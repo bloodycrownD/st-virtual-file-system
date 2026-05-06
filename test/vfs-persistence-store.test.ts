@@ -52,4 +52,15 @@ describe('vfs persistence store', () => {
 
     expect(store.getState().chat.mounted).toBe(false)
   })
+
+  it('returns immutable snapshots from getState', () => {
+    const adapter = createAdapterMock()
+    const store = createVfsPersistenceStore(adapter)
+    store.init()
+
+    const leaked = store.getState()
+    ;(leaked.chat as { mounted: boolean }).mounted = true
+
+    expect(store.getState().chat.mounted).toBe(false)
+  })
 })

@@ -28,10 +28,15 @@ export function createVfsPersistenceStore(adapter: StContextAdapter): VfsPersist
     chat: parseVfsChatMetadata({}),
   }
   const listeners = new Set<Listener>()
+  const snapshot = (): VfsPersistenceState => ({
+    extension: { ...state.extension },
+    chat: { ...state.chat },
+  })
 
   const notify = () => {
+    const safeState = snapshot()
     for (const listener of listeners) {
-      listener(state)
+      listener(safeState)
     }
   }
 
@@ -79,6 +84,6 @@ export function createVfsPersistenceStore(adapter: StContextAdapter): VfsPersist
         listeners.delete(listener)
       }
     },
-    getState: () => state,
+    getState: () => snapshot(),
   }
 }
