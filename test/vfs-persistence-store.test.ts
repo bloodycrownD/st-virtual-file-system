@@ -14,6 +14,20 @@ function createAdapterMock(): StContextAdapter {
 }
 
 describe('vfs persistence store', () => {
+  it('persists normalized extension/chat defaults during init', () => {
+    const adapter = createAdapterMock()
+    ;(adapter.readExtensionRaw as ReturnType<typeof vi.fn>).mockReturnValueOnce({ enabled: 'nope' })
+    ;(adapter.readChatRaw as ReturnType<typeof vi.fn>).mockReturnValueOnce({})
+    const store = createVfsPersistenceStore(adapter)
+
+    store.init()
+
+    expect(adapter.writeExtensionRaw).toHaveBeenCalledWith({ enabled: true })
+    expect(adapter.saveExtension).toHaveBeenCalledOnce()
+    expect(adapter.writeChatRaw).toHaveBeenCalledWith({ mounted: false })
+    expect(adapter.saveChat).toHaveBeenCalledOnce()
+  })
+
   it('loads defaults and persists extension state', () => {
     const adapter = createAdapterMock()
     const store = createVfsPersistenceStore(adapter)
@@ -43,6 +57,9 @@ describe('vfs persistence store', () => {
 
   it('falls back to defaults when adapter throws on read', () => {
     const adapter = createAdapterMock()
+    ;(adapter.readExtensionRaw as ReturnType<typeof vi.fn>).mockImplementationOnce(() => {
+      throw new Error('broken extension settings')
+    })
     ;(adapter.readChatRaw as ReturnType<typeof vi.fn>).mockImplementationOnce(() => {
       throw new Error('broken metadata')
     })
@@ -50,7 +67,12 @@ describe('vfs persistence store', () => {
     const store = createVfsPersistenceStore(adapter)
     store.init()
 
+    expect(store.getState().extension.enabled).toBe(true)
     expect(store.getState().chat.mounted).toBe(false)
+    expect(adapter.writeExtensionRaw).toHaveBeenCalledWith({ enabled: true })
+    expect(adapter.saveExtension).toHaveBeenCalledOnce()
+    expect(adapter.writeChatRaw).toHaveBeenCalledWith({ mounted: false })
+    expect(adapter.saveChat).toHaveBeenCalledOnce()
   })
 
   it('returns immutable snapshots from getState', () => {

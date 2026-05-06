@@ -40,19 +40,55 @@ export function createVfsPersistenceStore(adapter: StContextAdapter): VfsPersist
     }
   }
 
+  const isSameFlatRecord = (left: Record<string, unknown>, right: Record<string, unknown>) => {
+    const leftKeys = Object.keys(left)
+    const rightKeys = Object.keys(right)
+    if (leftKeys.length !== rightKeys.length) {
+      return false
+    }
+    for (const key of leftKeys) {
+      if (left[key] !== right[key]) {
+        return false
+      }
+    }
+    return true
+  }
+
   const readExtension = () => {
     try {
-      state = { ...state, extension: parseVfsExtensionSettings(adapter.readExtensionRaw()) }
+      const raw = adapter.readExtensionRaw()
+      const parsed = parseVfsExtensionSettings(raw)
+      const serialized = serializeVfsExtensionSettings(parsed)
+      const rawRecord = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {}
+      state = { ...state, extension: parsed }
+      if (!isSameFlatRecord(rawRecord, serialized)) {
+        adapter.writeExtensionRaw(serialized)
+        adapter.saveExtension()
+      }
     } catch {
-      state = { ...state, extension: parseVfsExtensionSettings({}) }
+      const fallback = parseVfsExtensionSettings({})
+      state = { ...state, extension: fallback }
+      adapter.writeExtensionRaw(serializeVfsExtensionSettings(fallback))
+      adapter.saveExtension()
     }
   }
 
   const readChat = () => {
     try {
-      state = { ...state, chat: parseVfsChatMetadata(adapter.readChatRaw()) }
+      const raw = adapter.readChatRaw()
+      const parsed = parseVfsChatMetadata(raw)
+      const serialized = serializeVfsChatMetadata(parsed)
+      const rawRecord = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {}
+      state = { ...state, chat: parsed }
+      if (!isSameFlatRecord(rawRecord, serialized)) {
+        adapter.writeChatRaw(serialized)
+        adapter.saveChat()
+      }
     } catch {
-      state = { ...state, chat: parseVfsChatMetadata({}) }
+      const fallback = parseVfsChatMetadata({})
+      state = { ...state, chat: fallback }
+      adapter.writeChatRaw(serializeVfsChatMetadata(fallback))
+      adapter.saveChat()
     }
   }
 
