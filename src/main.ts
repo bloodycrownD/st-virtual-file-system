@@ -1,5 +1,12 @@
 import { createApp } from 'vue'
-import './style.css'
 import App from './App.vue'
 
-createApp(App).mount('#app')
+const container = document.createElement('div')
+container.id = 'st-vfs-settings-root'
+
+const extensionsSettings = document.querySelector('#extensions_settings')
+if (extensionsSettings) {
+  extensionsSettings.appendChild(container)
+  const app = createApp(App)
+  app.mount(container)
+}
