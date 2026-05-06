@@ -1,28 +1,25 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { onMounted, onUnmounted, ref } from 'vue'
+import { initVfsPersistenceStore, vfsPersistenceStore } from '@/app/stores/vfs-store-singleton'
 
-const extensionName = 'st-virtual-file-system'
 const enabled = ref(true)
+let unsubscribe: (() => void) | null = null
 
 onMounted(() => {
-  if (typeof SillyTavern === 'undefined') {
-    return
-  }
+  initVfsPersistenceStore()
+  enabled.value = vfsPersistenceStore.getState().extension.enabled
+  unsubscribe = vfsPersistenceStore.subscribe((state) => {
+    enabled.value = state.extension.enabled
+  })
+})
 
-  const context = SillyTavern.getContext()
-  const settings = (context.extensionSettings[extensionName] ??= {})
-  enabled.value = Boolean(settings.enabled ?? true)
+onUnmounted(() => {
+  unsubscribe?.()
+  unsubscribe = null
 })
 
 const handleToggle = () => {
-  if (typeof SillyTavern === 'undefined') {
-    return
-  }
-
-  const context = SillyTavern.getContext()
-  const settings = (context.extensionSettings[extensionName] ??= {})
-  settings.enabled = enabled.value
-  context.saveSettingsDebounced()
+  vfsPersistenceStore.setExtensionEnabled(enabled.value)
 }
 </script>
 

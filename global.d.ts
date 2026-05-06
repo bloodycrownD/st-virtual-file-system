@@ -16,7 +16,9 @@ declare global {
     const SillyTavern: {
         getContext: () => {
             extensionSettings: Record<string, ExtensionSettings>;
+            chatMetadata: Record<string, unknown>;
             saveSettingsDebounced: () => void;
+            saveMetadata: () => void;
             eventSource: {
                 on: (event: string, handler: (...args: unknown[]) => void) => void;
             };
