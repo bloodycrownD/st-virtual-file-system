@@ -1,12 +1,18 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref } from 'vue'
+import { createMessageController } from '@/app/controllers/message-controller'
+import { createMessagePipeline } from '@/app/services/message/message-pipeline'
 import { initVfsPersistenceStore, vfsPersistenceStore } from '@/app/stores/vfs-store-singleton'
+import { createStMessageEventAdapter } from '@/infra/sillytarvern/events/st-event-adapter'
 
 const enabled = ref(true)
 let unsubscribe: (() => void) | null = null
 
+const messageEventAdapter = createStMessageEventAdapter(createMessageController(createMessagePipeline()))
+
 onMounted(() => {
   initVfsPersistenceStore()
+  messageEventAdapter.start()
   enabled.value = vfsPersistenceStore.getState().extension.enabled
   unsubscribe = vfsPersistenceStore.subscribe((state) => {
     enabled.value = state.extension.enabled
@@ -14,6 +20,7 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  messageEventAdapter.stop()
   unsubscribe?.()
   unsubscribe = null
 })
