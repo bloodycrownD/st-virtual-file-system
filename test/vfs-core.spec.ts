@@ -61,4 +61,13 @@ describe('vfs core', () => {
     expect(() => core.copy('/a', '/a')).toThrow(VfsInvalidPathError)
     expect(() => core.copy('/a', '/a/b/c')).toThrow(VfsInvalidPathError)
   })
+
+  it('rejects root move/rename/copy operations', () => {
+    const core = new VfsCore(new DeflateContentCodec())
+    core.mkdir('/docs')
+
+    expect(() => core.move('/', '/new-root')).toThrow(VfsInvalidPathError)
+    expect(() => core.rename('/', 'renamed-root')).toThrow(VfsInvalidPathError)
+    expect(() => core.copy('/', '/root-copy')).toThrow(VfsInvalidPathError)
+  })
 })

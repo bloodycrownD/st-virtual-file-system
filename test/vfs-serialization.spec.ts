@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { VfsCore } from '@/domain/vfs/vfs-core'
 import { DeflateContentCodec } from '@/infra/serialization/deflate-codec'
 import { parseVfsSnapshot } from '@/infra/persistence/vfs-snapshot.schema'
+import { VfsInvalidPathError } from '@/domain/vfs/vfs-errors'
 
 describe('vfs serialization', () => {
   it('keeps metadata plain while compressing large text content', () => {
@@ -49,5 +50,47 @@ describe('vfs serialization', () => {
 
     expect(restored.readFile('/a.txt')).toBe('a')
     expect(restored.readFile('/b.txt')).toBe('b')
+  })
+
+  it('rejects snapshot import when root node is invalid', () => {
+    const core = new VfsCore(new DeflateContentCodec({ threshold: 8 }))
+    const snapshot = core.exportSnapshot()
+    snapshot.nodes.root = {
+      ...(snapshot.nodes.root as any),
+      path: '/broken-root',
+    }
+
+    expect(() => core.importSnapshot(snapshot)).toThrow(VfsInvalidPathError)
+  })
+
+  it('rejects snapshot import when parent and child links are inconsistent', () => {
+    const source = new VfsCore(new DeflateContentCodec({ threshold: 8 }))
+    source.mkdir('/docs')
+    const snapshot = source.exportSnapshot()
+    snapshot.nodes.root = {
+      ...(snapshot.nodes.root as any),
+      children: ['node-missing'],
+    }
+
+    const restored = new VfsCore(new DeflateContentCodec({ threshold: 8 }))
+    expect(() => restored.importSnapshot(snapshot)).toThrow(VfsInvalidPathError)
+  })
+
+  it('rejects snapshot import when required file fields are invalid', () => {
+    const source = new VfsCore(new DeflateContentCodec({ threshold: 8 }))
+    source.writeFile('/a.txt', 'a')
+    const snapshot = source.exportSnapshot()
+    const fileNode = Object.values(snapshot.nodes).find((node) => node.path === '/a.txt')
+    if (!fileNode || fileNode.type !== 'file') {
+      throw new Error('test setup failed')
+    }
+
+    snapshot.nodes[fileNode.id] = {
+      ...(fileNode as any),
+      content: null,
+    }
+
+    const restored = new VfsCore(new DeflateContentCodec({ threshold: 8 }))
+    expect(() => restored.importSnapshot(snapshot)).toThrow(VfsInvalidPathError)
   })
 })

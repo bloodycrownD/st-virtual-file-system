@@ -121,7 +121,9 @@ export class VfsCore {
   }
 
   move(sourcePath: string, destinationPath: string): void {
-    const source = this.mustGetByPath(normalizePath(sourcePath))
+    const normalizedSourcePath = normalizePath(sourcePath)
+    if (normalizedSourcePath === ROOT_PATH) throw new VfsInvalidPathError('Cannot move root directory')
+    const source = this.mustGetByPath(normalizedSourcePath)
     const sourceParent = this.mustGetDirectory(source.parentId ? this.mustGetById(source.parentId).path : ROOT_PATH)
     const target = this.resolveTargetPath(source, destinationPath)
     this.assertNotSelfOrDescendantTarget(source, target.path)
@@ -134,12 +136,15 @@ export class VfsCore {
 
   rename(path: string, newName: string): void {
     const normalized = normalizePath(path)
+    if (normalized === ROOT_PATH) throw new VfsInvalidPathError('Cannot rename root directory')
     const parent = dirname(normalized)
     this.move(normalized, joinPath(parent, newName))
   }
 
   copy(sourcePath: string, destinationPath: string): void {
-    const source = this.mustGetByPath(normalizePath(sourcePath))
+    const normalizedSourcePath = normalizePath(sourcePath)
+    if (normalizedSourcePath === ROOT_PATH) throw new VfsInvalidPathError('Cannot copy root directory')
+    const source = this.mustGetByPath(normalizedSourcePath)
     const target = this.resolveTargetPath(source, destinationPath)
     this.assertNotSelfOrDescendantTarget(source, target.path)
     this.assertTargetAvailable(target.path)
@@ -178,6 +183,7 @@ export class VfsCore {
 
   importSnapshot(snapshot: VfsSnapshot): void {
     const parsed = parseVfsSnapshot(snapshot)
+    this.validateSnapshotStructure(parsed)
     this.nodes = new Map(Object.entries(parsed.nodes))
     this.pathIndex = new Map()
     for (const [id, node] of this.nodes) {
@@ -238,8 +244,73 @@ export class VfsCore {
 
   private assertNotSelfOrDescendantTarget(source: VfsNodeSnapshot, targetPath: string): void {
     if (source.type !== 'directory') return
-    if (targetPath === source.path || targetPath.startsWith(`${source.path}/`)) {
+    const isSelf = targetPath === source.path
+    const isDescendant = source.path === ROOT_PATH ? targetPath.startsWith(ROOT_PATH) : targetPath.startsWith(`${source.path}/`)
+    if (isSelf || isDescendant) {
       throw new VfsInvalidPathError(`Cannot move or copy directory into itself or its descendants: ${targetPath}`)
+    }
+  }
+
+  private validateSnapshotStructure(snapshot: VfsSnapshot): void {
+    const nodes = snapshot.nodes
+    const rootNode = nodes[snapshot.rootId]
+    if (!rootNode || rootNode.type !== 'directory') {
+      throw new VfsInvalidPathError('Invalid snapshot: root node must exist and be a directory')
+    }
+    if (rootNode.path !== ROOT_PATH || rootNode.parentId !== null || rootNode.name !== '') {
+      throw new VfsInvalidPathError('Invalid snapshot: root node integrity check failed')
+    }
+
+    for (const [id, node] of Object.entries(nodes)) {
+      if (!id || node.id !== id) {
+        throw new VfsInvalidPathError('Invalid snapshot: node id mapping mismatch')
+      }
+      if (!node.path || normalizePath(node.path) !== node.path) {
+        throw new VfsInvalidPathError(`Invalid snapshot: malformed path for node ${id}`)
+      }
+      if (typeof node.mtime !== 'number' || Number.isNaN(node.mtime)) {
+        throw new VfsInvalidPathError(`Invalid snapshot: invalid mtime for node ${id}`)
+      }
+
+      if (node.type === 'directory') {
+        for (const childId of node.children) {
+          const child = nodes[childId]
+          if (!child) {
+            throw new VfsInvalidPathError(`Invalid snapshot: missing child node ${childId}`)
+          }
+          if (child.parentId !== node.id) {
+            throw new VfsInvalidPathError(`Invalid snapshot: inconsistent parent link for child ${childId}`)
+          }
+        }
+        continue
+      }
+
+      if (typeof node.size !== 'number' || node.size < 0) {
+        throw new VfsInvalidPathError(`Invalid snapshot: invalid file size for node ${id}`)
+      }
+      if (!node.content || typeof node.content.data !== 'string') {
+        throw new VfsInvalidPathError(`Invalid snapshot: invalid content for node ${id}`)
+      }
+      if (node.content.encoding !== 'plain' && node.content.encoding !== 'deflate-base64') {
+        throw new VfsInvalidPathError(`Invalid snapshot: invalid content encoding for node ${id}`)
+      }
+      if (typeof node.content.originalSize !== 'number' || node.content.originalSize < 0) {
+        throw new VfsInvalidPathError(`Invalid snapshot: invalid original size for node ${id}`)
+      }
+    }
+
+    for (const [id, node] of Object.entries(nodes)) {
+      if (id === snapshot.rootId) continue
+      if (node.parentId === null) {
+        throw new VfsInvalidPathError(`Invalid snapshot: non-root node ${id} has null parent`)
+      }
+      const parent = nodes[node.parentId]
+      if (!parent || parent.type !== 'directory') {
+        throw new VfsInvalidPathError(`Invalid snapshot: parent missing for node ${id}`)
+      }
+      if (!parent.children.includes(id)) {
+        throw new VfsInvalidPathError(`Invalid snapshot: parent-child reference missing for node ${id}`)
+      }
     }
   }
 
