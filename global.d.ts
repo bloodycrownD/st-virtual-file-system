@@ -21,6 +21,7 @@ declare global {
             saveMetadata: () => void;
             eventSource: {
                 on: (event: string, handler: (...args: unknown[]) => void) => void;
+                removeListener: (event: string, handler: (...args: unknown[]) => void) => void;
             };
             event_types: EventTypes;
         };
