@@ -222,4 +222,26 @@ describe('virtual tool CR fixes', () => {
     expect(output.messageText).toContain('<virtual-tool-result>')
     expect(output.messageText).toContain('INVALID_JSON')
   })
+
+  it('replaces call block with unhandled error result when runtime throws unexpectedly', () => {
+    const store = createVfsPersistenceStore(createAdapterMock())
+    store.init()
+    const logs = new ChatVfsLogService(store)
+    const runtimeLike = {
+      isVirtualToolCallEnabled: () => true,
+      executeBatch: () => {
+        throw new Error('boom')
+      },
+    } as unknown as ChatVfsRuntime
+    const handler = new VirtualToolMessageHandler(runtimeLike, logs)
+    const output = handler.process({
+      chatId: 'chat',
+      messageId: 'unhandled',
+      messageText: '<virtual-tool-call>{"calls":[{"tool":"list","args":{"path":"/"}}]}</virtual-tool-call>',
+    })
+    expect(output.handled).toBe(true)
+    expect(output.messageText).not.toContain('<virtual-tool-call>')
+    expect(output.messageText).toContain('<virtual-tool-result>')
+    expect(output.messageText).toContain('UNHANDLED_PROCESSING_ERROR')
+  })
 })

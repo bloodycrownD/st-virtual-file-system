@@ -21,6 +21,7 @@ export class VirtualToolMessageHandler {
     if (locks.has(lockKey)) return { handled: false, messageText: input.messageText }
     locks.add(lockKey)
     const startedAt = Date.now()
+    let callBlock = extractLastCallBlock(input.messageText)
     try {
       if (!this.runtime.isVirtualToolCallEnabled()) {
         return { handled: false, messageText: input.messageText }
@@ -42,7 +43,6 @@ export class VirtualToolMessageHandler {
         })
         return { handled: false, messageText: input.messageText }
       }
-      const callBlock = extractLastCallBlock(input.messageText)
       if (!callBlock || !callBlock.content) return { handled: false, messageText: input.messageText }
       let envelope: ToolCallEnvelope
       try {
@@ -97,6 +97,11 @@ export class VirtualToolMessageHandler {
       this.logPerToolExecution(input, envelope, batch)
       return { handled: true, messageText: replaceCallWithResult(input.messageText, callBlock, payload) }
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      const unexpectedCode = 'UNHANDLED_PROCESSING_ERROR'
+      if (!callBlock) {
+        callBlock = extractLastCallBlock(input.messageText)
+      }
       this.logs.append({
         id: `log-${Date.now()}`,
         timestamp: Date.now(),
@@ -106,11 +111,24 @@ export class VirtualToolMessageHandler {
         toolName: 'batch',
         status: 'failed',
         durationMs: Date.now() - startedAt,
-        argsSummary: 'parse',
-        errorCode: 'INVALID_JSON',
-        errorMessage: error instanceof Error ? error.message : String(error),
+        argsSummary: 'unhandled',
+        errorCode: unexpectedCode,
+        errorMessage,
       })
-      return { handled: false, messageText: input.messageText }
+      if (callBlock) {
+        return {
+          handled: true,
+          messageText: replaceCallWithResult(input.messageText, callBlock, {
+            ok: false,
+            calls: [],
+            results: [],
+            errorCode: unexpectedCode,
+            errorMessage,
+          }),
+        }
+      }
+      const hasCallTag = input.messageText.includes('<virtual-tool-call>')
+      return { handled: hasCallTag, messageText: input.messageText }
     } finally {
       locks.delete(lockKey)
     }
