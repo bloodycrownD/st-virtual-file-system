@@ -44,7 +44,35 @@ export class VirtualToolMessageHandler {
       }
       const callBlock = extractLastCallBlock(input.messageText)
       if (!callBlock || !callBlock.content) return { handled: false, messageText: input.messageText }
-      const envelope = JSON.parse(callBlock.content) as ToolCallEnvelope
+      let envelope: ToolCallEnvelope
+      try {
+        envelope = JSON.parse(callBlock.content) as ToolCallEnvelope
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error)
+        this.logs.append({
+          id: `log-${Date.now()}`,
+          timestamp: Date.now(),
+          chatId: input.chatId,
+          messageId: input.messageId,
+          batchId: `batch-${Date.now()}`,
+          toolName: 'batch',
+          status: 'failed',
+          durationMs: Date.now() - startedAt,
+          argsSummary: 'parse',
+          errorCode: 'INVALID_JSON',
+          errorMessage,
+        })
+        return {
+          handled: true,
+          messageText: replaceCallWithResult(input.messageText, callBlock, {
+            ok: false,
+            calls: [],
+            results: [],
+            errorCode: 'INVALID_JSON',
+            errorMessage,
+          }),
+        }
+      }
       const batch = this.runtime.executeBatch(envelope)
       const payload = {
         ok: batch.ok,

@@ -205,4 +205,21 @@ describe('virtual tool CR fixes', () => {
     expect(output.handled).toBe(true)
     expect(nestedHandled).toBe(false)
   })
+
+  it('replaces malformed call blocks with failure result to avoid retrigger loop', () => {
+    const store = createVfsPersistenceStore(createAdapterMock())
+    store.init()
+    const logs = new ChatVfsLogService(store)
+    const runtime = new ChatVfsRuntime(store, new ToolDispatcher(), new ChatVfsVersionService(store))
+    const handler = new VirtualToolMessageHandler(runtime, logs)
+    const output = handler.process({
+      chatId: 'chat',
+      messageId: 'bad-json',
+      messageText: '<virtual-tool-call>{"calls":[{"tool":"list","args":{"path":"/"}}]</virtual-tool-call>',
+    })
+    expect(output.handled).toBe(true)
+    expect(output.messageText).not.toContain('<virtual-tool-call>')
+    expect(output.messageText).toContain('<virtual-tool-result>')
+    expect(output.messageText).toContain('INVALID_JSON')
+  })
 })
