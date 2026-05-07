@@ -24,11 +24,13 @@ export class ExtensionVfsTemplateService {
   overwriteChatWithTemplate(): void {
     const state = this.store.getState()
     if (!state.extension.extensionTemplateVfsSnapshot) return
+    // Keep a rollback point before destructive template overwrite.
     this.versionService.commitByManualSave('pre-template-overwrite', ['*'])
     this.store.updateChat((draft) => ({
       ...draft,
       chatVfsSnapshot: state.extension.extensionTemplateVfsSnapshot,
       templateInitialized: true,
     }))
+    this.versionService.commitByManualSave('manual-template-overwrite', ['*'])
   }
 }

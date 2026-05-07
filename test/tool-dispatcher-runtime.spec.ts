@@ -23,6 +23,18 @@ function createAdapterMock(): StContextAdapter {
 }
 
 describe('tool-dispatcher + runtime', () => {
+  it('rejects calls missing args object before dispatch', () => {
+    const store = createVfsPersistenceStore(createAdapterMock())
+    store.init()
+    const runtime = new ChatVfsRuntime(store, new ToolDispatcher(), new ChatVfsVersionService(store))
+    const failed = runtime.executeBatch({
+      calls: [{ tool: 'list' } as never],
+    })
+    expect(failed.ok).toBe(false)
+    expect(failed.errorCode).toBe('INVALID_CALL_ARGS')
+    expect(store.getState().chat.chatVfsSnapshot).toBeNull()
+  })
+
   it('commits whole batch when all tools succeed', () => {
     const store = createVfsPersistenceStore(createAdapterMock())
     store.init()

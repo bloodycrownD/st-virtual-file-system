@@ -16,6 +16,12 @@ export class ChatVfsLogService {
     return this.store.getState().chat.chatVfsLogs.filter((entry) => entry.messageId === messageId)
   }
 
+  listByTimeRange(startTimestamp: number, endTimestamp: number): ChatVfsLogEntry[] {
+    return this.store
+      .getState()
+      .chat.chatVfsLogs.filter((entry) => entry.timestamp >= startTimestamp && entry.timestamp <= endTimestamp)
+  }
+
   clear(): void {
     this.store.updateChat((draft) => ({ ...draft, chatVfsLogs: [] }))
   }

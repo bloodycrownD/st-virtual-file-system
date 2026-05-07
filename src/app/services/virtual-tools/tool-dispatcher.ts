@@ -19,6 +19,10 @@ const DEFAULT_OPTIONS: ToolDispatcherOptions = {
   timeoutMs: 5000,
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
 export class ToolDispatcher {
   private readonly tools: Map<string, VirtualTool>
   private readonly options: ToolDispatcherOptions
@@ -44,6 +48,15 @@ export class ToolDispatcher {
     const startedAt = Date.now()
     const results: ToolResultItem[] = []
     for (const call of envelope.calls) {
+      // Guard protocol boundaries before entering tool dispatch.
+      if (!call || typeof call.tool !== 'string' || call.tool.trim() === '' || !isRecord(call.args)) {
+        return {
+          ok: false,
+          results,
+          errorCode: 'INVALID_CALL_ARGS',
+          errorMessage: 'Each call must include a tool name and args object',
+        }
+      }
       if (Date.now() - startedAt > this.options.timeoutMs) {
         return { ok: false, results, errorCode: 'BATCH_TIMEOUT', errorMessage: 'Tool batch timed out' }
       }
@@ -57,7 +70,7 @@ export class ToolDispatcher {
         }
       }
       try {
-        const result = tool.execute(call.args ?? {}, { vfs })
+        const result = tool.execute(call.args, { vfs })
         results.push(result)
       } catch (error) {
         return {

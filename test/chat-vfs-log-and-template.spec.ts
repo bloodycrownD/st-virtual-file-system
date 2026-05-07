@@ -61,7 +61,49 @@ describe('chat vfs logs and templates', () => {
     templateService.initializeChatFromTemplateIfNeeded()
     expect(store.getState().chat.templateInitialized).toBe(true)
     templateService.overwriteChatWithTemplate()
-    expect(store.getState().chat.chatVfsVersions.length).toBe(1)
-    expect(store.getState().chat.chatVfsVersions[0]?.source).toBe('manual')
+    expect(store.getState().chat.chatVfsVersions.length).toBe(2)
+    expect(store.getState().chat.chatVfsVersions.every((entry) => entry.source === 'manual')).toBe(true)
+  })
+
+  it('queries logs by time range', () => {
+    const store = createVfsPersistenceStore(createAdapterMock())
+    store.init()
+    const logs = new ChatVfsLogService(store)
+    logs.append({
+      id: 'l1',
+      timestamp: 100,
+      chatId: 'c',
+      messageId: 'm1',
+      batchId: 'b1',
+      toolName: 'write',
+      status: 'success',
+      durationMs: 1,
+      argsSummary: 'a',
+    })
+    logs.append({
+      id: 'l2',
+      timestamp: 200,
+      chatId: 'c',
+      messageId: 'm2',
+      batchId: 'b2',
+      toolName: 'list',
+      status: 'success',
+      durationMs: 1,
+      argsSummary: 'b',
+    })
+    logs.append({
+      id: 'l3',
+      timestamp: 300,
+      chatId: 'c',
+      messageId: 'm3',
+      batchId: 'b3',
+      toolName: 'read',
+      status: 'success',
+      durationMs: 1,
+      argsSummary: 'c',
+    })
+
+    const inRange = logs.listByTimeRange(150, 250)
+    expect(inRange.map((entry) => entry.id)).toEqual(['l2'])
   })
 })
