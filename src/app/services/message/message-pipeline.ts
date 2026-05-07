@@ -1,3 +1,8 @@
+/**
+ * MessagePipeline（消息业务管道）
+ * v2：仅占位桩，真正把「解析 / SQL / 改消息正文」等行为放在后续迭代。
+ * 类型里预留 PipelinePhase / PipelineResult，方便以后分阶段报错与观测。
+ */
 import type { StMessageEventKind } from '@/infra/sillytarvern/events/st-event-types'
 
 export type PipelinePhase = 'parse' | 'validate' | 'execute' | 'commit'

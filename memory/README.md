@@ -33,6 +33,7 @@
 
 ## 快速入口（路径）
 
+- 需求文档历史快照：`docs/archive/index.md`（与 `memory` 互补：前者偏 **spec/plan 归档**，后者偏 **结论与决策记忆**）
 - `memory/persistence/index.md`
 - `memory/persistence/20260506/index.md`
 - `memory/persistence/20260507/index.md`

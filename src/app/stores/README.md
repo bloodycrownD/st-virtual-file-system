@@ -42,7 +42,7 @@ SillyTavern 第三方扩展：虚拟文件系统（VFS）实验项目。
 - `src/App.vue`：当前配置页 UI
 - `src/infra/persistence/`：持久化 adapter/schema
 - `src/app/stores/`：持久化 store 与单例接线
-- `docs/Iterations/持久化抽象重构/`：需求与设计文档
+- [`docs/archive/20260507/持久化抽象重构/features/spec-plan/`](../../../../docs/archive/20260507/持久化抽象重构/features/spec-plan/)：持久化重构 spec/plan（已归档快照）
 - `memory/`：项目记忆与知识索引
 
 ## 持久化设计说明

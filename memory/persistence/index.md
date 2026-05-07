@@ -8,7 +8,7 @@
 
 ### 当日摘要
 
-- **主题**：VFS 扩展挂载故障排查与修复闭环
+- **主题**：VFS 扩展挂载故障排查与修复闭环；文档归档与迭代索引
 - **关键词**：`VFS` `挂载失败` `process is not defined` `SillyTavern` `dist/index.js`
 - **结论**：根因是浏览器环境缺失 `process`，修复后扩展入口、挂载点和配置页均可正常生效。
 
@@ -17,6 +17,10 @@
 - [VFS 挂载失败与修复原因复盘](./20260507/records/VFS-挂载失败与修复原因复盘.md)
   - 关键词：`运行时异常` `process shim` `挂载链路`
   - 摘要：记录从“脚本已加载但界面不显示”到“定位根因并恢复 `manifest -> dist/index.js`”的完整过程。
+
+- [VFS 文档归档结构与迭代索引](./20260507/records/VFS-文档归档结构与迭代索引.md)
+  - 关键词：`docs/archive` `Iterations` `spec-plan`
+  - 摘要：`docs/archive/20260507` 下三类需求快照路径及与 `Iterations` 的关系。
 
 - [当日索引（2026-05-07）](./20260507/index.md)
   - 关键词：`日索引`
