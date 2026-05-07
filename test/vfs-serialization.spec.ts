@@ -93,4 +93,29 @@ describe('vfs serialization', () => {
     const restored = new VfsCore(new DeflateContentCodec({ threshold: 8 }))
     expect(() => restored.importSnapshot(snapshot)).toThrow(VfsInvalidPathError)
   })
+
+  it('rejects snapshot import when duplicate node IDs share the same normalized path', () => {
+    const source = new VfsCore(new DeflateContentCodec({ threshold: 8 }))
+    source.writeFile('/dup.txt', 'original')
+    const snapshot = source.exportSnapshot()
+    const originalFile = Object.values(snapshot.nodes).find((node) => node.path === '/dup.txt')
+    if (!originalFile || originalFile.type !== 'file') {
+      throw new Error('test setup failed')
+    }
+
+    snapshot.nodes['node-999'] = {
+      ...(originalFile as any),
+      id: 'node-999',
+      parentId: 'root',
+      name: 'dup-copy.txt',
+      path: '/dup.txt',
+    }
+    snapshot.nodes.root = {
+      ...(snapshot.nodes.root as any),
+      children: [...(snapshot.nodes.root as any).children, 'node-999'],
+    }
+
+    const restored = new VfsCore(new DeflateContentCodec({ threshold: 8 }))
+    expect(() => restored.importSnapshot(snapshot)).toThrow(/duplicate normalized path/i)
+  })
 })

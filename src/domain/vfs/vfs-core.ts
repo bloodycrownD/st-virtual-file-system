@@ -253,6 +253,7 @@ export class VfsCore {
 
   private validateSnapshotStructure(snapshot: VfsSnapshot): void {
     const nodes = snapshot.nodes
+    const nodeIdByNormalizedPath = new Map<string, string>()
     const rootNode = nodes[snapshot.rootId]
     if (!rootNode || rootNode.type !== 'directory') {
       throw new VfsInvalidPathError('Invalid snapshot: root node must exist and be a directory')
@@ -268,6 +269,14 @@ export class VfsCore {
       if (!node.path || normalizePath(node.path) !== node.path) {
         throw new VfsInvalidPathError(`Invalid snapshot: malformed path for node ${id}`)
       }
+      const normalizedPath = normalizePath(node.path)
+      const existingNodeId = nodeIdByNormalizedPath.get(normalizedPath)
+      if (existingNodeId && existingNodeId !== id) {
+        throw new VfsInvalidPathError(
+          `Invalid snapshot: duplicate normalized path "${normalizedPath}" for node IDs "${existingNodeId}" and "${id}"`,
+        )
+      }
+      nodeIdByNormalizedPath.set(normalizedPath, id)
       if (typeof node.mtime !== 'number' || Number.isNaN(node.mtime)) {
         throw new VfsInvalidPathError(`Invalid snapshot: invalid mtime for node ${id}`)
       }
