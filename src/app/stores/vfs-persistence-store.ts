@@ -26,7 +26,9 @@ export interface VfsPersistenceStore {
   init: () => void
   reloadChatState: () => void
   setExtensionEnabled: (enabled: boolean) => void
+  updateExtension: (updater: (draft: VfsExtensionSettings) => VfsExtensionSettings) => void
   setChatMounted: (mounted: boolean) => void
+  updateChat: (updater: (draft: VfsChatMetadata) => VfsChatMetadata) => void
   subscribe: (listener: Listener) => () => void
   getState: () => Readonly<VfsPersistenceState>
 }
@@ -40,7 +42,11 @@ export function createVfsPersistenceStore(adapter: StContextAdapter): VfsPersist
   /** 返回与内部 state 断开的拷贝，订阅回调与 UI 都只能拿到快照 */
   const snapshot = (): VfsPersistenceState => ({
     extension: { ...state.extension },
-    chat: { ...state.chat },
+    chat: {
+      ...state.chat,
+      chatVfsLogs: [...state.chat.chatVfsLogs],
+      chatVfsVersions: [...state.chat.chatVfsVersions],
+    },
   })
 
   const notify = () => {
@@ -127,9 +133,26 @@ export function createVfsPersistenceStore(adapter: StContextAdapter): VfsPersist
       adapter.saveExtension()
       notify()
     },
+    updateExtension: (updater) => {
+      state = { ...state, extension: updater({ ...state.extension }) }
+      adapter.writeExtensionRaw(serializeVfsExtensionSettings(state.extension))
+      adapter.saveExtension()
+      notify()
+    },
     /** 示例：会话内布尔字段写入 chatMetadata[name]（可按业务更名/扩展字段） */
     setChatMounted: (mounted) => {
       state = { ...state, chat: { ...state.chat, mounted } }
+      adapter.writeChatRaw(serializeVfsChatMetadata(state.chat))
+      adapter.saveChat()
+      notify()
+    },
+    updateChat: (updater) => {
+      const next = updater({
+        ...state.chat,
+        chatVfsLogs: [...state.chat.chatVfsLogs],
+        chatVfsVersions: [...state.chat.chatVfsVersions],
+      })
+      state = { ...state, chat: next }
       adapter.writeChatRaw(serializeVfsChatMetadata(state.chat))
       adapter.saveChat()
       notify()
