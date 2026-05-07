@@ -22,6 +22,10 @@
   - 关键词：`docs/archive` `Iterations` `spec-plan`
   - 摘要：`docs/archive/20260507` 下三类需求快照路径及与 `Iterations` 的关系。
 
+- [项目结构 - VFS 序列化实现后](./20260507/records/项目结构-VFS序列化实现后.md)
+  - 关键词：`项目结构` `VFS Core` `Repository` `Serialization`
+  - 摘要：记录序列化实现完成后的分层目录与职责边界，明确后续 ST 适配与版本能力扩展路径。
+
 - [当日索引（2026-05-07）](./20260507/index.md)
   - 关键词：`日索引`
   - 摘要：05-07 当天全部持久记忆入口。

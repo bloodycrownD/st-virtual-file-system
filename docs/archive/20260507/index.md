@@ -11,3 +11,4 @@
 | [持久化抽象重构](./持久化抽象重构/features/spec-plan/) | `spec-plan` | `spec.md`、`plan.md` |
 | [消息事件管线设计](./消息事件管线设计/features/spec-plan/) | `spec-plan` | `spec.md`、`plan.md`（含 v2 实现范围） |
 | [虚拟文件系统](./虚拟文件系统/features/spec-baseline/) | `spec-baseline` | 仅早期 `spec.md` |
+| [虚拟文件系统序列化实现](./虚拟文件系统序列化实现/features/full-implementation/) | `full-implementation` | `spec.md`、`plan.md`、`acceptance-evidence.md` |
