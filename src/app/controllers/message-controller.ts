@@ -1,9 +1,14 @@
 import type { MessagePipeline } from '@/app/services/message/message-pipeline'
 import type { StMessageEventKind } from '@/infra/sillytarvern/events/st-event-types'
 
-function logDispatchError(kind: StMessageEventKind, err: unknown) {
+function logDispatchError(kind: StMessageEventKind, args: unknown[], err: unknown) {
   const wrapped = err instanceof Error ? err : new Error(String(err))
-  console.error(`[st-vfs] message-controller: ${kind}`, wrapped)
+  const phase = 'pipeline.run'
+  const messageIndex = typeof args[0] === 'number' ? args[0] : undefined
+  console.error(
+    `[st-vfs] message-controller: kind=${kind} phase=${phase} messageIndex=${messageIndex ?? 'n/a'}`,
+    wrapped,
+  )
 }
 
 export interface MessageController {
@@ -18,7 +23,7 @@ export function createMessageController(pipeline: MessagePipeline): MessageContr
     try {
       pipeline.run({ kind, args })
     } catch (err) {
-      logDispatchError(kind, err)
+      logDispatchError(kind, args, err)
     }
   }
 
