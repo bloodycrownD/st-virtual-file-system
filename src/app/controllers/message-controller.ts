@@ -1,7 +1,14 @@
 /**
- * MessageController：夹在「事件 Adapter」与「Pipeline」中间的薄调度层。
- * 职责只有一件：收到 ST 的回调参数后，按事件种类调用 pipeline.run，并吞掉同步异常，
- * 避免某一个 handler 抛错导致后续消息事件都不再触发。
+ * @file Message dispatch façade between SillyTavern events and the internal pipeline.
+ *
+ * `MessageController` is intentionally thin:
+ * - It receives raw callback arguments from SillyTavern event listeners.
+ * - It forwards them to `MessagePipeline.run()` together with a logical event kind.
+ * - It catches synchronous exceptions to avoid breaking SillyTavern's event emitter chain
+ *   (a thrown error in one listener can prevent subsequent events from being delivered).
+ *
+ * The controller does **not** interpret SillyTavern's event argument shapes; those vary by
+ * version and event type, so the pipeline receives the original `unknown[]` unchanged.
  */
 import type { MessagePipeline } from '@/app/services/message/message-pipeline'
 import type { StMessageEventKind } from '@/infra/sillytarvern/events/st-event-types'
@@ -16,7 +23,13 @@ function logDispatchError(kind: StMessageEventKind, args: unknown[], err: unknow
   )
 }
 
-/** 四个方法名将由 st-event-adapter 分别绑定到不同 event_types 字符串上 */
+/**
+ * A stable, version-agnostic surface for the event adapter to call.
+ *
+ * The adapter binds these methods to SillyTavern's `event_types.*` string constants at runtime.
+ * Each handler keeps the original callback arguments intact (`unknown[]`) to preserve compatibility
+ * across SillyTavern versions.
+ */
 export interface MessageController {
   onMessageReceived: (...args: unknown[]) => void
   onMessageEdited: (...args: unknown[]) => void
@@ -24,6 +37,12 @@ export interface MessageController {
   onMessageDeleted: (...args: unknown[]) => void
 }
 
+/**
+ * Creates a `MessageController` bound to a pipeline.
+ *
+ * @param pipeline - The internal pipeline that handles the event routing and side effects.
+ * @returns A controller whose methods can be registered as SillyTavern event listeners.
+ */
 export function createMessageController(pipeline: MessagePipeline): MessageController {
   /** 统一入口：附带 kind + 原始参数数组传递给 pipeline（ST 各事件签名可能不同） */
   const dispatch = (kind: StMessageEventKind, args: unknown[]) => {

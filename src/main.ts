@@ -1,9 +1,37 @@
 /**
- * SillyTavern 扩展入口（由 manifest.json -> dist/index.js 加载）。
- * 不在普通网页里挂载 #app，而是挂到扩展设置页容器，与 SillyTavern UI 同源。
+ * @file Entry point for the `st-virtual-file-system` extension.
+ *
+ * This module performs two independent responsibilities:
+ *
+ * - **UI mount (optional)**: If SillyTavern's extension settings container exists, mount the Vue
+ *   settings UI into that container.
+ * - **Runtime wiring (always)**: Initialize persistence and connect the message/event pipeline so
+ *   virtual tool calls can update the VFS state.
+ *
+ * ## Initialization order (why it matters)
+ *
+ * 1) **Persistence store first**: loads extension/global + chat/session state so subsequent services
+ *    can read/write snapshots safely.
+ * 2) **Version/template services**: template initialization depends on versioning, and may populate
+ *    an initial snapshot for the current chat.
+ * 3) **Runtime + message handling**: only after state/services exist do we wire the message pipeline
+ *    to SillyTavern's event source.
+ *
+ * Note: event listeners for `CHAT_CHANGED` are owned by the persistence singleton
+ * (`initVfsPersistenceStore`) so chat reload is centralized and not duplicated across adapters.
  */
 import { createApp } from 'vue'
 import App from './App.vue'
+import { initVfsPersistenceStore, vfsPersistenceStore } from '@/app/stores/vfs-store-singleton'
+import { createMessageController } from '@/app/controllers/message-controller'
+import { createMessagePipeline } from '@/app/services/message/message-pipeline'
+import { createStMessageEventAdapter } from '@/infra/sillytarvern/events/st-event-adapter'
+import { ToolDispatcher } from '@/app/services/virtual-tools/tool-dispatcher'
+import { ChatVfsVersionService } from '@/app/services/vfs-version/chat-vfs-version-service'
+import { ChatVfsLogService } from '@/app/services/vfs-log/chat-vfs-log-service'
+import { ChatVfsRuntime } from '@/app/services/vfs-runtime/chat-vfs-runtime'
+import { ExtensionVfsTemplateService } from '@/app/services/vfs-runtime/extension-vfs-template-service'
+import { VirtualToolMessageHandler } from '@/app/services/message/virtual-tool-message-handler'
 
 /** 包住整棵 Vue 树的 DOM 节点，便于在 DevTools / 测试中定位 */
 const container = document.createElement('div')
@@ -16,3 +44,17 @@ if (extensionsSettings) {
   const app = createApp(App)
   app.mount(container)
 }
+
+initVfsPersistenceStore()
+// Runtime wiring order:
+// - store first (loads chat/extension snapshots)
+// - version + template services (template init depends on version service)
+// - runtime + handler wired into message pipeline and ST event source
+const versionService = new ChatVfsVersionService(vfsPersistenceStore)
+const templateService = new ExtensionVfsTemplateService(vfsPersistenceStore, versionService)
+templateService.initializeChatFromTemplateIfNeeded()
+const runtime = new ChatVfsRuntime(vfsPersistenceStore, new ToolDispatcher(), versionService, templateService)
+const logs = new ChatVfsLogService(vfsPersistenceStore)
+const messageHandler = new VirtualToolMessageHandler(runtime, logs)
+const controller = createMessageController(createMessagePipeline(messageHandler))
+createStMessageEventAdapter(controller).start()

@@ -22,9 +22,20 @@ describe('vfs persistence store', () => {
 
     store.init()
 
-    expect(adapter.writeExtensionRaw).toHaveBeenCalledWith({ enabled: true })
+    expect(adapter.writeExtensionRaw).toHaveBeenCalledWith({
+      enabled: true,
+      logMaxBytes: 1024 * 1024,
+      virtualToolCallEnabled: true,
+      extensionTemplateVfsSnapshot: null,
+    })
     expect(adapter.saveExtension).toHaveBeenCalledOnce()
-    expect(adapter.writeChatRaw).toHaveBeenCalledWith({ mounted: false })
+    expect(adapter.writeChatRaw).toHaveBeenCalledWith({
+      mounted: false,
+      chatVfsSnapshot: null,
+      chatVfsLogs: [],
+      chatVfsVersions: [],
+      templateInitialized: false,
+    })
     expect(adapter.saveChat).toHaveBeenCalledOnce()
   })
 
@@ -36,8 +47,13 @@ describe('vfs persistence store', () => {
     expect(store.getState().extension.enabled).toBe(false)
 
     store.setExtensionEnabled(true)
-    expect(adapter.writeExtensionRaw).toHaveBeenCalledWith({ enabled: true })
-    expect(adapter.saveExtension).toHaveBeenCalledOnce()
+    expect(adapter.writeExtensionRaw).toHaveBeenCalledWith({
+      enabled: true,
+      logMaxBytes: 1024 * 1024,
+      virtualToolCallEnabled: true,
+      extensionTemplateVfsSnapshot: null,
+    })
+    expect(adapter.saveExtension).toHaveBeenCalledTimes(2)
   })
 
   it('reloads chat state on chat change and notifies subscribers', () => {
@@ -69,9 +85,20 @@ describe('vfs persistence store', () => {
 
     expect(store.getState().extension.enabled).toBe(true)
     expect(store.getState().chat.mounted).toBe(false)
-    expect(adapter.writeExtensionRaw).toHaveBeenCalledWith({ enabled: true })
+    expect(adapter.writeExtensionRaw).toHaveBeenCalledWith({
+      enabled: true,
+      logMaxBytes: 1024 * 1024,
+      virtualToolCallEnabled: true,
+      extensionTemplateVfsSnapshot: null,
+    })
     expect(adapter.saveExtension).toHaveBeenCalledOnce()
-    expect(adapter.writeChatRaw).toHaveBeenCalledWith({ mounted: false })
+    expect(adapter.writeChatRaw).toHaveBeenCalledWith({
+      mounted: false,
+      chatVfsSnapshot: null,
+      chatVfsLogs: [],
+      chatVfsVersions: [],
+      templateInitialized: false,
+    })
     expect(adapter.saveChat).toHaveBeenCalledOnce()
   })
 

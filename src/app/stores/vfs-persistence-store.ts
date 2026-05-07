@@ -1,11 +1,20 @@
 /**
- * vfs 持久化「领域 store」（不是 Vuex/Pinia，就是普通的订阅式状态容器）。
+ * VFS persistence "domain store" (simple subscription-based state container).
  *
- * 数据分两类：
- * - extension：全局 extensionSettings[name]
- * - chat：当前会话 chatMetadata[name]（切换会话后内容由 adapter.reload 读出另一份）
+ * This store is the boundary between runtime services and SillyTavern persistence. It owns a small
+ * in-memory state and ensures changes are:
+ * - normalized via schema parsers
+ * - written back in a stable, JSON-friendly shape
+ * - broadcast to subscribers via immutable snapshots
  *
- * getState()/notify 时使用 snapshot 浅拷贝，避免外部篡改内部可变引用。
+ * ## Chat vs extension persistence mapping
+ * Data is persisted in two independent buckets:
+ * - **extension**: global `extensionSettings[name]` (shared across all chats)
+ * - **chat**: per-conversation `chatMetadata[name]` (switching chats swaps the backing record)
+ *
+ * ## Snapshot semantics
+ * `getState()` and subscriber notifications always return a shallow-copied snapshot to prevent
+ * external mutation of internal state references.
  */
 import type { StContextAdapter } from '@/infra/persistence/st-context-adapter'
 import {
@@ -23,14 +32,52 @@ export interface VfsPersistenceState {
 type Listener = (state: Readonly<VfsPersistenceState>) => void
 
 export interface VfsPersistenceStore {
+  /**
+   * Initialize store state from persistence (extension + current chat) and notify subscribers.
+   *
+   * This should be called once on extension startup.
+   */
   init: () => void
+  /**
+   * Reload only the chat-scoped segment from persistence and notify subscribers.
+   *
+   * Intended for chat-switch events (e.g. `CHAT_CHANGED`). Extension settings are not reloaded
+   * to avoid unnecessary I/O.
+   */
   reloadChatState: () => void
+  /** Set `extension.enabled` and persist to extension settings. */
   setExtensionEnabled: (enabled: boolean) => void
+  /**
+   * Update extension settings with an immutable updater and persist to extension settings.
+   *
+   * The updater receives a draft copy; returning a new object is expected.
+   */
+  updateExtension: (updater: (draft: VfsExtensionSettings) => VfsExtensionSettings) => void
+  /** Set `chat.mounted` and persist to chat metadata. */
   setChatMounted: (mounted: boolean) => void
+  /**
+   * Update chat metadata with an immutable updater and persist to chat metadata.
+   *
+   * The updater receives a draft copy (including cloned arrays for logs/versions) to prevent
+   * accidental external mutation.
+   */
+  updateChat: (updater: (draft: VfsChatMetadata) => VfsChatMetadata) => void
+  /** Subscribe to state changes; returns an unsubscribe function. */
   subscribe: (listener: Listener) => () => void
+  /** Read-only snapshot of current state. */
   getState: () => Readonly<VfsPersistenceState>
 }
 
+/**
+ * Create a new persistence store backed by a SillyTavern context adapter.
+ *
+ * The adapter encapsulates the host's read/write/save mechanics for:
+ * - extension settings (global)
+ * - chat metadata (per conversation)
+ *
+ * This store performs schema normalization on reads and may write back a "repaired" record when
+ * it detects missing fields or type mismatches (backfilling defaults without losing user data).
+ */
 export function createVfsPersistenceStore(adapter: StContextAdapter): VfsPersistenceStore {
   let state: VfsPersistenceState = {
     extension: parseVfsExtensionSettings({}),
@@ -40,7 +87,11 @@ export function createVfsPersistenceStore(adapter: StContextAdapter): VfsPersist
   /** 返回与内部 state 断开的拷贝，订阅回调与 UI 都只能拿到快照 */
   const snapshot = (): VfsPersistenceState => ({
     extension: { ...state.extension },
-    chat: { ...state.chat },
+    chat: {
+      ...state.chat,
+      chatVfsLogs: [...state.chat.chatVfsLogs],
+      chatVfsVersions: [...state.chat.chatVfsVersions],
+    },
   })
 
   const notify = () => {
@@ -127,9 +178,26 @@ export function createVfsPersistenceStore(adapter: StContextAdapter): VfsPersist
       adapter.saveExtension()
       notify()
     },
+    updateExtension: (updater) => {
+      state = { ...state, extension: updater({ ...state.extension }) }
+      adapter.writeExtensionRaw(serializeVfsExtensionSettings(state.extension))
+      adapter.saveExtension()
+      notify()
+    },
     /** 示例：会话内布尔字段写入 chatMetadata[name]（可按业务更名/扩展字段） */
     setChatMounted: (mounted) => {
       state = { ...state, chat: { ...state.chat, mounted } }
+      adapter.writeChatRaw(serializeVfsChatMetadata(state.chat))
+      adapter.saveChat()
+      notify()
+    },
+    updateChat: (updater) => {
+      const next = updater({
+        ...state.chat,
+        chatVfsLogs: [...state.chat.chatVfsLogs],
+        chatVfsVersions: [...state.chat.chatVfsVersions],
+      })
+      state = { ...state, chat: next }
       adapter.writeChatRaw(serializeVfsChatMetadata(state.chat))
       adapter.saveChat()
       notify()

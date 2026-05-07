@@ -1,9 +1,14 @@
 import type { VfsSnapshot } from '@/domain/vfs/types'
 
 /**
- * VFS 快照仓储抽象：
- * - 只关心“整包快照”的读写，不关心底层是 ST、内存还是数据库。
- * - 使用 async 是为了让上层代码对未来异步后端（IndexedDB/HTTP）保持兼容。
+ * @file Snapshot persistence boundary.
+ *
+ * This interface represents the minimal contract required by the app layer:
+ * - load the most recently saved full snapshot
+ * - save a full snapshot
+ *
+ * It deliberately hides the underlying storage (SillyTavern metadata, memory, IndexedDB, HTTP,
+ * etc.). Methods are `async` to keep the app layer compatible with future asynchronous backends.
  */
 export interface VfsSnapshotRepository {
   /** 读取最近一次保存的快照；无数据时返回 null。 */

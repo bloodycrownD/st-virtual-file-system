@@ -1,12 +1,21 @@
 /**
- * SillyTavern「消息相关」事件的订阅适配器：
- * - start：向 eventSource 注册若干 listener，并记住 (eventName, handler) 以便 stop 时成对移除
- * - 幂等：重复 start 不会重复注册
+ * @file Adapter for SillyTavern message-related events.
  *
- * CHAT_CHANGED 不在这里注册，避免与 vfs-store-singleton（持久化重载）重复订阅同一事件。
+ * This module bridges SillyTavern's runtime event system into our stable `MessageController`
+ * interface. The key constraint is that SillyTavern exposes event names as **runtime strings**
+ * (`context.event_types.*`) and those strings can differ across versions.
+ *
+ * ## Design notes
+ *
+ * - **Idempotent `start()`**: calling `start()` multiple times will not double-register listeners.
+ * - **Precise `stop()`**: we keep `(eventName, handler)` pairs so we can remove exactly what we
+ *   registered.
+ * - **No `CHAT_CHANGED` here**: chat switching triggers a persistence reload. That concern is
+ *   centralized in `vfs-store-singleton` to avoid duplicated subscriptions and double reloads.
  */
 import type { MessageController } from '@/app/controllers/message-controller'
 
+/** Lifecycle wrapper around SillyTavern event subscriptions. */
 export interface StMessageEventAdapter {
   start: () => void
   stop: () => void
@@ -30,8 +39,13 @@ function collectUniqueEventNames(...candidates: (string | undefined)[]): string[
 }
 
 /**
- * Subscribes SillyTavern message events only. `CHAT_CHANGED` remains handled in
- * `vfs-store-singleton` (persistence reload); this adapter does not register it.
+ * Creates an adapter that subscribes to SillyTavern message events only.
+ *
+ * `CHAT_CHANGED` is intentionally excluded: persistence reload on chat switch is handled in
+ * `vfs-store-singleton` so there's exactly one place responsible for chat-state reloading.
+ *
+ * @param controller - Receives logical message events; argument shapes remain `unknown[]`.
+ * @returns An adapter with `start/stop/isStarted` lifecycle.
  */
 export function createStMessageEventAdapter(controller: MessageController): StMessageEventAdapter {
   let started = false

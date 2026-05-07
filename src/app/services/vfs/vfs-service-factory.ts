@@ -5,12 +5,26 @@ import type { VfsSnapshotRepository } from '@/infra/repository/vfs-snapshot-repo
 import type { VfsSnapshot } from '@/domain/vfs/types'
 import { VfsService } from './vfs-service'
 
+/**
+ * @file Factory wiring for a ready-to-use `VfsService`.
+ *
+ * This is the central composition point that chooses defaults (codec + repository) while allowing
+ * callers (tests / future integrations) to override pieces.
+ */
 export interface VfsServiceFactoryOptions {
+  /** Minimum UTF-8 byte length before content is compressed. */
   compressionThreshold?: number
+  /** Custom snapshot repository; defaults to an in-memory repository. */
   repository?: VfsSnapshotRepository
+  /** Initial snapshot used by the default in-memory repository. */
   initialSnapshot?: VfsSnapshot | null
 }
 
+/**
+ * Creates a fully-wired `VfsService`.
+ *
+ * @param options - Optional overrides for compression and persistence.
+ */
 export function createVfsService(options: VfsServiceFactoryOptions = {}): VfsService {
   const codec = new DeflateContentCodec({
     threshold: options.compressionThreshold,

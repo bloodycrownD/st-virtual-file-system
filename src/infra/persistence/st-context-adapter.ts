@@ -1,8 +1,19 @@
 /**
- * 对 SillyTavern.getContext() 的薄封装：所有读写都「当场」拉 context，
- * 不长期缓存 chatMetadata（官方要求切换聊天后引用会变）。
+ * @file Thin adapter over `SillyTavern.getContext()` for extension + chat persistence.
  *
- * extensionName：在 extensionSettings / chatMetadata 里占一个独立 key，避免和其它扩展冲突。
+ * This adapter exists to isolate SillyTavern's mutable context API behind a small, testable
+ * surface. The most important constraint is **chat switching**:
+ *
+ * - SillyTavern's `chatMetadata` reference can change when the user switches chats.
+ * - Holding onto (caching) a previous `chatMetadata` object can cause writes to target the wrong
+ *   chat or be dropped.
+ *
+ * For that reason **every read/write re-fetches context** and re-derives the effective metadata
+ * object. This is why you'll see `getSafeContext()` called inside each method instead of caching
+ * `context`/`chatMetadata` in the adapter.
+ *
+ * `extensionName` is used as a dedicated namespace key inside both `extensionSettings` and
+ * `chatMetadata` to avoid collisions with other extensions.
  */
 export interface StContextAdapter {
   readExtensionRaw: () => unknown
@@ -29,6 +40,11 @@ function ensureRecord(input: unknown): Record<string, unknown> {
   return {}
 }
 
+/**
+ * Creates a `StContextAdapter` scoped to one extension namespace.
+ *
+ * @param extensionName - Namespace key used inside `extensionSettings` and `chatMetadata`.
+ */
 export function createStContextAdapter(extensionName: string): StContextAdapter {
   return {
     /** 读当前扩展的全局配置块（对象引用由 ST 托管，我们只是归一化成对象） */
