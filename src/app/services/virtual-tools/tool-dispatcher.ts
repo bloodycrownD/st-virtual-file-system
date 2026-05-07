@@ -72,6 +72,10 @@ export class ToolDispatcher {
       try {
         const result = tool.execute(call.args, { vfs })
         results.push(result)
+        // Enforce batch timeout on total elapsed wall-clock time, including long single-tool executions.
+        if (Date.now() - startedAt > this.options.timeoutMs) {
+          return { ok: false, results, errorCode: 'BATCH_TIMEOUT', errorMessage: 'Tool batch timed out' }
+        }
       } catch (error) {
         return {
           ok: false,

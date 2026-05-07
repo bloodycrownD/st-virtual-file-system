@@ -6,6 +6,7 @@ import { ChatVfsVersionService } from '@/app/services/vfs-version/chat-vfs-versi
 import { ExtensionVfsTemplateService } from '@/app/services/vfs-runtime/extension-vfs-template-service'
 import { VirtualToolMessageHandler } from '@/app/services/message/virtual-tool-message-handler'
 import { ChatVfsLogService } from '@/app/services/vfs-log/chat-vfs-log-service'
+import type { VirtualTool } from '@/app/services/virtual-tools/tool-contracts'
 import type { StContextAdapter } from '@/infra/persistence/st-context-adapter'
 
 function createAdapterMock(extensionSeed: Record<string, unknown> = {}): StContextAdapter {
@@ -130,5 +131,78 @@ describe('virtual tool CR fixes', () => {
     expect(entries.some((entry) => entry.toolName === 'write')).toBe(true)
     expect(entries.some((entry) => entry.toolName === 'read')).toBe(true)
     expect(entries.some((entry) => entry.errorCode === 'READ_TRUNCATED')).toBe(true)
+  })
+
+  it('returns CALL_LIMIT_EXCEEDED in acceptance flow when calls exceed limit', () => {
+    const store = createVfsPersistenceStore(createAdapterMock())
+    store.init()
+    const logs = new ChatVfsLogService(store)
+    const runtime = new ChatVfsRuntime(store, new ToolDispatcher(undefined, { maxCalls: 1 }), new ChatVfsVersionService(store))
+    const handler = new VirtualToolMessageHandler(runtime, logs)
+    const output = handler.process({
+      chatId: 'chat',
+      messageId: 'call-limit',
+      messageText:
+        '<virtual-tool-call>{"calls":[{"tool":"list","args":{"path":"/"}},{"tool":"list","args":{"path":"/"}}]}</virtual-tool-call>',
+    })
+    expect(output.handled).toBe(true)
+    expect(output.messageText).toContain('CALL_LIMIT_EXCEEDED')
+  })
+
+  it('returns BATCH_TIMEOUT in acceptance flow when total batch elapsed exceeds timeout', () => {
+    const store = createVfsPersistenceStore(createAdapterMock())
+    store.init()
+    const logs = new ChatVfsLogService(store)
+    const slowTool: VirtualTool = {
+      name: 'slow',
+      execute: () => {
+        const stopAt = Date.now() + 30
+        // Keep execution synchronous to validate dispatcher time-boundary checks.
+        while (Date.now() < stopAt) {
+          // noop busy wait
+        }
+        return { tool: 'slow', ok: true, data: { done: true } }
+      },
+    }
+    const runtime = new ChatVfsRuntime(
+      store,
+      new ToolDispatcher([slowTool], { timeoutMs: 10 }),
+      new ChatVfsVersionService(store),
+    )
+    const handler = new VirtualToolMessageHandler(runtime, logs)
+    const output = handler.process({
+      chatId: 'chat',
+      messageId: 'timeout',
+      messageText: '<virtual-tool-call>{"calls":[{"tool":"slow","args":{}}]}</virtual-tool-call>',
+    })
+    expect(output.handled).toBe(true)
+    expect(output.messageText).toContain('BATCH_TIMEOUT')
+  })
+
+  it('guards against concurrent duplicate processing for the same chatId:messageId', () => {
+    const store = createVfsPersistenceStore(createAdapterMock())
+    store.init()
+    const logs = new ChatVfsLogService(store)
+    let handler: VirtualToolMessageHandler
+    let nestedHandled: boolean | null = null
+    const runtimeLike = {
+      isVirtualToolCallEnabled: () => true,
+      executeBatch: () => {
+        nestedHandled = handler.process({
+          chatId: 'chat',
+          messageId: 'dup',
+          messageText: '<virtual-tool-call>{"calls":[{"tool":"list","args":{"path":"/"}}]}</virtual-tool-call>',
+        }).handled
+        return { ok: true, results: [{ tool: 'list', ok: true, data: { path: '/', entries: [] } }] }
+      },
+    } as unknown as ChatVfsRuntime
+    handler = new VirtualToolMessageHandler(runtimeLike, logs)
+    const output = handler.process({
+      chatId: 'chat',
+      messageId: 'dup',
+      messageText: '<virtual-tool-call>{"calls":[{"tool":"list","args":{"path":"/"}}]}</virtual-tool-call>',
+    })
+    expect(output.handled).toBe(true)
+    expect(nestedHandled).toBe(false)
   })
 })
