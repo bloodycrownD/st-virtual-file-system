@@ -1,6 +1,19 @@
 import type { VfsSnapshot, VfsNodeSnapshot, VfsFileContentSnapshot } from '@/domain/vfs/types'
 import { VfsInvalidPathError } from '@/domain/vfs/vfs-errors'
 
+/**
+ * @file Snapshot schema normalization helpers.
+ *
+ * Snapshots are stored/transferred as JSON-friendly structures. This module provides:
+ *
+ * - `parseVfsSnapshot(raw)`: validates/coerces unknown input into a safe, well-typed `VfsSnapshot`.
+ * - `serializeVfsSnapshot(snapshot)`: emits a plain JSON literal object suitable for
+ *   `JSON.stringify` and storage.
+ *
+ * The parser is intentionally defensive: when a value is missing or of the wrong type, it falls
+ * back to safe defaults or throws for structurally invalid nodes.
+ */
+
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
 }
@@ -42,6 +55,11 @@ function parseNode(raw: unknown): VfsNodeSnapshot {
   }
 }
 
+/**
+ * Parse unknown input into a normalized `VfsSnapshot`.
+ *
+ * @throws `VfsInvalidPathError` when the overall structure is not object-like or nodes are invalid.
+ */
 export function parseVfsSnapshot(raw: unknown): VfsSnapshot {
   if (!isObject(raw)) throw new VfsInvalidPathError('Invalid snapshot')
   const nodesRaw = isObject(raw.nodes) ? raw.nodes : {}
@@ -57,6 +75,12 @@ export function parseVfsSnapshot(raw: unknown): VfsSnapshot {
   }
 }
 
+/**
+ * Serialize a snapshot to a plain JSON literal object.
+ *
+ * This performs a JSON round-trip to strip prototypes/references and ensure the result is safe to
+ * persist.
+ */
 export function serializeVfsSnapshot(snapshot: VfsSnapshot): VfsSnapshot {
   // 输出“纯字面量”快照，保证可安全 JSON.stringify。
   return JSON.parse(JSON.stringify(snapshot)) as VfsSnapshot

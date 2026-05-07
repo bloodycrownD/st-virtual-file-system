@@ -2,6 +2,20 @@ import { strToU8, strFromU8, zlibSync, unzlibSync } from 'fflate'
 import type { VfsFileContentSnapshot } from '@/domain/vfs/types'
 import type { ContentCodec } from './content-codec'
 
+/**
+ * @file Deflate + base64 content codec.
+ *
+ * VFS file contents are stored inside snapshots, which must remain JSON-friendly. This codec
+ * supports two encodings:
+ *
+ * - `plain`: store raw text directly (best for readability/debugging).
+ * - `deflate-base64`: deflate-compress UTF-8 bytes and base64 encode into a string (smaller for
+ *   larger contents).
+ *
+ * Compression is applied only when the UTF-8 byte length meets a configurable threshold to avoid
+ * overhead where compression could increase size.
+ */
+
 export interface DeflateCodecOptions {
   /** 小于阈值的文本不压缩，避免“压缩后反而更大”的情况。 */
   threshold?: number
@@ -32,6 +46,11 @@ function base64ToBytes(base64: string): Uint8Array {
   return bytes
 }
 
+/**
+ * A `ContentCodec` implementation that compresses with deflate + base64.
+ *
+ * The output is always JSON-safe and self-describing via `VfsFileContentSnapshot.encoding`.
+ */
 export class DeflateContentCodec implements ContentCodec {
   private readonly threshold: number
 
@@ -40,6 +59,7 @@ export class DeflateContentCodec implements ContentCodec {
     this.threshold = options.threshold ?? 256
   }
 
+  /** Encode text into a snapshot-friendly representation. */
   encode(text: string): VfsFileContentSnapshot {
     const source = strToU8(text)
     if (source.length < this.threshold) {
@@ -60,6 +80,7 @@ export class DeflateContentCodec implements ContentCodec {
     }
   }
 
+  /** Decode snapshot content back into text. */
   decode(content: VfsFileContentSnapshot): string {
     if (content.encoding === 'plain') {
       return content.data

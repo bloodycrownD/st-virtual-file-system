@@ -1,11 +1,20 @@
 /**
- * 整个扩展共用的 persistence store 单例 + 一次性初始化。
+ * @file Singleton persistence store + one-time initialization.
  *
- * initVfsPersistenceStore()：
- * - 首次调用时从磁盘读扩展/会话两块配置进内存；
- * - 监听 CHAT_CHANGED：切换聊天后 reloadChatState()，让 chat 段与当前会话对齐。
+ * This module is the **single** owner of chat-switch persistence reload:
  *
- * message 侧的 st-event-adapter 故意不再监听 CHAT_CHANGED，会话重载仅此一处。
+ * - On first initialization it loads extension/global + current chat/session state into memory.
+ * - It subscribes to `CHAT_CHANGED` and calls `reloadChatState()` so the in-memory chat segment
+ *   always reflects the currently active chat.
+ *
+ * ## Why only here?
+ *
+ * SillyTavern's `chatMetadata` reference can change on chat switch. Re-loading chat state centrally
+ * prevents duplicated subscriptions and avoids subtle bugs where multiple listeners attempt to
+ * refresh state concurrently.
+ *
+ * The message-side event adapter intentionally does **not** subscribe to `CHAT_CHANGED`; it only
+ * handles message events (received/edited/updated/deleted).
  */
 import { createVfsPersistenceStore } from '@/app/stores/vfs-persistence-store'
 import { createStContextAdapter } from '@/infra/persistence/st-context-adapter'
@@ -16,6 +25,11 @@ export const vfsPersistenceStore = createVfsPersistenceStore(createStContextAdap
 
 let isInitialized = false
 
+/**
+ * Initializes the singleton store once.
+ *
+ * Safe to call multiple times; subsequent calls are no-ops.
+ */
 export function initVfsPersistenceStore() {
   if (isInitialized) {
     return

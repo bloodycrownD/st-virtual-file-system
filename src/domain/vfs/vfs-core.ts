@@ -19,6 +19,34 @@ import type {
 import type { ContentCodec } from '@/infra/serialization/content-codec'
 import { parseVfsSnapshot, serializeVfsSnapshot } from '@/infra/persistence/vfs-snapshot.schema'
 
+/**
+ * In-memory Virtual File System (VFS) core.
+ *
+ * Responsibilities:
+ * - Provide a small, synchronous, POSIX-ish API over an in-memory tree of
+ *   directories and files.
+ * - Maintain fast lookup by normalized path (`pathIndex`) and by id (`nodes`).
+ * - Export/import a snapshot representation for persistence.
+ *
+ * Key invariants:
+ * - All public APIs accept arbitrary strings, but internally all paths are
+ *   normalized via `normalizePath` and stored in canonical form.
+ * - Paths are unique (one node per normalized path).
+ * - Root is a permanently-present directory at `/` with:
+ *   - id === `"root"` (stable across snapshots)
+ *   - name === `""`
+ *   - parentId === `null`
+ * - The root cannot be deleted/moved/renamed or written as a file.
+ *
+ * Why some protections are strict:
+ * - Root protections keep the structure sane and avoid special-case fallout in
+ *   callers that assume `/` always exists.
+ * - Snapshot import performs deep validation because snapshots may be loaded
+ *   from untrusted or corrupted storage; accepting a malformed graph would
+ *   create subtle bugs (broken parent links, duplicate paths, impossible trees).
+ * - `idSeed` is recomputed after importing snapshots to prevent id collisions
+ *   when new nodes are created on top of imported state.
+ */
 export class VfsCore {
   private readonly codec: ContentCodec
   private nodes: Map<string, VfsNodeSnapshot> = new Map()
@@ -31,6 +59,16 @@ export class VfsCore {
     this.reset()
   }
 
+  /**
+   * Create a directory at `path`.
+   *
+   * Behavior notes:
+   * - If `path` normalizes to `/`, this is a no-op (root already exists and is immutable).
+   * - If `recursive` is true, missing intermediate directories are created.
+   *
+   * @throws {VfsAlreadyExistsError} If the directory (or any node) already exists at `path`.
+   * @throws {VfsNotFoundError} If a parent directory is missing and `recursive` is not enabled.
+   */
   mkdir(path: string, options: { recursive?: boolean } = {}): void {
     const normalized = normalizePath(path)
     if (normalized === ROOT_PATH) return
@@ -48,6 +86,13 @@ export class VfsCore {
     }
   }
 
+  /**
+   * List direct children of a directory.
+   *
+   * @returns Sorted entries by name.
+   * @throws {VfsNotFoundError} If `path` does not exist.
+   * @throws {VfsNotDirectoryError} If `path` exists but is not a directory.
+   */
   list(path: string): VfsListItem[] {
     const directory = this.mustGetDirectory(path)
     return directory.children
@@ -56,11 +101,27 @@ export class VfsCore {
       .sort((left, right) => left.name.localeCompare(right.name))
   }
 
+  /**
+   * Read a file and decode its content via the configured codec.
+   *
+   * @throws {VfsNotFoundError} If `path` does not exist.
+   * @throws {VfsIsDirectoryError} If `path` exists but is a directory.
+   */
   readFile(path: string): string {
     const file = this.mustGetFile(path)
     return this.codec.decode(file.content)
   }
 
+  /**
+   * Create or overwrite a file.
+   *
+   * Semantics:
+   * - When overwriting, the same node id is retained; only file metadata/content is updated.
+   * - `size` tracks the decoded/plaintext length of `content` (string length).
+   *
+   * @throws {VfsIsDirectoryError} If `path` is `/` or an existing directory.
+   * @throws {VfsNotFoundError} If the parent directory is missing and `createParents` is not enabled.
+   */
   writeFile(path: string, content: string, options: VfsWriteOptions = {}): void {
     const normalized = normalizePath(path)
     if (normalized === ROOT_PATH) throw new VfsIsDirectoryError('Cannot write root as file')
@@ -100,6 +161,13 @@ export class VfsCore {
     this.addNode(node)
   }
 
+  /**
+   * Delete a file or directory.
+   *
+   * @throws {VfsInvalidPathError} If attempting to delete the root directory.
+   * @throws {VfsNotFoundError} If `path` does not exist.
+   * @throws {VfsInvalidPathError} If deleting a non-empty directory without `recursive`.
+   */
   delete(path: string, options: VfsDeleteOptions = {}): void {
     const normalized = normalizePath(path)
     if (normalized === ROOT_PATH) throw new VfsInvalidPathError('Cannot delete root directory')
@@ -116,10 +184,30 @@ export class VfsCore {
     this.removeNode(node)
   }
 
+  /**
+   * Check whether a node exists at `path`.
+   *
+   * Notes:
+   * - This uses normalized paths, so logically equivalent spellings are treated the same.
+   */
   exists(path: string): boolean {
     return this.pathIndex.has(normalizePath(path))
   }
 
+  /**
+   * Move a file or directory to a new path.
+   *
+   * Destination resolution:
+   * - If `destinationPath` refers to an existing directory, the source is moved *into* it.
+   * - Otherwise, `destinationPath` is treated as the new full path.
+   *
+   * Safety:
+   * - Directories cannot be moved into themselves or into any descendant path.
+   *
+   * @throws {VfsInvalidPathError} If attempting to move the root directory.
+   * @throws {VfsNotFoundError} If source (or required destination parent) does not exist.
+   * @throws {VfsAlreadyExistsError} If the resolved destination path is occupied by a different node.
+   */
   move(sourcePath: string, destinationPath: string): void {
     const normalizedSourcePath = normalizePath(sourcePath)
     if (normalizedSourcePath === ROOT_PATH) throw new VfsInvalidPathError('Cannot move root directory')
@@ -134,6 +222,11 @@ export class VfsCore {
     this.relocateNode(source, target.parent, target.name)
   }
 
+  /**
+   * Rename a node by changing only its final segment.
+   *
+   * @throws {VfsInvalidPathError} If attempting to rename the root directory.
+   */
   rename(path: string, newName: string): void {
     const normalized = normalizePath(path)
     if (normalized === ROOT_PATH) throw new VfsInvalidPathError('Cannot rename root directory')
@@ -141,6 +234,18 @@ export class VfsCore {
     this.move(normalized, joinPath(parent, newName))
   }
 
+  /**
+   * Copy a file or directory to a new path.
+   *
+   * Destination resolution matches `move`.
+   *
+   * Safety:
+   * - Directories cannot be copied into themselves or into any descendant path.
+   *
+   * @throws {VfsInvalidPathError} If attempting to copy the root directory.
+   * @throws {VfsNotFoundError} If source (or required destination parent) does not exist.
+   * @throws {VfsAlreadyExistsError} If the destination path already exists.
+   */
   copy(sourcePath: string, destinationPath: string): void {
     const normalizedSourcePath = normalizePath(sourcePath)
     if (normalizedSourcePath === ROOT_PATH) throw new VfsInvalidPathError('Cannot copy root directory')
@@ -151,6 +256,12 @@ export class VfsCore {
     this.cloneNodeRecursive(source, target.parent, target.name)
   }
 
+  /**
+   * Update the modified time for a path, creating an empty file if it does not exist.
+   *
+   * Notes:
+   * - Creation behaves like `writeFile(path, "", { createParents: true })`.
+   */
   touch(path: string): void {
     const normalized = normalizePath(path)
     if (!this.pathIndex.has(normalized)) {
@@ -162,10 +273,21 @@ export class VfsCore {
     this.updateNode(node)
   }
 
+  /**
+   * Return stat info for a path.
+   *
+   * @throws {VfsNotFoundError} If `path` does not exist.
+   */
   stat(path: string): VfsStat {
     return this.toStat(this.mustGetByPath(normalizePath(path)))
   }
 
+  /**
+   * Walk the tree depth-first from `path` (default `/`) and return stats for all visited nodes.
+   *
+   * @returns Entries sorted by full path for stable output.
+   * @throws {VfsNotFoundError} If the start path does not exist.
+   */
   walk(path = ROOT_PATH): VfsStat[] {
     const start = this.mustGetByPath(normalizePath(path))
     const result: VfsStat[] = []
@@ -173,6 +295,13 @@ export class VfsCore {
     return result.sort((left, right) => left.path.localeCompare(right.path))
   }
 
+  /**
+   * Export the current VFS state as a validated snapshot object.
+   *
+   * Notes:
+   * - The snapshot is produced via the persistence schema serializer to keep a
+   *   single canonical format.
+   */
   exportSnapshot(): VfsSnapshot {
     return serializeVfsSnapshot({
       schemaVersion: 1,
@@ -181,6 +310,17 @@ export class VfsCore {
     })
   }
 
+  /**
+   * Replace current state with `snapshot`.
+   *
+   * Import steps:
+   * - Parse/normalize snapshot through the persistence schema.
+   * - Validate structural invariants (root integrity, unique normalized paths,
+   *   parent/child link consistency, file content encoding metadata).
+   * - Rebuild indexes and recompute `idSeed` so future `nextId()` calls cannot collide.
+   *
+   * @throws {VfsInvalidPathError} If the snapshot fails validation.
+   */
   importSnapshot(snapshot: VfsSnapshot): void {
     const parsed = parseVfsSnapshot(snapshot)
     this.validateSnapshotStructure(parsed)

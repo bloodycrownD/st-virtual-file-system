@@ -1,6 +1,24 @@
 /**
- * SillyTavern 扩展入口（由 manifest.json -> dist/index.js 加载）。
- * 不在普通网页里挂载 #app，而是挂到扩展设置页容器，与 SillyTavern UI 同源。
+ * @file Entry point for the `st-virtual-file-system` extension.
+ *
+ * This module performs two independent responsibilities:
+ *
+ * - **UI mount (optional)**: If SillyTavern's extension settings container exists, mount the Vue
+ *   settings UI into that container.
+ * - **Runtime wiring (always)**: Initialize persistence and connect the message/event pipeline so
+ *   virtual tool calls can update the VFS state.
+ *
+ * ## Initialization order (why it matters)
+ *
+ * 1) **Persistence store first**: loads extension/global + chat/session state so subsequent services
+ *    can read/write snapshots safely.
+ * 2) **Version/template services**: template initialization depends on versioning, and may populate
+ *    an initial snapshot for the current chat.
+ * 3) **Runtime + message handling**: only after state/services exist do we wire the message pipeline
+ *    to SillyTavern's event source.
+ *
+ * Note: event listeners for `CHAT_CHANGED` are owned by the persistence singleton
+ * (`initVfsPersistenceStore`) so chat reload is centralized and not duplicated across adapters.
  */
 import { createApp } from 'vue'
 import App from './App.vue'
@@ -28,6 +46,10 @@ if (extensionsSettings) {
 }
 
 initVfsPersistenceStore()
+// Runtime wiring order:
+// - store first (loads chat/extension snapshots)
+// - version + template services (template init depends on version service)
+// - runtime + handler wired into message pipeline and ST event source
 const versionService = new ChatVfsVersionService(vfsPersistenceStore)
 const templateService = new ExtensionVfsTemplateService(vfsPersistenceStore, versionService)
 templateService.initializeChatFromTemplateIfNeeded()
