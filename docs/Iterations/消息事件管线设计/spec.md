@@ -22,9 +22,14 @@
 
 ### 不包含范围
 
-- 本迭代不进行代码实现。
+- **v1（文档基线）**：仅 `spec + plan`，不进行代码实现。
 - 不修改 `st-better-database` 现有实现。
 - 不实现具体 SQL/DML 业务逻辑，仅定义架构承载方式。
+
+### v2 实现阶段（当前迭代，本分支）
+
+- **包含**：按 `plan.md` 落地**最小可运行骨架**——事件 Adapter（可 `start/stop`）、Message Controller、Message Pipeline（可为日志桩或 no-op），并与现有 `initVfsPersistenceStore` / `CHAT_CHANGED` 行为兼容（聊天切换时不长期缓存 `chatMetadata` 引用）。
+- **不包含**：具体消息内容解析、SQL 执行、改写聊天文本等业务；可选 `message-runtime-store` 默认不实现。
 
 ## 功能需求
 
@@ -61,6 +66,7 @@
 2. 文档明确“为什么不复制旧 manager”与“新架构分层边界”。
 3. 文档包含可执行实现步骤、文件级改动点、测试用例清单。
 4. 文档可直接作为下一迭代编码输入，不需额外结构性澄清。
+5. **v2**：代码中存在可启停的消息事件接线；`npm run test:run` 与 `npm run build` 通过；具备针对 Adapter/Controller 的最小测试（mock `SillyTavern` / `eventSource`）。
 
 ## 风险与待确认项
 
