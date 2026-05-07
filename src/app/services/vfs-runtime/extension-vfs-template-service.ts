@@ -24,7 +24,7 @@ export class ExtensionVfsTemplateService {
   overwriteChatWithTemplate(): void {
     const state = this.store.getState()
     if (!state.extension.extensionTemplateVfsSnapshot) return
-    this.versionService.commitSystem('pre-template-overwrite', ['*'])
+    this.versionService.commitByManualSave('pre-template-overwrite', ['*'])
     this.store.updateChat((draft) => ({
       ...draft,
       chatVfsSnapshot: state.extension.extensionTemplateVfsSnapshot,

@@ -12,6 +12,13 @@ function asNumber(value: unknown, fallback: number): number {
   return typeof value === 'number' && Number.isFinite(value) ? Math.floor(value) : fallback
 }
 
+function requireInteger(value: unknown, field: string): number {
+  if (typeof value !== 'number' || !Number.isInteger(value) || value < 1) {
+    throw new Error(`${field} must be a positive integer`)
+  }
+  return value
+}
+
 function truncateText(input: string, maxChars: number): { text: string; truncated: boolean } {
   if (input.length <= maxChars) {
     return { text: input, truncated: false }
@@ -26,21 +33,37 @@ function toLines(content: string): string[] {
 export const readTool: VirtualTool = {
   name: 'read',
   execute(args, context): ToolResultItem {
+    const HARD_MAX_LINES = 500
+    const HARD_MAX_CHARS = 20000
     const path = asPath(args.path)
     const startLine = Math.max(1, asNumber(args.startLine, 1))
     const endLine = Math.max(startLine, asNumber(args.endLine, startLine + 499))
-    const maxLines = Math.max(1, asNumber(args.maxLines, 500))
-    const maxChars = Math.max(1, asNumber(args.maxChars, 20000))
+    // Caller-provided limits can tighten reads, but never bypass hard safety caps.
+    const requestedMaxLines = Math.max(1, asNumber(args.maxLines, HARD_MAX_LINES))
+    const requestedMaxChars = Math.max(1, asNumber(args.maxChars, HARD_MAX_CHARS))
+    const maxLines = Math.min(HARD_MAX_LINES, requestedMaxLines)
+    const maxChars = Math.min(HARD_MAX_CHARS, requestedMaxChars)
     const full = context.vfs.readFile(path)
     const lines = toLines(full)
     const until = Math.min(lines.length, Math.min(endLine, startLine + maxLines - 1))
     const selected = lines.slice(startLine - 1, until).join('\n')
     const limited = truncateText(selected, maxChars)
+    const lineTruncated = until < Math.min(lines.length, endLine)
     return {
       tool: 'read',
       ok: true,
-      summary: limited.truncated ? `Read ${path} (truncated)` : `Read ${path}`,
-      data: { path, startLine, endLine: until, content: limited.text, truncated: limited.truncated },
+      summary: limited.truncated || lineTruncated ? `Read ${path} (truncated)` : `Read ${path}`,
+      data: {
+        path,
+        startLine,
+        endLine: until,
+        content: limited.text,
+        truncated: limited.truncated || lineTruncated,
+        truncation: {
+          byLines: lineTruncated,
+          byChars: limited.truncated,
+        },
+      },
     }
   },
 }
@@ -80,10 +103,20 @@ export const updateTool: VirtualTool = {
   name: 'update',
   execute(args, context): ToolResultItem {
     const path = asPath(args.path)
-    const startLine = Math.max(1, asNumber(args.startLine, 1))
-    const endLine = Math.max(startLine, asNumber(args.endLine, startLine))
-    const expected = typeof args.expectedOldContent === 'string' ? args.expectedOldContent : ''
-    const replacement = typeof args.newContent === 'string' ? args.newContent : ''
+    // Reject ambiguous update payloads to avoid accidental broad rewrites.
+    const startLine = requireInteger(args.startLine, 'startLine')
+    const endLine = requireInteger(args.endLine, 'endLine')
+    if (endLine < startLine) {
+      throw new Error('endLine must be greater than or equal to startLine')
+    }
+    if (typeof args.expectedOldContent !== 'string') {
+      throw new Error('expectedOldContent is required')
+    }
+    if (typeof args.newContent !== 'string') {
+      throw new Error('newContent is required')
+    }
+    const expected = args.expectedOldContent
+    const replacement = args.newContent
     const full = context.vfs.readFile(path)
     const lines = toLines(full)
     const existingSegment = lines.slice(startLine - 1, endLine).join('\n')

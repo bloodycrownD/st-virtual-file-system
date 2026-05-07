@@ -22,6 +22,9 @@ export class VirtualToolMessageHandler {
     locks.add(lockKey)
     const startedAt = Date.now()
     try {
+      if (!this.runtime.isVirtualToolCallEnabled()) {
+        return { handled: false, messageText: input.messageText }
+      }
       const resultTag = validateSingleResultTag(input.messageText)
       if (!resultTag.ok) {
         this.logs.append({
@@ -63,6 +66,7 @@ export class VirtualToolMessageHandler {
         errorCode: batch.errorCode,
         errorMessage: batch.errorMessage,
       })
+      this.logPerToolExecution(input, envelope, batch)
       return { handled: true, messageText: replaceCallWithResult(input.messageText, callBlock, payload) }
     } catch (error) {
       this.logs.append({
@@ -82,5 +86,63 @@ export class VirtualToolMessageHandler {
     } finally {
       locks.delete(lockKey)
     }
+  }
+
+  private logPerToolExecution(
+    input: { chatId: string; messageId: string },
+    envelope: ToolCallEnvelope,
+    batch: { ok: boolean; results: Array<{ tool: string; data?: unknown }>; errorCode?: string; errorMessage?: string },
+  ): void {
+    const now = Date.now()
+    envelope.calls.forEach((call, index) => {
+      const result = batch.results[index]
+      if (result) {
+        this.logs.append({
+          id: `log-${now}-${index}`,
+          timestamp: now,
+          chatId: input.chatId,
+          messageId: input.messageId,
+          batchId: `batch-${now}`,
+          toolName: result.tool,
+          status: 'success',
+          durationMs: 0,
+          argsSummary: summarizeArgs(call.args ?? {}),
+        })
+        const maybeReadData = result.tool === 'read' && result.data && typeof result.data === 'object' ? result.data : null
+        const truncated =
+          maybeReadData && 'truncated' in maybeReadData && (maybeReadData as { truncated: unknown }).truncated === true
+        if (truncated) {
+          this.logs.append({
+            id: `log-${now}-${index}-truncated`,
+            timestamp: now,
+            chatId: input.chatId,
+            messageId: input.messageId,
+            batchId: `batch-${now}`,
+            toolName: result.tool,
+            status: 'success',
+            durationMs: 0,
+            argsSummary: 'read-truncated',
+            errorCode: 'READ_TRUNCATED',
+            errorMessage: 'Read output truncated by hard caps',
+          })
+        }
+        return
+      }
+      if (index === batch.results.length && !batch.ok) {
+        this.logs.append({
+          id: `log-${now}-${index}`,
+          timestamp: now,
+          chatId: input.chatId,
+          messageId: input.messageId,
+          batchId: `batch-${now}`,
+          toolName: call.tool,
+          status: batch.errorCode === 'BATCH_TIMEOUT' ? 'timeout' : 'failed',
+          durationMs: 0,
+          argsSummary: summarizeArgs(call.args ?? {}),
+          errorCode: batch.errorCode,
+          errorMessage: batch.errorMessage,
+        })
+      }
+    })
   }
 }

@@ -62,5 +62,6 @@ describe('chat vfs logs and templates', () => {
     expect(store.getState().chat.templateInitialized).toBe(true)
     templateService.overwriteChatWithTemplate()
     expect(store.getState().chat.chatVfsVersions.length).toBe(1)
+    expect(store.getState().chat.chatVfsVersions[0]?.source).toBe('manual')
   })
 })
