@@ -6,6 +6,8 @@ let cleanupMount: (() => void) | null = null
 const popup = useVfsPopupLifecycle()
 
 export function mountVfsEntryButton(): void {
+  // WHY: repeated bootstrap runs must not overwrite/drop the active cleanup handle.
+  if (cleanupMount) return
   cleanupMount = mountVfsEntry(() => {
     popup.open()
     emitVfsEvent(VFS_POPUP_OPENED)

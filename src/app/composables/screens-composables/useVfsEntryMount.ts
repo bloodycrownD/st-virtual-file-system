@@ -7,15 +7,18 @@ export function mountVfsEntry(onOpen: () => void): (() => void) | null {
   if (!host) return null
 
   const existing = host.querySelector<HTMLButtonElement>(`#${ENTRY_BUTTON_ID}`)
-  if (existing) {
-    return null
-  }
-
-  const button = document.createElement('button')
-  button.id = ENTRY_BUTTON_ID
-  button.type = 'button'
-  button.textContent = 'VFS'
-  button.className = 'menu_button'
+  // WHY: mount must be idempotent; repeated calls must keep a valid cleanup handle.
+  const button =
+    existing ??
+    (() => {
+      const created = document.createElement('button')
+      created.id = ENTRY_BUTTON_ID
+      created.type = 'button'
+      created.textContent = 'VFS'
+      created.className = 'menu_button'
+      host.appendChild(created)
+      return created
+    })()
   // WHY: spec requires on/off paired lifecycle to avoid stale handlers on repeated mounts.
   const jQueryLike = (window as { jQuery?: ((el: Element) => { on: (event: string, handler: () => void) => void; off: (event: string) => void }) }).jQuery
   if (jQueryLike) {
@@ -24,7 +27,6 @@ export function mountVfsEntry(onOpen: () => void): (() => void) | null {
   } else {
     button.addEventListener('click', onOpen)
   }
-  host.appendChild(button)
 
   return () => {
     if (jQueryLike) {
