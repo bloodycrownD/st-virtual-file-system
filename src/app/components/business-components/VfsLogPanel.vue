@@ -56,7 +56,6 @@ const autoRefreshHandler = () => {
 let disposeMessageHooks: (() => void) | null = null
 
 onMounted(() => {
-  void refreshLogs(1)
   disposeMessageHooks = useVfsMessageHooks()
   window.addEventListener(VFS_LOG_REFRESH_AUTO, autoRefreshHandler)
   window.addEventListener(VFS_LOG_REFRESH_REQUESTED, autoRefreshHandler)
