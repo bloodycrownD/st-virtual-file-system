@@ -65,6 +65,34 @@ describe('chat vfs logs and templates', () => {
     expect(store.getState().chat.chatVfsVersions.every((entry) => entry.source === 'manual')).toBe(true)
   })
 
+  it('clones work-tree config from extension template on first init', () => {
+    const store = createVfsPersistenceStore(createAdapterMock())
+    store.init()
+    store.updateExtension((draft) => ({
+      ...draft,
+      workTreeTemplate: {
+        defaultRule: {
+          sortField: 'name',
+          sortDirection: 'asc',
+          headCount: 2,
+          tailCount: 1,
+          fill: 'filename',
+        },
+        directoryOverrides: {},
+        directoryRulesEnabled: { '/': true },
+        selectedFiles: ['/selected.md'],
+      },
+    }))
+    const versions = new ChatVfsVersionService(store)
+    const templateService = new ExtensionVfsTemplateService(store, versions)
+    templateService.initializeChatFromTemplateIfNeeded()
+    const chatState = store.getState().chat
+    expect(chatState.templateInitialized).toBe(true)
+    expect(chatState.workTree).not.toBeNull()
+    expect(chatState.workTree?.selectedFiles).toEqual(['/selected.md'])
+    expect(chatState.workTree?.directoryRulesEnabled).toEqual({ '/': true })
+  })
+
   it('queries logs by time range', () => {
     const store = createVfsPersistenceStore(createAdapterMock())
     store.init()

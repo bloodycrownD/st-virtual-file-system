@@ -49,9 +49,7 @@ export class ChatVfsRuntime {
     this.templateService?.initializeChatFromTemplateIfNeeded()
     const state = this.store.getState()
     const working = new VfsCore(new DeflateContentCodec())
-    if (state.chat.chatVfsSnapshot) {
-      working.importSnapshot(state.chat.chatVfsSnapshot)
-    }
+    working.importSnapshot(state.chat.chatVfsSnapshot)
     // before/after 用于后续版本摘要（当前简化为 '*' 级别）。
     const before = JSON.stringify(working.exportSnapshot())
     const result = this.dispatcher.executeEnvelope(envelope, working)

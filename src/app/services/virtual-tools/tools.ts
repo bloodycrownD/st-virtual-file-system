@@ -119,7 +119,7 @@ export const writeTool: VirtualTool = {
     const path = asPath(args.path)
     const content = typeof args.content === 'string' ? args.content : ''
     // 约定：write 自动补父目录，减少模型为了 mkdir 产生额外调用。
-    context.vfs.writeFile(path, content, { createParents: true })
+    context.vfs.writeFile(path, content, { createParents: true, updatedBy: 'assistant' })
     return { tool: 'write', ok: true, summary: `Wrote ${path}` }
   },
 }
@@ -167,7 +167,7 @@ export const appendTool: VirtualTool = {
     const appended = typeof args.content === 'string' ? args.content : ''
     // append 语义：不存在则视作空文件后再写入。
     const previous = context.vfs.exists(path) ? context.vfs.readFile(path) : ''
-    context.vfs.writeFile(path, `${previous}${appended}`, { createParents: true })
+    context.vfs.writeFile(path, `${previous}${appended}`, { createParents: true, updatedBy: 'assistant' })
     return { tool: 'append', ok: true, summary: `Appended ${path}` }
   },
 }
@@ -212,7 +212,7 @@ export const updateTool: VirtualTool = {
       throw new Error('expectedOldContent mismatch')
     }
     lines.splice(startLine - 1, endLine - startLine + 1, ...toLines(replacement))
-    context.vfs.writeFile(path, lines.join('\n'), { createParents: true })
+    context.vfs.writeFile(path, lines.join('\n'), { createParents: true, updatedBy: 'assistant' })
     return { tool: 'update', ok: true, summary: `Updated ${path}:${startLine}-${endLine}` }
   },
 }

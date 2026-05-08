@@ -41,6 +41,8 @@ export interface VfsListItem extends VfsStat {}
  */
 export interface VfsWriteOptions {
   createParents?: boolean
+  /** Attribution for macro `<file updatedBy="...">`; tools should pass `'assistant'`. */
+  updatedBy?: 'user' | 'assistant'
 }
 
 /**
@@ -92,6 +94,10 @@ export interface VfsFileNodeSnapshot extends VfsNodeSnapshotBase {
   type: 'file'
   size: number
   content: VfsFileContentSnapshot
+  /** Creation time (ms); required on all file nodes after schema normalization. */
+  ctime: number
+  /** Last writer attribution for AI-facing exports. */
+  updatedBy: 'user' | 'assistant'
 }
 
 /** Discriminated union of supported node snapshots. */

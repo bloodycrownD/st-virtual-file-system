@@ -1,5 +1,7 @@
 import type { VfsSnapshot } from '@/domain/vfs/types'
 import { parseVfsSnapshot, serializeVfsSnapshot } from '@/infra/persistence/vfs-snapshot.schema'
+import type { WorkTreeConfig } from '@/domain/work-tree/work-tree.types'
+import { parseWorkTreeConfig, serializeWorkTreeConfig } from '@/domain/work-tree/work-tree.types'
 
 /**
  * Extension-level persistence schema for the VFS extension.
@@ -37,6 +39,13 @@ export interface VfsExtensionSettings {
    * `chatVfsSnapshot` (chat metadata) and then mark that chat as initialized.
    */
   extensionTemplateVfsSnapshot: VfsSnapshot | null
+  /**
+   * Extension-scoped work-tree configuration template.
+   *
+   * When a chat VFS is first initialized from the extension template, this config is cloned into
+   * the chat metadata's `workTree` field (if present) so macros and future UI see a per-chat copy.
+   */
+  workTreeTemplate: WorkTreeConfig | null
 }
 
 /** Defaults used when no persisted settings exist (or when fields are missing/invalid). */
@@ -45,6 +54,7 @@ const DEFAULT_SETTINGS: VfsExtensionSettings = {
   logMaxBytes: 1024 * 1024,
   virtualToolCallEnabled: true,
   extensionTemplateVfsSnapshot: null,
+  workTreeTemplate: null,
 }
 
 /**
@@ -63,6 +73,7 @@ export function parseVfsExtensionSettings(raw: unknown): VfsExtensionSettings {
     logMaxBytes?: unknown
     virtualToolCallEnabled?: unknown
     extensionTemplateVfsSnapshot?: unknown
+    workTreeTemplate?: unknown
   }
   const logMaxBytes =
     typeof input.logMaxBytes === 'number' && Number.isFinite(input.logMaxBytes) && input.logMaxBytes > 0
@@ -76,6 +87,9 @@ export function parseVfsExtensionSettings(raw: unknown): VfsExtensionSettings {
       extensionTemplateVfsSnapshot = null
     }
   }
+
+  const workTreeTemplate = parseWorkTreeConfig(input.workTreeTemplate)
+
   return {
     enabled: typeof input.enabled === 'boolean' ? input.enabled : DEFAULT_SETTINGS.enabled,
     logMaxBytes,
@@ -84,6 +98,7 @@ export function parseVfsExtensionSettings(raw: unknown): VfsExtensionSettings {
         ? input.virtualToolCallEnabled
         : DEFAULT_SETTINGS.virtualToolCallEnabled,
     extensionTemplateVfsSnapshot,
+    workTreeTemplate,
   }
 }
 
@@ -96,10 +111,14 @@ export function parseVfsExtensionSettings(raw: unknown): VfsExtensionSettings {
 export function serializeVfsExtensionSettings(state: VfsExtensionSettings): Record<string, unknown> {
   return {
     enabled: Boolean(state.enabled),
-    logMaxBytes: Number.isFinite(state.logMaxBytes) && state.logMaxBytes > 0 ? Math.floor(state.logMaxBytes) : DEFAULT_SETTINGS.logMaxBytes,
+    logMaxBytes:
+      Number.isFinite(state.logMaxBytes) && state.logMaxBytes > 0
+        ? Math.floor(state.logMaxBytes)
+        : DEFAULT_SETTINGS.logMaxBytes,
     virtualToolCallEnabled: Boolean(state.virtualToolCallEnabled),
     extensionTemplateVfsSnapshot: state.extensionTemplateVfsSnapshot
       ? serializeVfsSnapshot(state.extensionTemplateVfsSnapshot)
       : null,
+    workTreeTemplate: state.workTreeTemplate ? serializeWorkTreeConfig(state.workTreeTemplate) : null,
   }
 }

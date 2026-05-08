@@ -1,5 +1,6 @@
 import type { VfsPersistenceStore } from '@/app/stores/vfs-persistence-store'
 import type { ChatVfsVersionService } from '@/app/services/vfs-version/chat-vfs-version-service'
+import { createEmptyVfsSnapshot } from '@/infra/persistence/vfs-snapshot.schema'
 
 /**
  * Extension-level VFS template service.
@@ -42,14 +43,22 @@ export class ExtensionVfsTemplateService {
   initializeChatFromTemplateIfNeeded(): void {
     const state = this.store.getState()
     if (state.chat.templateInitialized) return
-    if (!state.extension.extensionTemplateVfsSnapshot) {
-      // 没模板也要打初始化标记，避免每次访问重复走初始化流程。
-      this.store.updateChat((draft) => ({ ...draft, templateInitialized: true }))
+    const templateSnapshot = state.extension.extensionTemplateVfsSnapshot
+    const workTreeTemplate = state.extension.workTreeTemplate
+    if (!templateSnapshot) {
+      // 无模板时仍落一个空树根快照，避免 chat 侧长期 `null`（宏与 runtime 共用的不变量）。
+      this.store.updateChat((draft) => ({
+        ...draft,
+        chatVfsSnapshot: createEmptyVfsSnapshot(),
+        workTree: workTreeTemplate ?? draft.workTree,
+        templateInitialized: true,
+      }))
       return
     }
     this.store.updateChat((draft) => ({
       ...draft,
-      chatVfsSnapshot: state.extension.extensionTemplateVfsSnapshot,
+      chatVfsSnapshot: templateSnapshot,
+      workTree: workTreeTemplate ?? draft.workTree,
       templateInitialized: true,
     }))
   }

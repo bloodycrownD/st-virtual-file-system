@@ -103,6 +103,7 @@ describe('virtual tool CR fixes', () => {
     store.init()
     const logs = new ChatVfsLogService(store)
     const runtime = new ChatVfsRuntime(store, new ToolDispatcher(), new ChatVfsVersionService(store))
+    const before = JSON.stringify(store.getState().chat.chatVfsSnapshot)
     const handler = new VirtualToolMessageHandler(runtime, logs)
     const output = handler.process({
       chatId: 'chat',
@@ -110,7 +111,7 @@ describe('virtual tool CR fixes', () => {
       messageText: '<virtual-tool-call>{"calls":[{"tool":"write","args":{"path":"/a.txt","content":"x"}}]}</virtual-tool-call>',
     })
     expect(output.handled).toBe(false)
-    expect(store.getState().chat.chatVfsSnapshot).toBeNull()
+    expect(JSON.stringify(store.getState().chat.chatVfsSnapshot)).toBe(before)
   })
 
   it('writes per-tool logs including truncation detail', () => {
