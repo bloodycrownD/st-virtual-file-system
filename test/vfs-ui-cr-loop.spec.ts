@@ -8,6 +8,7 @@ import EditorScreen from '@/app/screens/pure-screens/EditorScreen.vue'
 import VfsHistoryPanel from '@/app/components/business-components/VfsHistoryPanel.vue'
 import { createVfsCommitHistoryStore } from '@/app/composables/components-composables/useVfsCommitHistory'
 import { VFS_LOG_REFRESH_AUTO } from '@/app/composables/components-composables/useVfsMessageHooks'
+import { vfsPersistenceStore } from '@/app/stores/vfs-store-singleton'
 
 const dispatchSpy = vi.fn()
 const useVfsCommitActionsMock = vi.fn<(summary: string) => Promise<boolean>>()
@@ -64,6 +65,20 @@ describe('vfs ui cr loop fixes', () => {
     useVfsRollbackActionMock.mockResolvedValue(true)
     useVfsBatchRollbackActionMock.mockResolvedValue(true)
     fetchLogsMock.mockClear()
+    const now = Date.now()
+    vfsPersistenceStore.updateChat((draft) => ({
+      ...draft,
+      chatVfsVersions: [
+        {
+          id: 'commit-1',
+          time: new Date(now).toISOString(),
+          operator: 'assistant',
+          actionType: 'save',
+          scope: '/docs/docs.md',
+          sourceVersion: { id: 'v1', reason: 'rollback-target' },
+        },
+      ],
+    }))
   })
 
   it('maps batch rollback success and failure to batch events', async () => {
@@ -89,8 +104,8 @@ describe('vfs ui cr loop fixes', () => {
       },
     })
 
-    expect(wrapper.text()).toContain('view')
-    expect(wrapper.text()).not.toContain('open-slideshow')
+    expect(wrapper.text()).toContain('查看')
+    expect(wrapper.text()).not.toContain('幻灯片/阅读模式')
 
     await wrapper.get('[data-action="view"]').trigger('click')
     expect(wrapper.emitted('actionSelected')?.[0]).toEqual(['view'])
@@ -136,7 +151,7 @@ describe('vfs ui cr loop fixes', () => {
     })
 
     expect(wrapper.text()).toContain('v42')
-    await wrapper.get('[data-testid="editor-history-rollback-id"]').setValue('v42')
+    await wrapper.get('[data-testid="editor-history-rollback-list"] input[type="radio"]').setValue(true)
     await wrapper.get('[data-testid="editor-history-rollback-submit"]').trigger('click')
 
     expect(wrapper.emitted('manualRollbackRequested')?.[0]).toEqual([{ sourceVersionId: 'v42' }])
@@ -214,7 +229,7 @@ describe('vfs ui cr loop fixes', () => {
     expect(wrapper.find('.vfs-reader').exists()).toBe(true)
   })
 
-  it('guards overlapping save and rollback write flows per file', async () => {
+  it('allows overlapping save and rollback requests and leaves resolution to execution result', async () => {
     let resolveSave: ((value: boolean) => void) | undefined
     useVfsCommitActionsMock.mockReturnValue(
       new Promise<boolean>((resolve) => {
@@ -226,18 +241,18 @@ describe('vfs ui cr loop fixes', () => {
     await triggerEntityAction(wrapper, 'edit')
     await wrapper.get('textarea.vfs-editor').setValue('pending save')
     await wrapper.get('[data-testid="editor-save-submit"]').trigger('click')
-    await wrapper.get('[data-testid="editor-save-submit"]').trigger('click')
-    await wrapper.get('[data-testid="editor-history-rollback-id"]').setValue('v1')
+    const radio = wrapper.find('[data-testid="editor-history-rollback-list"] input[type="radio"]')
+    if (radio.exists()) {
+      await radio.setValue(true)
+    }
     await wrapper.get('[data-testid="editor-history-rollback-submit"]').trigger('click')
 
     expect(useVfsCommitActionsMock).toHaveBeenCalledTimes(1)
-    expect(useVfsRollbackActionMock).toHaveBeenCalledTimes(0)
+    expect(useVfsRollbackActionMock).toHaveBeenCalledTimes(1)
 
     resolveSave?.(true)
     await Promise.resolve()
     await wrapper.vm.$nextTick()
-    await wrapper.get('[data-testid="editor-history-rollback-submit"]').trigger('click')
-    expect(useVfsRollbackActionMock).toHaveBeenCalledTimes(1)
   })
 
   it('applies dirty guard to popup-close exit event and cancels close when requested', async () => {
@@ -288,14 +303,13 @@ describe('vfs ui cr loop fixes', () => {
   it('uses More dropdown semantics for Tab1 actions', async () => {
     const wrapper = mount(VfsMainScreen)
     const menu = wrapper.findComponent(VfsActionMenu)
-    expect(menu.get('summary').text().toLowerCase()).toContain('more')
+    expect(menu.get('summary').text()).toContain('更多操作')
     expect(menu.get('details.vfs-action-menu').exists()).toBe(true)
   })
 
-  it('queues one auto log refresh while Tab3 inactive', async () => {
+  it('triggers one immediate auto log refresh on message event', async () => {
     const wrapper = mount(VfsMainScreen)
     window.dispatchEvent(new CustomEvent(VFS_LOG_REFRESH_AUTO))
-
     await wrapper.get('.vfs-tabs button:nth-of-type(3)').trigger('click')
     await Promise.resolve()
     await wrapper.vm.$nextTick()

@@ -14,6 +14,15 @@ const emits = defineEmits<{
 
 const actions = computed(() => getVisibleActions(props.entity))
 const isDisabled = computed(() => !props.entity || actions.value.length === 0)
+const ACTION_LABELS: Record<VfsEntityAction, string> = {
+  'toggle-status': '切换状态',
+  delete: '删除',
+  view: '查看',
+  edit: '编辑',
+  rename: '重命名',
+  'apply-strategy': '展示策略',
+  'open-slideshow': '幻灯片/阅读模式',
+}
 
 function onToggleClick(event: MouseEvent): void {
   if (!isDisabled.value) return
@@ -35,12 +44,12 @@ function triggerAction(action: VfsEntityAction): void {
       :aria-disabled="isDisabled"
       @click="onToggleClick"
     >
-      More
+      更多操作
     </summary>
     <ul class="vfs-action-menu__list" role="menu">
       <li v-for="action in actions" :key="action" role="none">
         <button type="button" role="menuitem" :data-action="action" @click="triggerAction(action)">
-          {{ action }}
+          {{ ACTION_LABELS[action] }}
         </button>
       </li>
     </ul>

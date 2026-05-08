@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import type { VfsCommitHistoryRecord } from '@/app/composables/components-composables/useVfsCommitHistory'
 import ReaderScreen from '@/app/screens/pure-screens/ReaderScreen.vue'
 
@@ -21,15 +21,23 @@ const emits = defineEmits<{
   saveRequested: []
 }>()
 const previewMode = ref(false)
-const rollbackSourceVersionId = ref('')
+const rollbackSourceVersionId = ref<string | null>(null)
+const rollbackOptions = computed(() =>
+  props.historyRecords
+    .filter((record) => record.sourceVersionId)
+    .map((record) => ({
+      key: `${record.time}-${record.scope}-${record.sourceVersionId}`,
+      label: `${record.time} · ${record.actionType} · ${record.scope}`,
+      sourceVersionId: record.sourceVersionId as string,
+    })),
+)
 
 function requestManualRollback(): void {
-  if (!rollbackSourceVersionId.value.trim() || props.rollbackInProgress) return
-  emits('manualRollbackRequested', { sourceVersionId: rollbackSourceVersionId.value.trim() })
+  if (!rollbackSourceVersionId.value) return
+  emits('manualRollbackRequested', { sourceVersionId: rollbackSourceVersionId.value })
 }
 
 function requestSave(): void {
-  if (props.saveInProgress) return
   emits('saveRequested')
 }
 </script>
@@ -40,7 +48,7 @@ function requestSave(): void {
       <button type="button" @click="previewMode = !previewMode">
         {{ previewMode ? 'Source' : 'Preview' }}
       </button>
-      <button data-testid="editor-save-submit" type="button" :disabled="props.saveInProgress" @click="requestSave">
+      <button data-testid="editor-save-submit" type="button" @click="requestSave">
         {{ props.saveInProgress ? 'Saving...' : 'Save' }}
       </button>
     </header>
@@ -57,16 +65,23 @@ function requestSave(): void {
           <span>{{ record.sourceVersionId }}</span>
         </li>
       </ul>
-      <input
-        v-model="rollbackSourceVersionId"
-        data-testid="editor-history-rollback-id"
-        type="text"
-        placeholder="source version id"
-      />
+      <fieldset class="vfs-editor-history-select" data-testid="editor-history-rollback-list">
+        <legend>选择历史版本回滚</legend>
+        <label v-for="option in rollbackOptions" :key="option.key">
+          <input
+            :checked="rollbackSourceVersionId === option.sourceVersionId"
+            type="radio"
+            name="editor-rollback-source"
+            :value="option.sourceVersionId"
+            @change="rollbackSourceVersionId = option.sourceVersionId"
+          />
+          <span>{{ option.label }}</span>
+        </label>
+      </fieldset>
       <button
         data-testid="editor-history-rollback-submit"
         type="button"
-        :disabled="props.rollbackInProgress"
+        :disabled="!rollbackSourceVersionId"
         @click="requestManualRollback"
       >
         {{ props.rollbackInProgress ? 'Rolling back...' : 'Rollback' }}
