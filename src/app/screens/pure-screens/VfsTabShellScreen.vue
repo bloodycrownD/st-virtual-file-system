@@ -3,6 +3,11 @@ import { ref } from 'vue'
 
 const tabs = ['files', 'history', 'logs'] as const
 const activeTab = ref<(typeof tabs)[number]>('files')
+const TAB_LABELS: Record<(typeof tabs)[number], string> = {
+  files: '文件管理器',
+  history: '提交记录',
+  logs: '日志',
+}
 const props = defineProps<{
   beforeTabChange?: (nextTab: (typeof tabs)[number]) => boolean
 }>()
@@ -24,7 +29,7 @@ function trySwitchTab(nextTab: (typeof tabs)[number]): void {
         :class="{ active: activeTab === tab }"
         @click="trySwitchTab(tab)"
       >
-        {{ tab }}
+        {{ TAB_LABELS[tab] }}
       </button>
     </header>
     <div class="vfs-tab-content">
