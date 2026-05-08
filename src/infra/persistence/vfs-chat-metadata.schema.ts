@@ -71,6 +71,12 @@ export interface ChatVfsVersionEntry {
   actionType: VfsCommitActionType
   scope: string
   sourceVersion?: VfsSourceVersionRef
+  /**
+   * Optional multi-source provenance for batch operations.
+   * For batch rollback, `sourceVersion` points to the *applied* target (last snapshot),
+   * while `sourceVersions` can retain the full ordered selection for auditability.
+   */
+  sourceVersions?: VfsSourceVersionRef[]
   /** Optional snapshot anchor for authoritative rollback application. */
   snapshot?: VfsSnapshot
   /**

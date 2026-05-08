@@ -6,13 +6,14 @@ import { serializeVfsSnapshot } from '@/infra/persistence/vfs-snapshot.schema'
 import { toVfsErrorToast } from '@/app/utils/vfsErrorMapper'
 import type { VfsSourceVersionRef } from '@/infra/persistence/vfs-chat-metadata.schema'
 
-function appendManualCommit(summary: string, actionType: 'rollback' | 'batch-rollback', sourceVersionId: string): void {
+function appendManualCommit(
+  summary: string,
+  actionType: 'rollback' | 'batch-rollback',
+  sourceVersion: VfsSourceVersionRef,
+  sourceVersions?: VfsSourceVersionRef[],
+): void {
   const time = new Date().toISOString()
   const currentSnapshot = serializeVfsSnapshot(vfsPersistenceStore.getState().chat.chatVfsSnapshot)
-  const sourceVersion: VfsSourceVersionRef = {
-    id: sourceVersionId,
-    reason: actionType === 'batch-rollback' ? 'batch-rollback-target' : 'rollback-target',
-  }
   const entry = {
     id: `commit-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
     time,
@@ -20,6 +21,7 @@ function appendManualCommit(summary: string, actionType: 'rollback' | 'batch-rol
     actionType,
     scope: '*',
     sourceVersion,
+    sourceVersions,
     snapshot: currentSnapshot,
     // WHY: write legacy mirrors during transition so old UIs keep rendering.
     timestamp: Date.parse(time),
@@ -35,7 +37,7 @@ export async function useVfsRollbackAction(commitId: string): Promise<boolean> {
   // Keep the shared service contract intact while matching UI wording at call sites.
   const result = await rollbackCommit({ commitId })
   if (result.ok) {
-    appendManualCommit(`rollback -> ${commitId}`, 'rollback', commitId)
+    appendManualCommit(`rollback -> ${commitId}`, 'rollback', { id: commitId, reason: 'rollback-target' })
     emitVfsEvent(VFS_STATE_REFRESH_REQUIRED)
     return true
   }
@@ -46,7 +48,15 @@ export async function useVfsRollbackAction(commitId: string): Promise<boolean> {
 export async function useVfsBatchRollbackAction(commitIds: string[]): Promise<boolean> {
   const result = await rollbackBatch({ commitIds })
   if (result.ok) {
-    appendManualCommit(`batch-rollback -> ${commitIds.join(', ')}`, 'batch-rollback', commitIds[0] ?? '')
+    const normalized = commitIds.map((id) => id.trim()).filter(Boolean)
+    const appliedTargetId = normalized[normalized.length - 1] ?? ''
+    const sources = normalized.map((id) => ({ id, reason: 'batch-rollback-target' as const }))
+    appendManualCommit(
+      `batch-rollback -> ${normalized.join(', ')}`,
+      'batch-rollback',
+      { id: appliedTargetId, reason: 'batch-rollback-target' },
+      sources,
+    )
     emitVfsEvent(VFS_STATE_REFRESH_REQUIRED)
     return true
   }
