@@ -12,7 +12,9 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
+    "dompurify": "^3.4.2",
     "fflate": "^0.8.2",
+    "marked": "^18.0.3",
     "vue": "^3.5.32"
   },
   "devDependencies": {
