@@ -35,12 +35,33 @@ export async function rollbackCommit(payload: RollbackPayload): Promise<VfsActio
 }
 
 export async function rollbackBatch(payload: BatchRollbackPayload): Promise<VfsActionResult> {
-  if (payload.commitIds.length === 0) {
+  const targetIds = payload.commitIds.map((item) => item.trim()).filter(Boolean)
+  if (targetIds.length === 0) {
     return { ok: false, errorCode: VFS_ERROR_CODES.BATCH_ROLLBACK_FAILED, message: 'At least one commit is required' }
   }
-  const targetId = payload.commitIds[0]?.trim()
-  if (!targetId) {
-    return { ok: false, errorCode: VFS_ERROR_CODES.BATCH_ROLLBACK_FAILED, message: 'At least one commit is required' }
+  const state = vfsPersistenceStore.getState().chat
+  const versionsById = new Map(state.chatVfsVersions.map((entry) => [entry.id, entry]))
+  const snapshots = targetIds.map((commitId) => versionsById.get(commitId)?.snapshot)
+  if (snapshots.some((snapshot) => !snapshot)) {
+    return {
+      ok: false,
+      errorCode: VFS_ERROR_CODES.COMMIT_APPLY_FAILED,
+      message: 'One or more commit snapshots are unavailable',
+    }
   }
-  return rollbackCommit({ commitId: targetId })
+
+  const finalSnapshot = snapshots[snapshots.length - 1]
+  if (!finalSnapshot) {
+    return {
+      ok: false,
+      errorCode: VFS_ERROR_CODES.COMMIT_APPLY_FAILED,
+      message: 'Commit snapshot is unavailable',
+    }
+  }
+
+  vfsPersistenceStore.updateChat((draft) => ({
+    ...draft,
+    chatVfsSnapshot: serializeVfsSnapshot(finalSnapshot),
+  }))
+  return { ok: true }
 }

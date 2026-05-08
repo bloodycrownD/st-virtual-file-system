@@ -100,7 +100,7 @@ function refreshAuthoritativeState(): void {
       operator: entry.operator,
       actionType: entry.actionType,
       scope: entry.scope,
-      sourceVersionId: entry.sourceVersion?.id ?? entry.id,
+      sourceVersionId: entry.sourceVersion?.id,
     })),
   )
   const selectedPath = selectedEntity.value?.path

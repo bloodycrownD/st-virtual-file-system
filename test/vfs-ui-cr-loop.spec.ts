@@ -157,7 +157,7 @@ describe('vfs ui cr loop fixes', () => {
     expect(wrapper.emitted('manualRollbackRequested')?.[0]).toEqual([{ sourceVersionId: 'v42' }])
   })
 
-  it('allows manual rollback target from normal history versions', async () => {
+  it('maps manual rollback selection to valid commit snapshot ids', async () => {
     const wrapper = mount(EditorScreen, {
       props: {
         modelValue: 'draft',
@@ -168,6 +168,7 @@ describe('vfs ui cr loop fixes', () => {
             operator: 'assistant',
             actionType: 'save',
             scope: '/docs/a.md',
+            sourceVersionId: 'legacy-source-v1',
           },
         ],
       },
@@ -179,7 +180,7 @@ describe('vfs ui cr loop fixes', () => {
     expect(wrapper.emitted('manualRollbackRequested')?.[0]).toEqual([{ sourceVersionId: 'commit-raw-1' }])
   })
 
-  it('uses single-target rollback interaction in commit tab', async () => {
+  it('uses batch rollback interaction in commit tab', async () => {
     const wrapper = mount(VfsCommitTab, {
       props: {
         commits: [
@@ -202,17 +203,20 @@ describe('vfs ui cr loop fixes', () => {
     })
 
     const rollbackButtonBefore = wrapper.get('button')
-    expect(rollbackButtonBefore.text()).toContain('回滚所选提交')
+    expect(rollbackButtonBefore.text()).toContain('批量回滚所选提交')
     expect(rollbackButtonBefore.attributes('disabled')).toBeDefined()
 
-    const radios = wrapper.findAll('input[type="radio"]')
-    await radios[0].setValue(true)
-    await radios[1].setValue(true)
+    const checkboxes = wrapper.findAll('input[type="checkbox"]')
+    await checkboxes[0].setValue(true)
+    await checkboxes[1].setValue(true)
     await wrapper.get('button').trigger('click')
 
-    expect(useVfsRollbackActionMock).toHaveBeenCalledWith('commit-2')
-    expect(wrapper.emitted('rollbackStatus')?.[0]).toEqual([{ kind: 'single', status: 'rollingBack' }])
-    expect(wrapper.emitted('rollbackStatus')?.[1]).toEqual([{ kind: 'single', status: 'succeeded', sourceVersionId: 'commit-2' }])
+    expect(useVfsBatchRollbackActionMock).toHaveBeenCalledWith(['commit-1', 'commit-2'])
+    expect(useVfsRollbackActionMock).not.toHaveBeenCalled()
+    expect(wrapper.emitted('rollbackStatus')?.[0]).toEqual([{ kind: 'batch', status: 'batchRollingBack' }])
+    expect(wrapper.emitted('rollbackStatus')?.[1]).toEqual([
+      { kind: 'batch', status: 'succeeded', sourceVersionId: 'commit-1' },
+    ])
   })
 
   it('switches between mobile and desktop layout modes', async () => {

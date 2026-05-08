@@ -24,7 +24,7 @@ const previewMode = ref(false)
 const rollbackSourceVersionId = ref<string | null>(null)
 const rollbackOptions = computed(() =>
   props.historyRecords.flatMap((record) => {
-    const targetId = record.sourceVersionId ?? record.commitId
+    const targetId = record.commitId ?? record.sourceVersionId
     if (!targetId) return []
     return {
       key: `${record.time}-${record.scope}-${targetId}`,
