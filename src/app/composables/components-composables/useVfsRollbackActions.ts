@@ -4,6 +4,8 @@ import { rollbackBatch, rollbackCommit } from '@/app/services/vfs/rollbackServic
 import { toVfsErrorToast } from '@/app/utils/vfsErrorMapper'
 
 export async function useVfsRollbackAction(commitId: string): Promise<boolean> {
+  // WHY: UI and specs speak in "sourceVersionId"; the service contract uses `commitId`.
+  // Keep the shared service contract intact while matching UI wording at call sites.
   const result = await rollbackCommit({ commitId })
   if (result.ok) {
     emitVfsEvent(VFS_STATE_REFRESH_REQUIRED)

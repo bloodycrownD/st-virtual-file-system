@@ -10,9 +10,17 @@ export function emitVfsEvent(eventName: string): void {
 }
 
 export function useVfsMessageHooks(): () => void {
+  let queued = false
   const handler = () => {
-    // WHY: messages should trigger exactly one refresh path; the UI listens to the VFS_LOG_REFRESH_AUTO event.
-    emitVfsEvent(VFS_LOG_REFRESH_AUTO)
+    // WHY: SillyTavern can emit multiple closely-timed message events; we coalesce them so the UI
+    // observes exactly one refresh request per tick.
+    if (queued) return
+    queued = true
+    queueMicrotask(() => {
+      queued = false
+      // WHY: messages should trigger exactly one refresh path; the UI listens to the VFS_LOG_REFRESH_AUTO event.
+      emitVfsEvent(VFS_LOG_REFRESH_AUTO)
+    })
   }
 
   if (typeof SillyTavern !== 'undefined') {

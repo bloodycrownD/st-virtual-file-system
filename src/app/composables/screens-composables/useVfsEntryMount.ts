@@ -25,14 +25,16 @@ export function mountVfsEntry(onOpen: () => void): (() => void) | null {
     jQueryLike(button).off(`click${ENTRY_CLICK_NS}`)
     jQueryLike(button).on(`click${ENTRY_CLICK_NS}`, onOpen)
   } else {
-    button.addEventListener('click', onOpen)
+    // WHY: `onclick` overwrites any previous handler, preventing duplicate refresh/open actions
+    // when bootstrap re-runs without jQuery available.
+    button.onclick = onOpen
   }
 
   return () => {
     if (jQueryLike) {
       jQueryLike(button).off(`click${ENTRY_CLICK_NS}`)
     } else {
-      button.removeEventListener('click', onOpen)
+      button.onclick = null
     }
     button.remove()
   }
