@@ -1,17 +1,17 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { useVfsBatchRollbackAction } from '@/app/composables/components-composables/useVfsRollbackActions'
+import { useVfsRollbackAction } from '@/app/composables/components-composables/useVfsRollbackActions'
 import type { ChatVfsVersionEntry } from '@/infra/persistence/vfs-chat-metadata.schema'
 
 const props = defineProps<{
   commits: ChatVfsVersionEntry[]
 }>()
 
-const selectedIds = ref<string[]>([])
+const selectedId = ref<string | null>(null)
 const isRollingBack = ref(false)
 const emits = defineEmits<{
   rollbackStatus: [
-    payload: { kind: 'batch'; status: 'batchRollingBack' | 'succeeded' | 'failed'; sourceVersionId?: string },
+    payload: { kind: 'single'; status: 'rollingBack' | 'succeeded' | 'failed'; sourceVersionId?: string },
   ]
 }>()
 
@@ -34,27 +34,23 @@ function displaySubline(item: ChatVfsVersionEntry): string {
 }
 
 function isSelected(id: string): boolean {
-  return selectedIds.value.includes(id)
+  return selectedId.value === id
 }
 
 function toggleSelected(id: string): void {
   if (isRollingBack.value) return
-  if (isSelected(id)) {
-    selectedIds.value = selectedIds.value.filter((item) => item !== id)
-    return
-  }
-  selectedIds.value = [...selectedIds.value, id]
+  selectedId.value = selectedId.value === id ? null : id
 }
 
-async function rollbackSelected(): Promise<void> {
+async function rollbackToSelected(): Promise<void> {
   if (isRollingBack.value) return
-  if (selectedIds.value.length === 0) return
+  if (!selectedId.value) return
   isRollingBack.value = true
-  emits('rollbackStatus', { kind: 'batch', status: 'batchRollingBack' })
+  emits('rollbackStatus', { kind: 'single', status: 'rollingBack', sourceVersionId: selectedId.value })
   try {
-    const targetIds = [...selectedIds.value]
-    const ok = await useVfsBatchRollbackAction(targetIds)
-    emits('rollbackStatus', { kind: 'batch', status: ok ? 'succeeded' : 'failed', sourceVersionId: targetIds[0] })
+    const targetId = selectedId.value
+    const ok = await useVfsRollbackAction(targetId)
+    emits('rollbackStatus', { kind: 'single', status: ok ? 'succeeded' : 'failed', sourceVersionId: targetId })
   } finally {
     isRollingBack.value = false
   }
@@ -65,8 +61,8 @@ async function rollbackSelected(): Promise<void> {
   <section class="vfs-commit-tab">
     <header class="vfs-commit-tab-header">
       <p class="vfs-commit-tab-hint">选择一个提交记录并回滚到该版本</p>
-      <button type="button" :disabled="isRollingBack || selectedIds.length === 0" @click="rollbackSelected">
-        {{ isRollingBack ? '批量回滚进行中...' : '批量回滚所选提交' }}
+      <button type="button" :disabled="isRollingBack || !selectedId" @click="rollbackToSelected">
+        {{ isRollingBack ? '回滚进行中...' : '回滚到所选提交' }}
       </button>
     </header>
 
@@ -74,9 +70,10 @@ async function rollbackSelected(): Promise<void> {
       <li v-for="item in orderedCommits" :key="item.id" class="vfs-commit-item">
         <label class="vfs-commit-row">
           <input
-            type="checkbox"
+            type="radio"
             :checked="isSelected(item.id)"
             :disabled="isRollingBack"
+            name="vfs-commit-target"
             @change="toggleSelected(item.id)"
           />
           <span class="vfs-commit-meta">

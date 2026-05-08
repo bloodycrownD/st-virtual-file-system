@@ -13,7 +13,6 @@ import { vfsPersistenceStore } from '@/app/stores/vfs-store-singleton'
 const dispatchSpy = vi.fn()
 const useVfsCommitActionsMock = vi.fn<(summary: string) => Promise<boolean>>()
 const useVfsRollbackActionMock = vi.fn<(commitId: string) => Promise<boolean>>()
-const useVfsBatchRollbackActionMock = vi.fn<(commitIds: string[]) => Promise<boolean>>()
 const fetchLogsMock = vi.fn(async () => ({ items: [], total: 0 }))
 
 function getButtonByText(wrapper: ReturnType<typeof mount>, label: string) {
@@ -34,6 +33,25 @@ async function triggerEntityAction(wrapper: ReturnType<typeof mount>, action: st
   await menu.get(`[data-action="${action}"]`).trigger('click')
 }
 
+async function selectDocsFile(wrapper: ReturnType<typeof mount>) {
+  const list = wrapper.get('[data-testid="vfs-file-manager-list"]')
+  const candidates = list.findAll('button.vfs-fm-item')
+  const docsDir = candidates.find((btn) => btn.text().includes('docs')) // directory at root
+  if (!docsDir) {
+    throw new Error('docs directory not found')
+  }
+  await docsDir.trigger('dblclick')
+  await wrapper.vm.$nextTick()
+
+  const innerList = wrapper.get('[data-testid="vfs-file-manager-list"]')
+  const innerCandidates = innerList.findAll('button.vfs-fm-item')
+  const fileButton = innerCandidates.find((btn) => btn.text().includes('docs.md'))
+  if (!fileButton) {
+    throw new Error('docs.md not found')
+  }
+  await fileButton.trigger('click')
+}
+
 vi.mock('@/app/composables/screens-composables/useVfsHistoryStateMachine', () => ({
   createVfsHistoryStateMachine: () => ({
     state: { status: 'idle' },
@@ -47,7 +65,6 @@ vi.mock('@/app/composables/components-composables/useVfsCommitActions', () => ({
 
 vi.mock('@/app/composables/components-composables/useVfsRollbackActions', () => ({
   useVfsRollbackAction: (commitId: string) => useVfsRollbackActionMock(commitId),
-  useVfsBatchRollbackAction: (commitIds: string[]) => useVfsBatchRollbackActionMock(commitIds),
 }))
 
 vi.mock('@/app/services/vfs/logService', () => ({
@@ -60,14 +77,48 @@ describe('vfs ui cr loop fixes', () => {
     dispatchSpy.mockReset()
     useVfsCommitActionsMock.mockReset()
     useVfsRollbackActionMock.mockReset()
-    useVfsBatchRollbackActionMock.mockReset()
     useVfsCommitActionsMock.mockResolvedValue(true)
     useVfsRollbackActionMock.mockResolvedValue(true)
-    useVfsBatchRollbackActionMock.mockResolvedValue(true)
     fetchLogsMock.mockClear()
     const now = Date.now()
     vfsPersistenceStore.updateChat((draft) => ({
       ...draft,
+      chatVfsSnapshot: {
+        schemaVersion: 1,
+        rootId: 'root',
+        nodes: {
+          root: {
+            id: 'root',
+            type: 'directory',
+            path: '/',
+            name: '',
+            parentId: null,
+            children: ['node-2'],
+            mtime: now,
+          },
+          'node-2': {
+            id: 'node-2',
+            type: 'directory',
+            path: '/docs',
+            name: 'docs',
+            parentId: 'root',
+            children: ['node-3'],
+            mtime: now,
+          },
+          'node-3': {
+            id: 'node-3',
+            type: 'file',
+            path: '/docs/docs.md',
+            name: 'docs.md',
+            parentId: 'node-2',
+            size: 3,
+            content: { encoding: 'plain', data: '# a', originalSize: 3 },
+            mtime: now,
+            ctime: now,
+            updatedBy: 'user',
+          },
+        },
+      },
       chatVfsVersions: [
         {
           id: 'commit-1',
@@ -81,19 +132,19 @@ describe('vfs ui cr loop fixes', () => {
     }))
   })
 
-  it('maps batch rollback success and failure to batch events', async () => {
+  it('maps rollback success and failure to history events', async () => {
     const wrapper = mount(VfsHistoryScreen)
 
-    await wrapper.findComponent(VfsCommitTab).vm.$emit('rollback-status', { kind: 'batch', status: 'succeeded' })
-    expect(dispatchSpy).toHaveBeenCalledWith({ type: 'BATCH_ROLLBACK_SUCCESS' })
+    await wrapper.findComponent(VfsCommitTab).vm.$emit('rollback-status', { kind: 'single', status: 'succeeded' })
+    expect(dispatchSpy).toHaveBeenCalledWith({ type: 'ROLLBACK_SUCCESS' })
 
     await wrapper
       .findComponent(VfsCommitTab)
-      .vm.$emit('rollback-status', { kind: 'batch', status: 'failed', sourceVersionId: 'v1' })
+      .vm.$emit('rollback-status', { kind: 'single', status: 'failed', sourceVersionId: 'v1' })
     expect(dispatchSpy).toHaveBeenCalledWith({
-      type: 'BATCH_ROLLBACK_FAILED',
-      errorCode: 'E_BATCH_ROLLBACK_FAILED',
-      message: 'Batch rollback failed',
+      type: 'ROLLBACK_FAILED',
+      errorCode: 'E_ROLLBACK_FAILED',
+      message: 'Rollback failed',
     })
   })
 
@@ -180,7 +231,7 @@ describe('vfs ui cr loop fixes', () => {
     expect(wrapper.emitted('manualRollbackRequested')?.[0]).toEqual([{ sourceVersionId: 'commit-raw-1' }])
   })
 
-  it('uses batch rollback interaction in commit tab', async () => {
+  it('uses single-target rollback interaction in commit tab', async () => {
     const wrapper = mount(VfsCommitTab, {
       props: {
         commits: [
@@ -203,19 +254,17 @@ describe('vfs ui cr loop fixes', () => {
     })
 
     const rollbackButtonBefore = wrapper.get('button')
-    expect(rollbackButtonBefore.text()).toContain('批量回滚所选提交')
+    expect(rollbackButtonBefore.text()).toContain('回滚到所选提交')
     expect(rollbackButtonBefore.attributes('disabled')).toBeDefined()
 
-    const checkboxes = wrapper.findAll('input[type="checkbox"]')
-    await checkboxes[0].setValue(true)
-    await checkboxes[1].setValue(true)
+    const radios = wrapper.findAll('input[type="radio"]')
+    await radios[0].setValue(true)
     await wrapper.get('button').trigger('click')
 
-    expect(useVfsBatchRollbackActionMock).toHaveBeenCalledWith(['commit-1', 'commit-2'])
-    expect(useVfsRollbackActionMock).not.toHaveBeenCalled()
-    expect(wrapper.emitted('rollbackStatus')?.[0]).toEqual([{ kind: 'batch', status: 'batchRollingBack' }])
+    expect(useVfsRollbackActionMock).toHaveBeenCalledWith('commit-1')
+    expect(wrapper.emitted('rollbackStatus')?.[0]).toEqual([{ kind: 'single', status: 'rollingBack', sourceVersionId: 'commit-1' }])
     expect(wrapper.emitted('rollbackStatus')?.[1]).toEqual([
-      { kind: 'batch', status: 'succeeded', sourceVersionId: 'commit-1' },
+      { kind: 'single', status: 'succeeded', sourceVersionId: 'commit-1' },
     ])
   })
 
@@ -235,6 +284,7 @@ describe('vfs ui cr loop fixes', () => {
     const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false)
     const wrapper = mount(VfsMainScreen)
 
+    await selectDocsFile(wrapper)
     await triggerEntityAction(wrapper, 'edit')
     await wrapper.get('textarea.vfs-editor').setValue('unsaved draft')
     await triggerEntityAction(wrapper, 'view')
@@ -247,6 +297,7 @@ describe('vfs ui cr loop fixes', () => {
     const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true)
     const wrapper = mount(VfsMainScreen)
 
+    await selectDocsFile(wrapper)
     await triggerEntityAction(wrapper, 'edit')
     await wrapper.get('textarea.vfs-editor').setValue('discard me')
     await wrapper.get('[data-action="view"]').trigger('click')
@@ -262,6 +313,7 @@ describe('vfs ui cr loop fixes', () => {
     const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false)
     const wrapper = mount(VfsMainScreen)
 
+    await selectDocsFile(wrapper)
     await triggerEntityAction(wrapper, 'edit')
     await wrapper.get('textarea.vfs-editor').setValue('dirty content')
     await wrapper.get('.vfs-tabs button:nth-of-type(2)').trigger('click')
@@ -273,6 +325,7 @@ describe('vfs ui cr loop fixes', () => {
 
   it('wires editor save action to commit flow and appends commit record on success', async () => {
     const wrapper = mount(VfsMainScreen)
+    await selectDocsFile(wrapper)
     await triggerEntityAction(wrapper, 'edit')
     await wrapper.get('textarea.vfs-editor').setValue('new content')
     await wrapper.get('[data-testid="editor-save-submit"]').trigger('click')
@@ -300,6 +353,7 @@ describe('vfs ui cr loop fixes', () => {
     )
 
     const wrapper = mount(VfsMainScreen)
+    await selectDocsFile(wrapper)
     await triggerEntityAction(wrapper, 'edit')
     await wrapper.get('textarea.vfs-editor').setValue('pending save')
     await wrapper.get('[data-testid="editor-save-submit"]').trigger('click')
@@ -320,6 +374,7 @@ describe('vfs ui cr loop fixes', () => {
   it('applies dirty guard to popup-close exit event and cancels close when requested', async () => {
     const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false)
     const wrapper = mount(VfsMainScreen)
+    await selectDocsFile(wrapper)
     await triggerEntityAction(wrapper, 'edit')
     await wrapper.get('textarea.vfs-editor').setValue('unsaved by popup close')
     const beforeCloseEvent = new CustomEvent('VFS_POPUP_BEFORE_CLOSE', { cancelable: true })
@@ -356,6 +411,7 @@ describe('vfs ui cr loop fixes', () => {
     const wrapper = mount(VfsMainScreen)
     expect(wrapper.get('[data-testid="vfs-desktop-grid"]').exists()).toBe(true)
 
+    await selectDocsFile(wrapper)
     await triggerEntityAction(wrapper, 'edit')
     expect(wrapper.find('textarea.vfs-editor').exists()).toBe(true)
     expect(wrapper.get('[data-testid="vfs-desktop-grid"]').exists()).toBe(true)
