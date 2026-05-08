@@ -57,4 +57,28 @@ describe('vfs chat metadata schema', () => {
     expect(raw.templateInitialized).toBe(false)
     expect(raw.chatVfsSnapshot).toEqual(snapshot)
   })
+
+  it('normalizes legacy commit records into required history fields', () => {
+    const parsed = parseVfsChatMetadata({
+      chatVfsVersions: [
+        {
+          id: 'legacy-1',
+          timestamp: Date.parse('2026-05-08T09:00:00.000Z'),
+          source: 'manual',
+          summary: '/docs/legacy.md',
+          changedFiles: ['/docs/legacy.md'],
+        },
+      ],
+    })
+
+    expect(parsed.chatVfsVersions[0]).toMatchObject({
+      id: 'legacy-1',
+      time: '2026-05-08T09:00:00.000Z',
+      operator: 'system',
+      actionType: 'save',
+      scope: '/docs/legacy.md',
+      source: 'manual',
+      summary: '/docs/legacy.md',
+    })
+  })
 })

@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { createVfsPersistenceStore } from '@/app/stores/vfs-persistence-store'
 import { ChatVfsLogService } from '@/app/services/vfs-log/chat-vfs-log-service'
-import { ChatVfsVersionService } from '@/app/services/vfs-version/chat-vfs-version-service'
 import { ExtensionVfsTemplateService } from '@/app/services/vfs-runtime/extension-vfs-template-service'
 import type { StContextAdapter } from '@/infra/persistence/st-context-adapter'
 
@@ -56,13 +55,29 @@ describe('chat vfs logs and templates', () => {
         },
       },
     }))
-    const versions = new ChatVfsVersionService(store)
-    const templateService = new ExtensionVfsTemplateService(store, versions)
+    store.updateChat((draft) => ({
+      ...draft,
+      chatVfsLogs: [
+        {
+          id: 'log-1',
+          timestamp: Date.now(),
+          chatId: 'c',
+          messageId: 'm',
+          batchId: 'b',
+          toolName: 'write',
+          status: 'success',
+          durationMs: 1,
+          argsSummary: '{}',
+        },
+      ],
+      chatVfsVersions: [{ id: 'v1', time: new Date().toISOString(), operator: 'system', actionType: 'save', scope: '*' }],
+    }))
+    const templateService = new ExtensionVfsTemplateService(store)
     templateService.initializeChatFromTemplateIfNeeded()
     expect(store.getState().chat.templateInitialized).toBe(true)
     templateService.overwriteChatWithTemplate()
-    expect(store.getState().chat.chatVfsVersions.length).toBe(2)
-    expect(store.getState().chat.chatVfsVersions.every((entry) => entry.source === 'manual')).toBe(true)
+    expect(store.getState().chat.chatVfsLogs).toEqual([])
+    expect(store.getState().chat.chatVfsVersions).toEqual([])
   })
 
   it('clones work-tree config from extension template on first init', () => {
@@ -83,8 +98,7 @@ describe('chat vfs logs and templates', () => {
         selectedFiles: ['/selected.md'],
       },
     }))
-    const versions = new ChatVfsVersionService(store)
-    const templateService = new ExtensionVfsTemplateService(store, versions)
+    const templateService = new ExtensionVfsTemplateService(store)
     templateService.initializeChatFromTemplateIfNeeded()
     const chatState = store.getState().chat
     expect(chatState.templateInitialized).toBe(true)

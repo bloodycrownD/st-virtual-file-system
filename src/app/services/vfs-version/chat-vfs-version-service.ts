@@ -13,9 +13,15 @@ import type { ChatVfsVersionEntry, VfsCommitSource } from '@/infra/persistence/v
  * append and easy to display/filter in UI.
  */
 function createVersionEntry(source: VfsCommitSource, summary: string, changedFiles: string[]): ChatVfsVersionEntry {
+  const time = new Date().toISOString()
   return {
     id: `commit-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
-    timestamp: Date.now(),
+    time,
+    operator: 'system',
+    actionType: 'save',
+    scope: summary || '*',
+    // WHY: legacy mirrors remain until all consumers are migrated.
+    timestamp: Date.parse(time),
     source,
     summary,
     changedFiles,

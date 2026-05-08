@@ -1,6 +1,6 @@
 import type { VfsPersistenceStore } from '@/app/stores/vfs-persistence-store'
-import type { ChatVfsVersionService } from '@/app/services/vfs-version/chat-vfs-version-service'
 import { createEmptyVfsSnapshot } from '@/infra/persistence/vfs-snapshot.schema'
+import type { VfsSnapshot } from '@/domain/vfs/types'
 
 /**
  * Extension-level VFS template service.
@@ -18,17 +18,13 @@ import { createEmptyVfsSnapshot } from '@/infra/persistence/vfs-snapshot.schema'
  * chat VFS. It uses a per-chat flag (`templateInitialized`) so the initialization process runs
  * at most once per chat, even if no template exists (to avoid repeated checks and repeated work).
  *
- * ## Manual overwrite and rollback anchors
+ * ## Manual overwrite and reset semantics
  * `overwriteChatWithTemplate()` performs a potentially destructive replacement of the chat VFS
- * snapshot. It records **manual** commit entries before and after the overwrite to provide:
- * - A rollback anchor for the pre-overwrite state.
- * - A clear history event representing the overwrite itself.
+ * snapshot and then clears chat-scoped logs/version history so the result is equivalent to
+ * re-initializing the chat working tree from template.
  */
 export class ExtensionVfsTemplateService {
-  constructor(
-    private readonly store: VfsPersistenceStore,
-    private readonly versionService: ChatVfsVersionService,
-  ) {}
+  constructor(private readonly store: VfsPersistenceStore) {}
 
   /**
    * Initialize the current chat snapshot from the extension template if needed.
@@ -57,7 +53,7 @@ export class ExtensionVfsTemplateService {
     }
     this.store.updateChat((draft) => ({
       ...draft,
-      chatVfsSnapshot: templateSnapshot,
+      chatVfsSnapshot: this.cloneSnapshot(templateSnapshot),
       workTree: workTreeTemplate ?? draft.workTree,
       templateInitialized: true,
     }))
@@ -74,14 +70,17 @@ export class ExtensionVfsTemplateService {
     const state = this.store.getState()
     const templateSnapshot = state.extension.extensionTemplateVfsSnapshot
     if (!templateSnapshot) return
-    // Keep a rollback point before destructive template overwrite.
-    // 覆盖前后都打 manual commit：前者是回退锚点，后者是新状态落点。
-    this.versionService.commitByManualSave('pre-template-overwrite', ['*'])
     this.store.updateChat((draft) => ({
       ...draft,
-      chatVfsSnapshot: templateSnapshot,
+      // WHY: overwrite is semantic re-initialization, so logs/version history must be reset with content.
+      chatVfsSnapshot: this.cloneSnapshot(templateSnapshot),
+      chatVfsLogs: [],
+      chatVfsVersions: [],
       templateInitialized: true,
     }))
-    this.versionService.commitByManualSave('manual-template-overwrite', ['*'])
+  }
+
+  private cloneSnapshot(snapshot: VfsSnapshot): VfsSnapshot {
+    return JSON.parse(JSON.stringify(snapshot))
   }
 }
