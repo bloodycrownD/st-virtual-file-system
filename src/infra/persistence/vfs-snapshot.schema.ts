@@ -1,4 +1,4 @@
-import type { VfsSnapshot, VfsNodeSnapshot, VfsFileContentSnapshot } from '@/domain/vfs/types'
+import type { VfsSnapshot, VfsNodeSnapshot, VfsFileContentSnapshot, VfsDirectoryNodeSnapshot } from '@/domain/vfs/types'
 import { VfsInvalidPathError } from '@/domain/vfs/vfs-errors'
 
 /**
@@ -47,11 +47,38 @@ function parseNode(raw: unknown): VfsNodeSnapshot {
     return { ...common, type, children }
   }
 
+  // File nodes must provide strict metadata for the AI-facing `<file>` macro.
+  // Missing these fields is a spec violation and should not be silently backfilled.
+  if (typeof raw.mtime !== 'number') throw new VfsInvalidPathError('Missing file mtime')
+  if (typeof raw.ctime !== 'number') throw new VfsInvalidPathError('Missing file ctime')
+  if (raw.updatedBy !== 'user' && raw.updatedBy !== 'assistant') throw new VfsInvalidPathError('Missing file updatedBy')
+
   return {
     ...common,
     type,
     size: typeof raw.size === 'number' ? raw.size : 0,
     content: parseContent(raw.content),
+    ctime: raw.ctime,
+    updatedBy: raw.updatedBy,
+  }
+}
+
+/** Minimal valid empty tree (root only). Used when chat has no persisted snapshot yet. */
+export function createEmptyVfsSnapshot(): VfsSnapshot {
+  const now = Date.now()
+  const root: VfsDirectoryNodeSnapshot = {
+    id: 'root',
+    type: 'directory',
+    path: '/',
+    name: '',
+    parentId: null,
+    children: [],
+    mtime: now,
+  }
+  return {
+    schemaVersion: 1,
+    rootId: 'root',
+    nodes: { root },
   }
 }
 

@@ -32,6 +32,7 @@ import { ChatVfsLogService } from '@/app/services/vfs-log/chat-vfs-log-service'
 import { ChatVfsRuntime } from '@/app/services/vfs-runtime/chat-vfs-runtime'
 import { ExtensionVfsTemplateService } from '@/app/services/vfs-runtime/extension-vfs-template-service'
 import { VirtualToolMessageHandler } from '@/app/services/message/virtual-tool-message-handler'
+import { registerVfsMacros } from '@/infra/sillytarvern/macros/register-vfs-macros'
 
 /** 包住整棵 Vue 树的 DOM 节点，便于在 DevTools / 测试中定位 */
 const container = document.createElement('div')
@@ -49,10 +50,12 @@ initVfsPersistenceStore()
 // Runtime wiring order:
 // - store first (loads chat/extension snapshots)
 // - version + template services (template init depends on version service)
+// - ST prompt macros read the same store snapshot (sync handlers)
 // - runtime + handler wired into message pipeline and ST event source
 const versionService = new ChatVfsVersionService(vfsPersistenceStore)
 const templateService = new ExtensionVfsTemplateService(vfsPersistenceStore, versionService)
 templateService.initializeChatFromTemplateIfNeeded()
+registerVfsMacros(vfsPersistenceStore, templateService.initializeChatFromTemplateIfNeeded.bind(templateService))
 const runtime = new ChatVfsRuntime(vfsPersistenceStore, new ToolDispatcher(), versionService, templateService)
 const logs = new ChatVfsLogService(vfsPersistenceStore)
 const messageHandler = new VirtualToolMessageHandler(runtime, logs)

@@ -27,15 +27,22 @@ describe('vfs persistence store', () => {
       logMaxBytes: 1024 * 1024,
       virtualToolCallEnabled: true,
       extensionTemplateVfsSnapshot: null,
+      workTreeTemplate: null,
     })
     expect(adapter.saveExtension).toHaveBeenCalledOnce()
-    expect(adapter.writeChatRaw).toHaveBeenCalledWith({
+    expect(adapter.writeChatRaw).toHaveBeenCalled()
+    const writtenChat = (adapter.writeChatRaw as ReturnType<typeof vi.fn>).mock.calls[0]?.[0] as Record<
+      string,
+      unknown
+    >
+    expect(writtenChat).toMatchObject({
       mounted: false,
-      chatVfsSnapshot: null,
       chatVfsLogs: [],
       chatVfsVersions: [],
       templateInitialized: false,
+      workTree: null,
     })
+    expect((writtenChat.chatVfsSnapshot as Record<string, unknown>).rootId).toBe('root')
     expect(adapter.saveChat).toHaveBeenCalledOnce()
   })
 
@@ -52,6 +59,7 @@ describe('vfs persistence store', () => {
       logMaxBytes: 1024 * 1024,
       virtualToolCallEnabled: true,
       extensionTemplateVfsSnapshot: null,
+      workTreeTemplate: null,
     })
     expect(adapter.saveExtension).toHaveBeenCalledTimes(2)
   })
@@ -90,15 +98,22 @@ describe('vfs persistence store', () => {
       logMaxBytes: 1024 * 1024,
       virtualToolCallEnabled: true,
       extensionTemplateVfsSnapshot: null,
+      workTreeTemplate: null,
     })
     expect(adapter.saveExtension).toHaveBeenCalledOnce()
-    expect(adapter.writeChatRaw).toHaveBeenCalledWith({
+    expect(adapter.writeChatRaw).toHaveBeenCalled()
+    const writtenChat = (adapter.writeChatRaw as ReturnType<typeof vi.fn>).mock.calls[0]?.[0] as Record<
+      string,
+      unknown
+    >
+    expect(writtenChat).toMatchObject({
       mounted: false,
-      chatVfsSnapshot: null,
       chatVfsLogs: [],
       chatVfsVersions: [],
       templateInitialized: false,
+      workTree: null,
     })
+    expect((writtenChat.chatVfsSnapshot as Record<string, unknown>).rootId).toBe('root')
     expect(adapter.saveChat).toHaveBeenCalledOnce()
   })
 

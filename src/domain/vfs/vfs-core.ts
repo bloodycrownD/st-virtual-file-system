@@ -140,11 +140,15 @@ export class VfsCore {
       if (existing.type !== 'file') throw new VfsIsDirectoryError(`Path is directory: ${normalized}`)
       existing.content = this.codec.encode(content)
       existing.size = content.length
-      existing.mtime = Date.now()
+      const now = Date.now()
+      existing.mtime = now
+      existing.updatedBy = options.updatedBy ?? 'user'
       this.updateNode(existing)
       return
     }
 
+    const now = Date.now()
+    const attribution = options.updatedBy ?? 'user'
     const node: VfsFileNodeSnapshot = {
       id: this.nextId(),
       type: 'file',
@@ -153,7 +157,9 @@ export class VfsCore {
       parentId: parent.id,
       size: content.length,
       content: this.codec.encode(content),
-      mtime: Date.now(),
+      mtime: now,
+      ctime: now,
+      updatedBy: attribution,
     }
     parent.children.push(node.id)
     parent.mtime = Date.now()
@@ -507,6 +513,8 @@ export class VfsCore {
         name: targetName,
         path: joinPath(targetParent.path, targetName),
         mtime: Date.now(),
+        ctime: source.ctime,
+        updatedBy: source.updatedBy,
       }
       targetParent.children.push(clone.id)
       this.updateNode(targetParent)

@@ -26,13 +26,14 @@ describe('tool-dispatcher + runtime', () => {
   it('rejects calls missing args object before dispatch', () => {
     const store = createVfsPersistenceStore(createAdapterMock())
     store.init()
+    const before = JSON.stringify(store.getState().chat.chatVfsSnapshot)
     const runtime = new ChatVfsRuntime(store, new ToolDispatcher(), new ChatVfsVersionService(store))
     const failed = runtime.executeBatch({
       calls: [{ tool: 'list' } as never],
     })
     expect(failed.ok).toBe(false)
     expect(failed.errorCode).toBe('INVALID_CALL_ARGS')
-    expect(store.getState().chat.chatVfsSnapshot).toBeNull()
+    expect(JSON.stringify(store.getState().chat.chatVfsSnapshot)).toBe(before)
   })
 
   it('commits whole batch when all tools succeed', () => {
@@ -53,6 +54,7 @@ describe('tool-dispatcher + runtime', () => {
   it('rolls back batch when one tool fails', () => {
     const store = createVfsPersistenceStore(createAdapterMock())
     store.init()
+    const before = JSON.stringify(store.getState().chat.chatVfsSnapshot)
     const runtime = new ChatVfsRuntime(store, new ToolDispatcher(), new ChatVfsVersionService(store))
     const failed = runtime.executeBatch({
       calls: [
@@ -64,6 +66,6 @@ describe('tool-dispatcher + runtime', () => {
       ],
     })
     expect(failed.ok).toBe(false)
-    expect(store.getState().chat.chatVfsSnapshot).toBeNull()
+    expect(JSON.stringify(store.getState().chat.chatVfsSnapshot)).toBe(before)
   })
 })

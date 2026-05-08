@@ -24,6 +24,8 @@ declare global {
                 removeListener: (event: string, handler: (...args: unknown[]) => void) => void;
             };
             event_types: EventTypes;
+            registerMacro: (name: string, handler: (nonce: string) => string | unknown) => void;
+            unregisterMacro: (name: string) => void;
         };
     };
 

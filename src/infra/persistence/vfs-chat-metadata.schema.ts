@@ -1,5 +1,11 @@
 import type { VfsSnapshot } from '@/domain/vfs/types'
-import { parseVfsSnapshot, serializeVfsSnapshot } from '@/infra/persistence/vfs-snapshot.schema'
+import {
+  createEmptyVfsSnapshot,
+  parseVfsSnapshot,
+  serializeVfsSnapshot,
+} from '@/infra/persistence/vfs-snapshot.schema'
+import type { WorkTreeConfig } from '@/domain/work-tree/work-tree.types'
+import { parseWorkTreeConfig, serializeWorkTreeConfig } from '@/domain/work-tree/work-tree.types'
 
 /**
  * Chat-level persistence schema for the VFS extension.
@@ -14,6 +20,11 @@ import { parseVfsSnapshot, serializeVfsSnapshot } from '@/infra/persistence/vfs-
  *
  * The parser functions are defensive: unknown or malformed shapes fall back to safe defaults so a
  * corrupted persistence record does not break runtime behavior.
+ *
+ * ## Snapshot invariant
+ * After normalization, `chatVfsSnapshot` is always a valid `VfsSnapshot` (at minimum an empty tree).
+ * Persisted `null`/parse failures are coerced to `createEmptyVfsSnapshot()` so macros and runtime do
+ * not branch on a long-lived missing tree.
  */
 export type VfsLogStatus = 'success' | 'failed' | 'timeout' | 'skipped'
 
@@ -63,12 +74,12 @@ export interface ChatVfsVersionEntry {
 export interface VfsChatMetadata {
   mounted: boolean
   /**
-   * The persisted chat VFS snapshot.
+   * The persisted chat VFS snapshot (always non-null after parse; minimum empty root tree).
    *
    * Runtime services treat this as the durable state. Tool execution uses a working copy and only
    * writes back a new snapshot on successful completion of a full batch (persist-on-success).
    */
-  chatVfsSnapshot: VfsSnapshot | null
+  chatVfsSnapshot: VfsSnapshot
   /** Chat-scoped diagnostic logs (subject to byte-based trimming). */
   chatVfsLogs: ChatVfsLogEntry[]
   /** Append-only commit metadata list (tool/manual/system sources). */
@@ -81,27 +92,29 @@ export interface VfsChatMetadata {
    * is set to true to make the operation idempotent per chat.
    */
   templateInitialized: boolean
+  /** When null, `{{VIRTUAL_WORK_TREE}}` renders an empty string. */
+  workTree: WorkTreeConfig | null
 }
 
 /** Default chat metadata used when missing/invalid data is encountered. */
 const DEFAULT_CHAT_METADATA: VfsChatMetadata = {
   mounted: false,
-  chatVfsSnapshot: null,
+  chatVfsSnapshot: createEmptyVfsSnapshot(),
   chatVfsLogs: [],
   chatVfsVersions: [],
   templateInitialized: false,
+  workTree: null,
 }
 
 /**
  * Parse a raw `chatMetadata[name]` record into a normalized `VfsChatMetadata` object.
  *
  * - Missing or invalid fields fall back to defaults.
- * - Snapshot parsing failures degrade to `null` (rather than throwing), preventing bad persistence
- *   data from poisoning runtime state.
+ * - Snapshot parsing failures degrade to an **empty** snapshot (not null).
  */
 export function parseVfsChatMetadata(raw: unknown): VfsChatMetadata {
   if (!raw || typeof raw !== 'object') {
-    return { ...DEFAULT_CHAT_METADATA }
+    return { ...DEFAULT_CHAT_METADATA, chatVfsSnapshot: createEmptyVfsSnapshot() }
   }
 
   const input = raw as {
@@ -110,15 +123,15 @@ export function parseVfsChatMetadata(raw: unknown): VfsChatMetadata {
     chatVfsLogs?: unknown
     chatVfsVersions?: unknown
     templateInitialized?: unknown
+    workTree?: unknown
   }
 
-  // 快照解析失败时回退 null，避免脏结构污染运行时。
-  let chatVfsSnapshot: VfsSnapshot | null = null
+  let chatVfsSnapshot = createEmptyVfsSnapshot()
   if (input.chatVfsSnapshot && typeof input.chatVfsSnapshot === 'object') {
     try {
       chatVfsSnapshot = parseVfsSnapshot(input.chatVfsSnapshot as VfsSnapshot)
     } catch {
-      chatVfsSnapshot = null
+      chatVfsSnapshot = createEmptyVfsSnapshot()
     }
   }
 
@@ -126,6 +139,8 @@ export function parseVfsChatMetadata(raw: unknown): VfsChatMetadata {
   const chatVfsVersions = Array.isArray(input.chatVfsVersions)
     ? (input.chatVfsVersions as ChatVfsVersionEntry[]).filter(Boolean)
     : []
+
+  const workTree = parseWorkTreeConfig(input.workTree)
 
   return {
     mounted: typeof input.mounted === 'boolean' ? input.mounted : DEFAULT_CHAT_METADATA.mounted,
@@ -136,6 +151,7 @@ export function parseVfsChatMetadata(raw: unknown): VfsChatMetadata {
       typeof input.templateInitialized === 'boolean'
         ? input.templateInitialized
         : DEFAULT_CHAT_METADATA.templateInitialized,
+    workTree,
   }
 }
 
@@ -148,9 +164,10 @@ export function parseVfsChatMetadata(raw: unknown): VfsChatMetadata {
 export function serializeVfsChatMetadata(state: VfsChatMetadata): Record<string, unknown> {
   return {
     mounted: Boolean(state.mounted),
-    chatVfsSnapshot: state.chatVfsSnapshot ? serializeVfsSnapshot(state.chatVfsSnapshot) : null,
+    chatVfsSnapshot: serializeVfsSnapshot(state.chatVfsSnapshot),
     chatVfsLogs: [...state.chatVfsLogs],
     chatVfsVersions: [...state.chatVfsVersions],
     templateInitialized: Boolean(state.templateInitialized),
+    workTree: state.workTree ? serializeWorkTreeConfig(state.workTree) : null,
   }
 }
