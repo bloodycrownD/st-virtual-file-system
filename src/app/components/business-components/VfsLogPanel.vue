@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, watch, ref } from 'vue'
+import { computed, onMounted, watch, ref } from 'vue'
 import { VFS_ERROR_CODES } from '@/app/constants/vfsErrorCodes'
 import { createVfsServerLogPagination } from '@/app/composables/components-composables/useVfsLogPagination'
 import { fetchLogs } from '@/app/services/vfs/logService'
@@ -60,6 +60,14 @@ async function refreshLogs(page = currentPage.value): Promise<void> {
 function requestManualRefresh(): void {
   void refreshLogs(currentPage.value)
 }
+
+onMounted(() => {
+  // WHY: logs are manual by default; however, an already-issued auto-refresh request (from
+  // message events while the tab was inactive) must not be lost on initial mount.
+  if (props.refreshToken > 0) {
+    void refreshLogs(currentPage.value)
+  }
+})
 
 watch(
   () => props.refreshToken,

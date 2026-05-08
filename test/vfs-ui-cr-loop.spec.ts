@@ -481,4 +481,35 @@ describe('vfs ui cr loop fixes', () => {
 
     expect(fetchLogsMock).toHaveBeenCalledTimes(1)
   })
+
+  it('does not lose auto log refresh when message event fires while Tab3 is not active', async () => {
+    const wrapper = mountTracked(VfsMainScreen)
+
+    // Fire auto-refresh while still on Tab1 (files).
+    window.dispatchEvent(new CustomEvent(VFS_LOG_REFRESH_AUTO))
+    await Promise.resolve()
+    await wrapper.vm.$nextTick()
+    expect(fetchLogsMock).toHaveBeenCalledTimes(0)
+
+    // Opening Tab3 should consume the pending refresh exactly once.
+    await wrapper.get('.vfs-tabs button:nth-of-type(3)').trigger('click')
+    await Promise.resolve()
+    await wrapper.vm.$nextTick()
+    expect(fetchLogsMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('coalesces multiple inactive-tab auto refresh events into a single pending refresh', async () => {
+    const wrapper = mountTracked(VfsMainScreen)
+
+    window.dispatchEvent(new CustomEvent(VFS_LOG_REFRESH_AUTO))
+    window.dispatchEvent(new CustomEvent(VFS_LOG_REFRESH_AUTO))
+    await Promise.resolve()
+    await wrapper.vm.$nextTick()
+    expect(fetchLogsMock).toHaveBeenCalledTimes(0)
+
+    await wrapper.get('.vfs-tabs button:nth-of-type(3)').trigger('click')
+    await Promise.resolve()
+    await wrapper.vm.$nextTick()
+    expect(fetchLogsMock).toHaveBeenCalledTimes(1)
+  })
 })

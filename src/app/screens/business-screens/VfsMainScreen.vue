@@ -60,6 +60,7 @@ const editorHistoryRecords = computed<VfsCommitHistoryRecord[]>(() => history.re
 const chatSnapshot = computed(() => vfsPersistenceStore.getState().chat.chatVfsSnapshot)
 
 const logRefreshToken = ref(0)
+const logAutoRefreshPending = ref(false)
 let disposeMessageHooks: (() => void) | null = null
 
 const updateLayout = () => {
@@ -234,12 +235,21 @@ function handlePopupBeforeClose(event: Event): void {
 }
 
 function onLogRefreshAutoRequested(): void {
-  // WHY: message events should trigger one refresh immediately, not deferred by active tab.
-  logRefreshToken.value += 1
+  // WHY: logs are manual by default, but message events must not "lose" a refresh request
+  // when Tab3 isn't active. We coalesce to a single pending refresh until the logs tab is opened.
+  if (activeTab.value === 'logs') {
+    logRefreshToken.value += 1
+    return
+  }
+  logAutoRefreshPending.value = true
 }
 
 function handleTabChanged(nextTab: 'files' | 'history' | 'logs'): void {
   activeTab.value = nextTab
+  if (nextTab === 'logs' && logAutoRefreshPending.value) {
+    logAutoRefreshPending.value = false
+    logRefreshToken.value += 1
+  }
 }
 
 onMounted(() => {
