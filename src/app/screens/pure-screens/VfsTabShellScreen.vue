@@ -3,6 +3,15 @@ import { ref } from 'vue'
 
 const tabs = ['files', 'history', 'logs'] as const
 const activeTab = ref<(typeof tabs)[number]>('files')
+const props = defineProps<{
+  beforeTabChange?: (nextTab: (typeof tabs)[number]) => boolean
+}>()
+
+function trySwitchTab(nextTab: (typeof tabs)[number]): void {
+  if (nextTab === activeTab.value) return
+  if (props.beforeTabChange && !props.beforeTabChange(nextTab)) return
+  activeTab.value = nextTab
+}
 </script>
 
 <template>
@@ -13,7 +22,7 @@ const activeTab = ref<(typeof tabs)[number]>('files')
         :key="tab"
         type="button"
         :class="{ active: activeTab === tab }"
-        @click="activeTab = tab"
+        @click="trySwitchTab(tab)"
       >
         {{ tab }}
       </button>

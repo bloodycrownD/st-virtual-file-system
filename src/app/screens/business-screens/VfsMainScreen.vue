@@ -23,6 +23,7 @@ import { useVfsRollbackAction } from '@/app/composables/components-composables/u
 
 const mode = ref<'list' | 'reader' | 'editor' | 'slideshow'>('list')
 const editorContent = ref('')
+const savedContent = ref('')
 const isDirty = ref(false)
 const viewRefreshToken = ref(0)
 const activeDirectory = ref('docs')
@@ -71,14 +72,23 @@ onUnmounted(() => {
   window.removeEventListener('resize', updateLayout)
 })
 
-function tryLeaveEditor(nextMode: 'list' | 'reader' | 'slideshow'): void {
-  if (mode.value !== 'editor' || !isDirty.value) {
+function discardEditorDraft(): void {
+  editorContent.value = savedContent.value
+  isDirty.value = false
+}
+
+function requestModeChange(nextMode: 'list' | 'reader' | 'editor' | 'slideshow'): void {
+  if (mode.value === nextMode) return
+  if (nextMode === 'editor' && mode.value !== 'editor') {
+    savedContent.value = editorContent.value
+  }
+  if (mode.value !== 'editor' || nextMode === 'editor' || !isDirty.value) {
     mode.value = nextMode
     return
   }
   // WHY: force-exit intentionally discards draft per product rule.
   if (window.confirm('Unsaved changes will be discarded. Continue?')) {
-    isDirty.value = false
+    discardEditorDraft()
     mode.value = nextMode
   }
 }
@@ -87,17 +97,24 @@ function handleEntityAction(action: VfsEntityAction): void {
   if (!isActionTriggerable(selectedEntity.value, action)) return
   switch (action) {
     case 'view':
-      mode.value = 'reader'
+      requestModeChange('reader')
       break
     case 'edit':
-      mode.value = 'editor'
+      requestModeChange('editor')
       break
     case 'open-slideshow':
-      mode.value = 'slideshow'
+      requestModeChange('slideshow')
       break
     default:
-      mode.value = 'list'
+      requestModeChange('list')
   }
+}
+
+function guardTabChange(nextTab: 'files' | 'history' | 'logs'): boolean {
+  if (nextTab === 'files' || mode.value !== 'editor' || !isDirty.value) return true
+  if (!window.confirm('Unsaved changes will be discarded. Continue?')) return false
+  discardEditorDraft()
+  return true
 }
 
 async function handleEditorManualRollback(payload: { sourceVersionId: string }): Promise<void> {
@@ -105,12 +122,13 @@ async function handleEditorManualRollback(payload: { sourceVersionId: string }):
   if (!ok) return
   // WHY: rollback success is a new commit entry; failures must preserve the current editor draft.
   appendHistory('rollback', selectedEntity.value?.path ?? '/', payload.sourceVersionId)
+  savedContent.value = editorContent.value
   isDirty.value = false
 }
 </script>
 
 <template>
-  <VfsTabShellScreen v-slot="{ activeTab }">
+  <VfsTabShellScreen :before-tab-change="guardTabChange" v-slot="{ activeTab }">
     <div v-if="activeTab === 'files'" data-testid="vfs-main-layout" :data-layout="layoutMode" :class="`layout-${layoutMode}`">
       <VfsFileManagerPanel :key="`fm-${viewRefreshToken}`" :mode="mode">
         <select v-model="selectedEntityId">
@@ -123,10 +141,10 @@ async function handleEditorManualRollback(payload: { sourceVersionId: string }):
           <option value="docs">docs</option>
           <option value="notes">notes</option>
         </select>
-        <button type="button" @click="mode = 'reader'">Open Reader</button>
-        <button type="button" @click="mode = 'editor'">Open Editor</button>
-        <button type="button" @click="mode = 'slideshow'">Open Slideshow</button>
-        <button type="button" @click="tryLeaveEditor('list')">Back to List</button>
+        <button type="button" @click="requestModeChange('reader')">Open Reader</button>
+        <button type="button" @click="requestModeChange('editor')">Open Editor</button>
+        <button type="button" @click="requestModeChange('slideshow')">Open Slideshow</button>
+        <button type="button" @click="requestModeChange('list')">Back to List</button>
       </VfsFileManagerPanel>
       <ReaderScreen v-if="mode === 'reader'" :key="`reader-${viewRefreshToken}`" :html="readerHtml" />
       <EditorScreen

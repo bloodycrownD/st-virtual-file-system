@@ -9,6 +9,16 @@ import { createVfsCommitHistoryStore } from '@/app/composables/components-compos
 
 const dispatchSpy = vi.fn()
 
+function getButtonByText(wrapper: ReturnType<typeof mount>, label: string) {
+  const button = wrapper
+    .findAll('button')
+    .find((candidate) => candidate.text().trim().toLowerCase() === label.toLowerCase())
+  if (!button) {
+    throw new Error(`button "${label}" not found`)
+  }
+  return button
+}
+
 vi.mock('@/app/composables/screens-composables/useVfsHistoryStateMachine', () => ({
   createVfsHistoryStateMachine: () => ({
     state: { status: 'idle' },
@@ -107,5 +117,45 @@ describe('vfs ui cr loop fixes', () => {
     await wrapper.vm.$nextTick()
 
     expect(wrapper.get('[data-testid="vfs-main-layout"]').attributes('data-layout')).toBe('desktop')
+  })
+
+  it('prompts before direct mode switch and keeps editor when cancelled', async () => {
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false)
+    const wrapper = mount(VfsMainScreen)
+
+    await getButtonByText(wrapper, 'Open Editor').trigger('click')
+    await wrapper.get('textarea.vfs-editor').setValue('unsaved draft')
+    await getButtonByText(wrapper, 'Open Reader').trigger('click')
+
+    expect(confirmSpy).toHaveBeenCalled()
+    expect(wrapper.find('textarea.vfs-editor').exists()).toBe(true)
+  })
+
+  it('prompts before action-driven mode switch and discards draft on force leave', async () => {
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true)
+    const wrapper = mount(VfsMainScreen)
+
+    await getButtonByText(wrapper, 'Open Editor').trigger('click')
+    await wrapper.get('textarea.vfs-editor').setValue('discard me')
+    await wrapper.get('[data-action="view"]').trigger('click')
+
+    expect(confirmSpy).toHaveBeenCalled()
+    expect(wrapper.find('textarea.vfs-editor').exists()).toBe(false)
+
+    await getButtonByText(wrapper, 'Open Editor').trigger('click')
+    expect((wrapper.get('textarea.vfs-editor').element as HTMLTextAreaElement).value).toBe('')
+  })
+
+  it('prompts before tab switch and stays on files when cancelled', async () => {
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false)
+    const wrapper = mount(VfsMainScreen)
+
+    await getButtonByText(wrapper, 'Open Editor').trigger('click')
+    await wrapper.get('textarea.vfs-editor').setValue('dirty content')
+    await wrapper.get('.vfs-tabs button:nth-of-type(2)').trigger('click')
+
+    expect(confirmSpy).toHaveBeenCalled()
+    expect(wrapper.find('textarea.vfs-editor').exists()).toBe(true)
+    expect(wrapper.get('[data-testid="vfs-main-layout"]').exists()).toBe(true)
   })
 })
