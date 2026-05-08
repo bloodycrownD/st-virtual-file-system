@@ -9,10 +9,9 @@ export function emitVfsEvent(eventName: string): void {
   window.dispatchEvent(new CustomEvent(eventName))
 }
 
-export function useVfsMessageHooks(onAutoRefresh: () => void): () => void {
+export function useVfsMessageHooks(): () => void {
   const handler = () => {
-    // WHY: single callback consolidates MESSAGE_RECEIVED and MESSAGE_EDITED into one auto-refresh path.
-    onAutoRefresh()
+    // WHY: messages should trigger exactly one refresh path; the UI listens to the VFS_LOG_REFRESH_AUTO event.
     emitVfsEvent(VFS_LOG_REFRESH_AUTO)
   }
 

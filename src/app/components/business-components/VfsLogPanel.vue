@@ -47,7 +47,6 @@ async function refreshLogs(page = currentPage.value): Promise<void> {
 
 function requestManualRefresh(): void {
   emitVfsEvent(VFS_LOG_REFRESH_REQUESTED)
-  void refreshLogs(currentPage.value)
 }
 
 const autoRefreshHandler = () => {
@@ -58,7 +57,7 @@ let disposeMessageHooks: (() => void) | null = null
 
 onMounted(() => {
   void refreshLogs(1)
-  disposeMessageHooks = useVfsMessageHooks(autoRefreshHandler)
+  disposeMessageHooks = useVfsMessageHooks()
   window.addEventListener(VFS_LOG_REFRESH_AUTO, autoRefreshHandler)
   window.addEventListener(VFS_LOG_REFRESH_REQUESTED, autoRefreshHandler)
 })

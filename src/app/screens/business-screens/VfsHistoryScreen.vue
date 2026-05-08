@@ -18,7 +18,12 @@ const statusLabel = computed(() => machine.state.status)
 const orderedTimeline = computed(() => timeline.value)
 const orderedCommitRecords = computed(() => history.records.value)
 
-function markTimeline(actionType: VfsCommitActionType, scope: string, sourceVersionId?: string): void {
+function markTimeline(
+  actionType: VfsCommitActionType,
+  scope: string,
+  sourceVersionId?: string,
+  options?: { recordCommit?: boolean },
+): void {
   const record: VfsCommitHistoryRecord = {
     time: new Date().toISOString(),
     operator: 'assistant',
@@ -27,7 +32,9 @@ function markTimeline(actionType: VfsCommitActionType, scope: string, sourceVers
     sourceVersionId,
   }
   timeline.value = [record, ...timeline.value].slice(0, 20)
-  history.appendRecord(record)
+  if (options?.recordCommit) {
+    history.appendRecord(record)
+  }
 }
 
 function onRollbackStatus(payload: {
@@ -37,22 +44,24 @@ function onRollbackStatus(payload: {
 }): void {
   if (payload.status === 'rollingBack') {
     machine.dispatch({ type: 'ROLLBACK_REQUEST' })
-    markTimeline('rollback', 'history/single', payload.sourceVersionId)
+    markTimeline('rollback', 'history/single-requested', payload.sourceVersionId)
     return
   }
   if (payload.status === 'batchRollingBack') {
     machine.dispatch({ type: 'BATCH_ROLLBACK_REQUEST' })
-    markTimeline('batch-rollback', 'history/batch', payload.sourceVersionId)
+    markTimeline('batch-rollback', 'history/batch-requested', payload.sourceVersionId)
     return
   }
   if (payload.status === 'succeeded') {
     if (payload.kind === 'batch') {
       machine.dispatch({ type: 'BATCH_ROLLBACK_SUCCESS' })
-      markTimeline('trace-rollback', 'history/batch', payload.sourceVersionId)
+      // WHY: rollback success is recorded as a new commit; request/failure are timeline-only.
+      markTimeline('batch-rollback', 'history/batch-succeeded', payload.sourceVersionId, { recordCommit: true })
       return
     }
     machine.dispatch({ type: 'ROLLBACK_SUCCESS' })
-    markTimeline('trace-rollback', 'history/single', payload.sourceVersionId)
+    // WHY: rollback success is recorded as a new commit; request/failure are timeline-only.
+    markTimeline('rollback', 'history/single-succeeded', payload.sourceVersionId, { recordCommit: true })
     return
   }
   if (payload.kind === 'batch') {

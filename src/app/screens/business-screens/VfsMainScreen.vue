@@ -19,6 +19,7 @@ import EditorScreen from '@/app/screens/pure-screens/EditorScreen.vue'
 import ReaderScreen from '@/app/screens/pure-screens/ReaderScreen.vue'
 import SlideshowScreen from '@/app/screens/pure-screens/SlideshowScreen.vue'
 import VfsTabShellScreen from '@/app/screens/pure-screens/VfsTabShellScreen.vue'
+import { useVfsRollbackAction } from '@/app/composables/components-composables/useVfsRollbackActions'
 
 const mode = ref<'list' | 'reader' | 'editor' | 'slideshow'>('list')
 const editorContent = ref('')
@@ -97,13 +98,14 @@ function handleEntityAction(action: VfsEntityAction): void {
     default:
       mode.value = 'list'
   }
-  appendHistory('save', selectedEntity.value?.path ?? '/', selectedEntity.value?.id)
 }
 
-function handleEditorManualRollback(payload: { sourceVersionId: string }): void {
-  // WHY: source-version trace commit keeps rollback provenance auditable across tabs.
-  appendHistory('trace-rollback', selectedEntity.value?.path ?? '/', payload.sourceVersionId)
-  refreshAllViews()
+async function handleEditorManualRollback(payload: { sourceVersionId: string }): Promise<void> {
+  const ok = await useVfsRollbackAction(payload.sourceVersionId)
+  if (!ok) return
+  // WHY: rollback success is a new commit entry; failures must preserve the current editor draft.
+  appendHistory('rollback', selectedEntity.value?.path ?? '/', payload.sourceVersionId)
+  isDirty.value = false
 }
 </script>
 
