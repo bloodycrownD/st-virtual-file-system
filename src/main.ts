@@ -33,6 +33,8 @@ import { ChatVfsRuntime } from '@/app/services/vfs-runtime/chat-vfs-runtime'
 import { ExtensionVfsTemplateService } from '@/app/services/vfs-runtime/extension-vfs-template-service'
 import { VirtualToolMessageHandler } from '@/app/services/message/virtual-tool-message-handler'
 import { registerVfsMacros } from '@/infra/sillytarvern/macros/register-vfs-macros'
+import { mountVfsEntryButton } from '@/app/bootstrap/mountVfsEntry'
+import { unmountVfsEntry } from '@/app/bootstrap/unmountVfsEntry'
 
 /** 包住整棵 Vue 树的 DOM 节点，便于在 DevTools / 测试中定位 */
 const container = document.createElement('div')
@@ -61,3 +63,10 @@ const logs = new ChatVfsLogService(vfsPersistenceStore)
 const messageHandler = new VirtualToolMessageHandler(runtime, logs)
 const controller = createMessageController(createMessagePipeline(messageHandler))
 createStMessageEventAdapter(controller).start()
+mountVfsEntryButton()
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('beforeunload', () => {
+    unmountVfsEntry()
+  })
+}
