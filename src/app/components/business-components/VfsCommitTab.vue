@@ -14,8 +14,22 @@ const emits = defineEmits<{
 }>()
 
 const orderedCommits = computed(() =>
-  [...props.commits].sort((left, right) => right.timestamp - left.timestamp),
+  [...props.commits].sort((left, right) => {
+    const leftTime = left.time ? Date.parse(left.time) : (left.timestamp ?? 0)
+    const rightTime = right.time ? Date.parse(right.time) : (right.timestamp ?? 0)
+    return rightTime - leftTime
+  }),
 )
+
+function displaySummary(item: ChatVfsVersionEntry): string {
+  return item.summary ?? `${item.actionType} · ${item.scope}`
+}
+
+function displaySubline(item: ChatVfsVersionEntry): string {
+  const timeText = item.time ? new Date(item.time).toLocaleString() : new Date(item.timestamp ?? 0).toLocaleString()
+  const actor = item.operator || item.source || 'system'
+  return `${timeText} · ${actor} · ${item.actionType} · ${item.scope}`
+}
 
 function isSelected(id: string): boolean {
   return selectedIds.value.includes(id)
@@ -63,9 +77,9 @@ async function rollbackSelected(): Promise<void> {
             @change="toggleSelected(item.id)"
           />
           <span class="vfs-commit-meta">
-            <span class="vfs-commit-summary">{{ item.summary }}</span>
+            <span class="vfs-commit-summary">{{ displaySummary(item) }}</span>
             <span class="vfs-commit-sub">
-              {{ new Date(item.timestamp).toLocaleString() }} · {{ item.source }} · {{ item.id }}
+              {{ displaySubline(item) }} · {{ item.id }}
             </span>
           </span>
         </label>

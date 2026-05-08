@@ -30,6 +30,12 @@ export type VfsLogStatus = 'success' | 'failed' | 'timeout' | 'skipped'
 
 /** Commit origin classification used by version history. */
 export type VfsCommitSource = 'tool' | 'manual' | 'system'
+export type VfsCommitActionType = 'save' | 'rollback' | 'batch-rollback' | 'trace-rollback'
+
+export interface VfsSourceVersionRef {
+  id: string
+  reason: 'rollback-target' | 'batch-rollback-target' | 'trace-target'
+}
 
 /**
  * Structured log entry for a tool execution (or tool batch).
@@ -59,10 +65,20 @@ export interface ChatVfsLogEntry {
  */
 export interface ChatVfsVersionEntry {
   id: string
-  timestamp: number
-  source: VfsCommitSource
-  summary: string
-  changedFiles: string[]
+  /** Required by UI spec for timeline rendering. */
+  time: string
+  operator: string
+  actionType: VfsCommitActionType
+  scope: string
+  sourceVersion?: VfsSourceVersionRef
+  /**
+   * Backward-compatible fields for pre-schema records/UI branches.
+   * WHY: keep reads migration-safe while new writers move to spec fields.
+   */
+  timestamp?: number
+  source?: VfsCommitSource
+  summary?: string
+  changedFiles?: string[]
 }
 
 /**
@@ -136,8 +152,60 @@ export function parseVfsChatMetadata(raw: unknown): VfsChatMetadata {
   }
 
   const chatVfsLogs = Array.isArray(input.chatVfsLogs) ? (input.chatVfsLogs as ChatVfsLogEntry[]).filter(Boolean) : []
+  const toActionType = (value: unknown): VfsCommitActionType => {
+    if (value === 'save' || value === 'rollback' || value === 'batch-rollback' || value === 'trace-rollback') {
+      return value
+    }
+    return 'save'
+  }
+
+  const normalizeVersionEntry = (entry: unknown): ChatVfsVersionEntry | null => {
+    if (!entry || typeof entry !== 'object') return null
+    const rawEntry = entry as Record<string, unknown>
+    const timestamp =
+      typeof rawEntry.timestamp === 'number' && Number.isFinite(rawEntry.timestamp) ? rawEntry.timestamp : Date.now()
+    const time = typeof rawEntry.time === 'string' && rawEntry.time ? rawEntry.time : new Date(timestamp).toISOString()
+    const scopeFromLegacySummary = typeof rawEntry.summary === 'string' && rawEntry.summary ? rawEntry.summary : '*'
+    const actionType = toActionType(rawEntry.actionType)
+    const sourceVersionRaw =
+      rawEntry.sourceVersion && typeof rawEntry.sourceVersion === 'object'
+        ? (rawEntry.sourceVersion as Record<string, unknown>)
+        : null
+
+    const sourceVersion: VfsSourceVersionRef | undefined =
+      sourceVersionRaw && typeof sourceVersionRaw.id === 'string' && sourceVersionRaw.id
+        ? {
+            id: sourceVersionRaw.id,
+            reason:
+              sourceVersionRaw.reason === 'rollback-target' ||
+              sourceVersionRaw.reason === 'batch-rollback-target' ||
+              sourceVersionRaw.reason === 'trace-target'
+                ? sourceVersionRaw.reason
+                : ('rollback-target' as const),
+          }
+        : undefined
+
+    return {
+      id: typeof rawEntry.id === 'string' && rawEntry.id ? rawEntry.id : `commit-${timestamp}`,
+      time,
+      operator: typeof rawEntry.operator === 'string' && rawEntry.operator ? rawEntry.operator : 'system',
+      actionType,
+      scope: typeof rawEntry.scope === 'string' && rawEntry.scope ? rawEntry.scope : scopeFromLegacySummary,
+      sourceVersion,
+      timestamp,
+      source:
+        rawEntry.source === 'tool' || rawEntry.source === 'manual' || rawEntry.source === 'system'
+          ? rawEntry.source
+          : 'manual',
+      summary: typeof rawEntry.summary === 'string' ? rawEntry.summary : scopeFromLegacySummary,
+      changedFiles: Array.isArray(rawEntry.changedFiles)
+        ? (rawEntry.changedFiles.filter((item) => typeof item === 'string') as string[])
+        : [],
+    }
+  }
+
   const chatVfsVersions = Array.isArray(input.chatVfsVersions)
-    ? (input.chatVfsVersions as ChatVfsVersionEntry[]).filter(Boolean)
+    ? input.chatVfsVersions.map((entry) => normalizeVersionEntry(entry)).filter((entry): entry is ChatVfsVersionEntry => !!entry)
     : []
 
   const workTree = parseWorkTreeConfig(input.workTree)
