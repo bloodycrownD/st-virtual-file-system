@@ -511,7 +511,8 @@ async function handleEditorSaveRequested(): Promise<void> {
             v-else-if="mode === 'slideshow'"
             :directories="slideshowDirectoryOptions"
             :pages="slideshowPages"
-            :initial-directory-path="slideshowDirectoryPath"
+            :directory-path="slideshowDirectoryPath"
+            @directory-changed="slideshowDirectoryPath = $event"
           />
           <section v-else class="vfs-empty" data-testid="vfs-desktop-empty">Select an item then use More.</section>
         </main>
@@ -552,7 +553,8 @@ async function handleEditorSaveRequested(): Promise<void> {
             v-else
             :directories="slideshowDirectoryOptions"
             :pages="slideshowPages"
-            :initial-directory-path="slideshowDirectoryPath"
+            :directory-path="slideshowDirectoryPath"
+            @directory-changed="slideshowDirectoryPath = $event"
           />
         </section>
       </div>

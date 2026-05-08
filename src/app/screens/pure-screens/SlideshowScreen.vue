@@ -16,24 +16,26 @@ export interface SlideshowPage {
 const props = defineProps<{
   directories: SlideshowDirectoryOption[]
   pages: SlideshowPage[]
-  initialDirectoryPath: string
+  directoryPath: string
 }>()
 
-const currentDirectoryPath = ref(props.initialDirectoryPath)
+const emits = defineEmits<{
+  directoryChanged: [path: string]
+}>()
+
+const currentDirectoryPath = ref(props.directoryPath)
 const currentPageIndex = ref(0)
 const verticalMode = ref(false)
 
-watch(
-  () => props.initialDirectoryPath,
-  (next) => {
-    currentDirectoryPath.value = next
-    currentPageIndex.value = 0
-  },
-)
+watch(() => props.directoryPath, (next) => {
+  currentDirectoryPath.value = next
+  currentPageIndex.value = 0
+})
 
 watch(currentDirectoryPath, () => {
   // WHY: changing directory resets paging cursor to prevent index drift across different page counts.
   currentPageIndex.value = 0
+  emits('directoryChanged', currentDirectoryPath.value)
 })
 
 const availableDirectories = computed(() => props.directories)
