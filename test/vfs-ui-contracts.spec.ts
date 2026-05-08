@@ -1,10 +1,25 @@
-import { describe, expect, it } from 'vitest'
+import { mount } from '@vue/test-utils'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { VFS_ERROR_CODES } from '@/app/constants/vfsErrorCodes'
 import { toVfsErrorToast } from '@/app/utils/vfsErrorMapper'
 import { createVfsLogPagination } from '@/app/composables/components-composables/useVfsLogPagination'
 import { createVfsHistoryStateMachine } from '@/app/composables/screens-composables/useVfsHistoryStateMachine'
+import { useVfsRollbackAction } from '@/app/composables/components-composables/useVfsRollbackActions'
+import { useVfsPopupLifecycle } from '@/app/composables/screens-composables/useVfsPopupLifecycle'
+import ReaderScreen from '@/app/screens/pure-screens/ReaderScreen.vue'
+import SlideshowScreen from '@/app/screens/pure-screens/SlideshowScreen.vue'
+
+vi.mock('@/app/services/vfs/rollbackService', () => ({
+  rollbackCommit: vi.fn(async () => ({ ok: true })),
+  rollbackBatch: vi.fn(async () => ({ ok: true })),
+}))
 
 describe('vfs ui contracts', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    vi.restoreAllMocks()
+  })
+
   it('formats toastr error with prefixed code', () => {
     const message = toVfsErrorToast(VFS_ERROR_CODES.ROLLBACK_FAILED, 'Rollback failed')
     expect(message).toBe('[E_ROLLBACK_FAILED] Rollback failed')
@@ -39,5 +54,56 @@ describe('vfs ui contracts', () => {
     })
     expect(machine.state.status).toBe('failed')
     expect(machine.state.lastErrorCode).toBe(VFS_ERROR_CODES.ROLLBACK_FAILED)
+  })
+
+  it('sanitizes reader html through shared pipeline', async () => {
+    const wrapper = mount(ReaderScreen, {
+      props: { html: '<img src=x onerror=alert(1) /><script>alert(1)</script><p>safe</p>' },
+    })
+
+    const rendered = wrapper.find('.vfs-reader').html()
+    expect(rendered).toContain('<p>safe</p>')
+    expect(rendered).not.toContain('onerror=')
+    expect(rendered).not.toContain('<script')
+  })
+
+  it('emits state refresh event after rollback success', async () => {
+    const spy = vi.fn()
+    window.addEventListener('VFS_STATE_REFRESH_REQUIRED', spy)
+
+    const ok = await useVfsRollbackAction('commit-1')
+
+    expect(ok).toBe(true)
+    expect(spy).toHaveBeenCalledTimes(1)
+    window.removeEventListener('VFS_STATE_REFRESH_REQUIRED', spy)
+  })
+
+  it('supports slideshow directory switch and paging modes', async () => {
+    const wrapper = mount(SlideshowScreen, {
+      props: {
+        directories: [
+          { id: 'dir-a', name: 'A', pages: ['a-1', 'a-2'] },
+          { id: 'dir-b', name: 'B', pages: ['b-1'] },
+        ],
+      },
+    })
+
+    expect(wrapper.text()).toContain('a-1')
+    await wrapper.get('[data-testid="next-page"]').trigger('click')
+    expect(wrapper.text()).toContain('a-2')
+    await wrapper.get('[data-testid="directory-select"]').setValue('dir-b')
+    expect(wrapper.text()).toContain('b-1')
+    await wrapper.get('[data-testid="toggle-vertical"]').trigger('click')
+    expect(wrapper.get('.vfs-slideshow-screen').classes()).toContain('is-vertical')
+  })
+
+  it('mounts vfs vue app into popup shell', () => {
+    const popup = useVfsPopupLifecycle()
+    popup.open()
+
+    expect(document.querySelector('#st-vfs-popup')).toBeTruthy()
+    expect(document.querySelector('.vfs-tab-shell')).toBeTruthy()
+
+    popup.close()
   })
 })

@@ -3,9 +3,14 @@ import { ref } from 'vue'
 import { useVfsRollbackAction } from '@/app/composables/components-composables/useVfsRollbackActions'
 
 const commitId = ref('')
+const emits = defineEmits<{
+  rollbackStatus: [status: 'rollingBack' | 'succeeded' | 'failed']
+}>()
 
 async function rollback(): Promise<void> {
-  await useVfsRollbackAction(commitId.value)
+  emits('rollbackStatus', 'rollingBack')
+  const ok = await useVfsRollbackAction(commitId.value)
+  emits('rollbackStatus', ok ? 'succeeded' : 'failed')
 }
 </script>
 
