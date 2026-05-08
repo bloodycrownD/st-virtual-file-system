@@ -2,7 +2,7 @@ import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { VFS_ERROR_CODES } from '@/app/constants/vfsErrorCodes'
 import { toVfsErrorToast } from '@/app/utils/vfsErrorMapper'
-import { createVfsLogPagination } from '@/app/composables/components-composables/useVfsLogPagination'
+import { createVfsLogPagination, createVfsServerLogPagination } from '@/app/composables/components-composables/useVfsLogPagination'
 import { createVfsHistoryStateMachine } from '@/app/composables/screens-composables/useVfsHistoryStateMachine'
 import { useVfsRollbackAction } from '@/app/composables/components-composables/useVfsRollbackActions'
 import { useVfsPopupLifecycle } from '@/app/composables/screens-composables/useVfsPopupLifecycle'
@@ -34,6 +34,14 @@ describe('vfs ui contracts', () => {
     pagination.goToPage(99)
     expect(pagination.currentPage).toBe(3)
     expect(pagination.currentItems.map((item) => item.id)).toEqual(Array.from({ length: 5 }).map((_, index) => index + 41))
+  })
+
+  it('computes total pages from global totalItems (server-driven)', () => {
+    const pagination = createVfsServerLogPagination({ currentPage: 1, totalItems: 45, pageSize: 20 })
+    expect(pagination.totalPages).toBe(3)
+
+    pagination.goToPage(99)
+    expect(pagination.currentPage).toBe(3)
   })
 
   it('tracks history state transitions for save and rollback', () => {

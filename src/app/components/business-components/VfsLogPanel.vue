@@ -7,7 +7,7 @@ import {
   VFS_LOG_REFRESH_AUTO,
   VFS_LOG_REFRESH_REQUESTED,
 } from '@/app/composables/components-composables/useVfsMessageHooks'
-import { createVfsLogPagination } from '@/app/composables/components-composables/useVfsLogPagination'
+import { createVfsServerLogPagination } from '@/app/composables/components-composables/useVfsLogPagination'
 import { fetchLogs } from '@/app/services/vfs/logService'
 import { toVfsErrorToast } from '@/app/utils/vfsErrorMapper'
 
@@ -21,21 +21,34 @@ const isLoading = ref(false)
 const status = ref<'idle' | 'refreshing' | 'succeeded' | 'failed'>('idle')
 const currentPage = ref(1)
 const totalItems = ref(0)
+const pageSize = 20
 
 const pagination = computed(() => {
-  const state = createVfsLogPagination(logs.value)
-  state.goToPage(currentPage.value)
-  return state
+  return createVfsServerLogPagination({
+    currentPage: currentPage.value,
+    totalItems: totalItems.value,
+    pageSize,
+  })
 })
 
 async function refreshLogs(page = currentPage.value): Promise<void> {
   isLoading.value = true
   status.value = 'refreshing'
   try {
-    const result = await fetchLogs({ page, pageSize: 20 })
+    const result = await fetchLogs({ page, pageSize })
     logs.value = result.items as LogItem[]
     totalItems.value = result.total
-    currentPage.value = page
+
+    const totalPages = Math.max(1, Math.ceil(Math.max(result.total, 0) / pageSize))
+    const clampedPage = Math.min(Math.max(page, 1), totalPages)
+    if (clampedPage !== page && result.total > 0) {
+      const retry = await fetchLogs({ page: clampedPage, pageSize })
+      logs.value = retry.items as LogItem[]
+      totalItems.value = retry.total
+      currentPage.value = clampedPage
+    } else {
+      currentPage.value = clampedPage
+    }
     status.value = 'succeeded'
   } catch {
     status.value = 'failed'
@@ -77,7 +90,7 @@ onUnmounted(() => {
       <span>Page {{ pagination.currentPage }} / {{ pagination.totalPages }}</span>
     </header>
     <ul>
-      <li v-for="item in pagination.currentItems" :key="item.id">{{ item.message }}</li>
+      <li v-for="item in logs" :key="item.id">{{ item.message }}</li>
     </ul>
     <footer>
       <button type="button" :disabled="pagination.currentPage <= 1" @click="refreshLogs(pagination.currentPage - 1)">Prev</button>

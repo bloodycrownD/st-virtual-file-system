@@ -34,3 +34,49 @@ export function createVfsLogPagination<T>(items: T[]): VfsLogPaginationState<T> 
 
   return api
 }
+
+export interface VfsServerPaginationInput {
+  currentPage: number
+  totalItems: number
+  pageSize?: number
+}
+
+export interface VfsServerPaginationState {
+  pageSize: number
+  currentPage: number
+  totalItems: number
+  totalPages: number
+  goToPage: (page: number) => void
+}
+
+/**
+ * Server-driven pagination model.
+ *
+ * Use when `items` is already a server-sliced page and `totalItems` represents
+ * the global collection size (so we must not re-slice locally).
+ */
+export function createVfsServerLogPagination({
+  currentPage: initialPage,
+  totalItems,
+  pageSize = PAGE_SIZE,
+}: VfsServerPaginationInput): VfsServerPaginationState {
+  let currentPage = initialPage
+  const getTotalPages = (): number => Math.max(1, Math.ceil(Math.max(totalItems, 0) / pageSize))
+  const clampPage = (page: number): number => Math.min(Math.max(page, 1), getTotalPages())
+
+  return {
+    pageSize,
+    get currentPage() {
+      return currentPage
+    },
+    get totalItems() {
+      return totalItems
+    },
+    get totalPages() {
+      return getTotalPages()
+    },
+    goToPage(page: number) {
+      currentPage = clampPage(page)
+    },
+  }
+}
