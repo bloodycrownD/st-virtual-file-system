@@ -1,5 +1,6 @@
 import { VFS_ERROR_CODES } from '@/app/constants/vfsErrorCodes'
 import { vfsPersistenceStore } from '@/app/stores/vfs-store-singleton'
+import { serializeVfsSnapshot } from '@/infra/persistence/vfs-snapshot.schema'
 import type { ChatVfsVersionEntry } from '@/infra/persistence/vfs-chat-metadata.schema'
 
 export interface VfsActionResult {
@@ -18,12 +19,14 @@ export async function saveCommit(payload: SaveCommitPayload): Promise<VfsActionR
   }
 
   const time = new Date().toISOString()
+  const currentSnapshot = serializeVfsSnapshot(vfsPersistenceStore.getState().chat.chatVfsSnapshot)
   const entry: ChatVfsVersionEntry = {
     id: `commit-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
     time,
     operator: 'assistant',
     actionType: 'save',
     scope: payload.summary.trim(),
+    snapshot: currentSnapshot,
     // WHY: preserve legacy fields until all readers consume the spec-native schema only.
     timestamp: Date.parse(time),
     source: 'manual',

@@ -12,15 +12,20 @@ export interface VfsCommitHistoryRecord {
 
 export function createVfsCommitHistoryStore() {
   const recordsRef = ref<VfsCommitHistoryRecord[]>([])
+  const byDescTime = (left: VfsCommitHistoryRecord, right: VfsCommitHistoryRecord) =>
+    new Date(right.time).getTime() - new Date(left.time).getTime()
 
   const appendRecord = (record: VfsCommitHistoryRecord): void => {
-    recordsRef.value = [...recordsRef.value, record].sort(
-      (left, right) => new Date(right.time).getTime() - new Date(left.time).getTime(),
-    )
+    recordsRef.value = [...recordsRef.value, record].sort(byDescTime)
+  }
+
+  const replaceRecords = (records: VfsCommitHistoryRecord[]): void => {
+    recordsRef.value = [...records].sort(byDescTime)
   }
 
   return {
     records: computed(() => recordsRef.value),
     appendRecord,
+    replaceRecords,
   }
 }

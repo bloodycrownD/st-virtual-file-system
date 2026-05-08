@@ -28,6 +28,8 @@ import { createVfsHistoryStateMachine } from '@/app/composables/screens-composab
 import { useVfsRollbackAction } from '@/app/composables/components-composables/useVfsRollbackActions'
 import { VFS_ERROR_CODES } from '@/app/constants/vfsErrorCodes'
 import { VFS_POPUP_BEFORE_CLOSE } from '@/app/composables/components-composables/useVfsMessageHooks'
+import { vfsPersistenceStore } from '@/app/stores/vfs-store-singleton'
+import type { VfsSnapshot } from '@/domain/vfs/types'
 
 const mode = ref<'list' | 'reader' | 'editor' | 'slideshow'>('list')
 const editorContent = ref('')
@@ -44,7 +46,8 @@ const entityList = ref<VfsManagerEntity[]>([
 const selectedEntityId = ref('docs-file')
 const history = createVfsCommitHistoryStore()
 const historyMachine = createVfsHistoryStateMachine()
-const writeScopesInProgress = ref(new Set<string>())
+const saveRequestsInFlight = ref(0)
+const rollbackRequestsInFlight = ref(0)
 const saveInProgress = ref(false)
 const rollbackInProgress = ref(false)
 const slideshowDirectories = ref([
@@ -57,15 +60,59 @@ const selectedEntity = computed(() => entityList.value.find((item) => item.id ==
 const editorHistoryRecords = computed<VfsCommitHistoryRecord[]>(() => history.records.value)
 
 const logRefreshToken = ref(0)
-const pendingAutoLogRefresh = ref(false)
 let disposeMessageHooks: (() => void) | null = null
 
 const updateLayout = () => {
   layoutMode.value = window.innerWidth >= 1024 ? 'desktop' : 'mobile'
 }
 
+function toEntityList(snapshot: VfsSnapshot): VfsManagerEntity[] {
+  return Object.values(snapshot.nodes)
+    .filter((node) => node.type === 'file' || node.type === 'directory')
+    .filter((node) => node.path !== '/')
+    .map((node) => ({
+      id: node.id,
+      name: node.name,
+      kind: node.type === 'file' ? 'file' : 'directory',
+      path: node.path,
+    }))
+}
+
+function readFileContentFromSnapshot(snapshot: VfsSnapshot, path: string): string {
+  const node = Object.values(snapshot.nodes).find((candidate) => candidate.type === 'file' && candidate.path === path)
+  if (!node || node.type !== 'file') return ''
+  return node.content.encoding === 'plain' ? node.content.data : ''
+}
+
+function refreshAuthoritativeState(): void {
+  const chatState = vfsPersistenceStore.getState().chat
+  const entities = toEntityList(chatState.chatVfsSnapshot)
+  if (entities.length > 0) {
+    entityList.value = entities
+    if (!entities.some((item) => item.id === selectedEntityId.value)) {
+      selectedEntityId.value = entities[0].id
+    }
+  }
+  history.replaceRecords(
+    chatState.chatVfsVersions.map((entry) => ({
+      time: entry.time,
+      operator: entry.operator,
+      actionType: entry.actionType,
+      scope: entry.scope,
+      sourceVersionId: entry.sourceVersion?.id,
+    })),
+  )
+  const selectedPath = selectedEntity.value?.path
+  if (!selectedPath) return
+  const source = readFileContentFromSnapshot(chatState.chatVfsSnapshot, selectedPath)
+  editorContent.value = source
+  savedContent.value = source
+  isDirty.value = false
+}
+
 const refreshAllViews = () => {
-  // WHY: one monotonic token keeps file manager/reader/editor/history refresh in sync after rollback.
+  // WHY: keep all screens synced to persisted state after rollback/save side effects.
+  refreshAuthoritativeState()
   viewRefreshToken.value += 1
 }
 
@@ -80,20 +127,22 @@ function appendHistory(actionType: VfsCommitActionType, scope: string, sourceVer
 }
 
 function withWriteScopeGuard(scope: string, action: 'save' | 'rollback', task: () => Promise<void>): Promise<void> {
-  // WHY: saves and rollbacks both mutate the same file timeline; serialize by scope to avoid overlap races.
-  if (writeScopesInProgress.value.has(scope)) return Promise.resolve()
-  writeScopesInProgress.value.add(scope)
+  // WHY: do not short-circuit concurrent operations; execution result is authoritative per spec.
+  void scope
   if (action === 'save') {
-    saveInProgress.value = true
+    saveRequestsInFlight.value += 1
+    saveInProgress.value = saveRequestsInFlight.value > 0
   } else {
-    rollbackInProgress.value = true
+    rollbackRequestsInFlight.value += 1
+    rollbackInProgress.value = rollbackRequestsInFlight.value > 0
   }
   return task().finally(() => {
-    writeScopesInProgress.value.delete(scope)
     if (action === 'save') {
-      saveInProgress.value = false
+      saveRequestsInFlight.value = Math.max(0, saveRequestsInFlight.value - 1)
+      saveInProgress.value = saveRequestsInFlight.value > 0
     } else {
-      rollbackInProgress.value = false
+      rollbackRequestsInFlight.value = Math.max(0, rollbackRequestsInFlight.value - 1)
+      rollbackInProgress.value = rollbackRequestsInFlight.value > 0
     }
   })
 }
@@ -108,21 +157,12 @@ function handlePopupBeforeClose(event: Event): void {
 }
 
 function onLogRefreshAutoRequested(): void {
-  // WHY: log refresh is allowed to be triggered by message events even when Tab3 is not active.
-  // We defer the actual refresh until logs tab becomes active to avoid hidden background work.
-  if (activeTab.value === 'logs') {
-    logRefreshToken.value += 1
-    return
-  }
-  pendingAutoLogRefresh.value = true
+  // WHY: message events should trigger one refresh immediately, not deferred by active tab.
+  logRefreshToken.value += 1
 }
 
 function handleTabChanged(nextTab: 'files' | 'history' | 'logs'): void {
   activeTab.value = nextTab
-  if (nextTab === 'logs' && pendingAutoLogRefresh.value) {
-    pendingAutoLogRefresh.value = false
-    logRefreshToken.value += 1
-  }
 }
 
 onMounted(() => {
@@ -131,6 +171,7 @@ onMounted(() => {
   window.addEventListener(VFS_LOG_REFRESH_AUTO, onLogRefreshAutoRequested)
   window.addEventListener('resize', updateLayout)
   disposeMessageHooks = useVfsMessageHooks()
+  refreshAuthoritativeState()
 })
 
 onUnmounted(() => {
@@ -192,10 +233,8 @@ async function handleEditorManualRollback(payload: { sourceVersionId: string }):
   await withWriteScopeGuard(scope, 'rollback', async () => {
     const ok = await useVfsRollbackAction(payload.sourceVersionId)
     if (!ok) return
-    // WHY: rollback success is a new commit entry; failures must preserve the current editor draft.
-    appendHistory('rollback', scope, payload.sourceVersionId)
-    savedContent.value = editorContent.value
-    isDirty.value = false
+    // WHY: rollback result must rehydrate all visible states from persistence as the single source of truth.
+    refreshAuthoritativeState()
   })
 }
 

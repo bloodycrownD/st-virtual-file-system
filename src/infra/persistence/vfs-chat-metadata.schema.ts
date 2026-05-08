@@ -71,6 +71,8 @@ export interface ChatVfsVersionEntry {
   actionType: VfsCommitActionType
   scope: string
   sourceVersion?: VfsSourceVersionRef
+  /** Optional snapshot anchor for authoritative rollback application. */
+  snapshot?: VfsSnapshot
   /**
    * Backward-compatible fields for pre-schema records/UI branches.
    * WHY: keep reads migration-safe while new writers move to spec fields.
@@ -184,6 +186,14 @@ export function parseVfsChatMetadata(raw: unknown): VfsChatMetadata {
                 : ('rollback-target' as const),
           }
         : undefined
+    let snapshot: VfsSnapshot | undefined
+    if (rawEntry.snapshot && typeof rawEntry.snapshot === 'object') {
+      try {
+        snapshot = parseVfsSnapshot(rawEntry.snapshot as VfsSnapshot)
+      } catch {
+        snapshot = undefined
+      }
+    }
 
     return {
       id: typeof rawEntry.id === 'string' && rawEntry.id ? rawEntry.id : `commit-${timestamp}`,
@@ -192,6 +202,7 @@ export function parseVfsChatMetadata(raw: unknown): VfsChatMetadata {
       actionType,
       scope: typeof rawEntry.scope === 'string' && rawEntry.scope ? rawEntry.scope : scopeFromLegacySummary,
       sourceVersion,
+      snapshot,
       timestamp,
       source:
         rawEntry.source === 'tool' || rawEntry.source === 'manual' || rawEntry.source === 'system'

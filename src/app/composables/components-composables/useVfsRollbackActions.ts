@@ -2,11 +2,13 @@ import { VFS_ERROR_CODES } from '@/app/constants/vfsErrorCodes'
 import { emitVfsEvent, VFS_STATE_REFRESH_REQUIRED } from '@/app/composables/components-composables/useVfsMessageHooks'
 import { rollbackBatch, rollbackCommit } from '@/app/services/vfs/rollbackService'
 import { vfsPersistenceStore } from '@/app/stores/vfs-store-singleton'
+import { serializeVfsSnapshot } from '@/infra/persistence/vfs-snapshot.schema'
 import { toVfsErrorToast } from '@/app/utils/vfsErrorMapper'
 import type { VfsSourceVersionRef } from '@/infra/persistence/vfs-chat-metadata.schema'
 
 function appendManualCommit(summary: string, actionType: 'rollback' | 'batch-rollback', sourceVersionId: string): void {
   const time = new Date().toISOString()
+  const currentSnapshot = serializeVfsSnapshot(vfsPersistenceStore.getState().chat.chatVfsSnapshot)
   const sourceVersion: VfsSourceVersionRef = {
     id: sourceVersionId,
     reason: actionType === 'batch-rollback' ? 'batch-rollback-target' : 'rollback-target',
@@ -18,6 +20,7 @@ function appendManualCommit(summary: string, actionType: 'rollback' | 'batch-rol
     actionType,
     scope: '*',
     sourceVersion,
+    snapshot: currentSnapshot,
     // WHY: write legacy mirrors during transition so old UIs keep rendering.
     timestamp: Date.parse(time),
     source: 'manual' as const,
