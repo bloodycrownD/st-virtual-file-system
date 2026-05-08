@@ -30,34 +30,34 @@ import { VFS_ERROR_CODES } from '@/app/constants/vfsErrorCodes'
 import { VFS_POPUP_BEFORE_CLOSE } from '@/app/composables/components-composables/useVfsMessageHooks'
 import { vfsPersistenceStore } from '@/app/stores/vfs-store-singleton'
 import type { VfsSnapshot } from '@/domain/vfs/types'
+import type { VfsBrowserEntity } from '@/app/components/business-components/VfsFileManagerPanel.vue'
+import { dirname, normalizePath, ROOT_PATH } from '@/domain/vfs/path-utils'
+import { DeflateContentCodec } from '@/infra/serialization/deflate-codec'
+import { VfsCore } from '@/domain/vfs/vfs-core'
+import { DEFAULT_DIRECTORY_RULE, type DirectoryRule, type WorkTreeConfig } from '@/domain/work-tree/work-tree.types'
+import { toVfsErrorToast } from '@/app/utils/vfsErrorMapper'
 
 const mode = ref<'list' | 'reader' | 'editor' | 'slideshow'>('list')
 const editorContent = ref('')
 const savedContent = ref('')
 const isDirty = ref(false)
 const viewRefreshToken = ref(0)
-const activeDirectory = ref('docs')
 const layoutMode = ref<'mobile' | 'desktop'>(window.innerWidth >= 1024 ? 'desktop' : 'mobile')
 const activeTab = ref<'files' | 'history' | 'logs'>('files')
-const entityList = ref<VfsManagerEntity[]>([
-  { id: 'docs-file', name: 'docs.md', kind: 'file', path: '/docs/docs.md' },
-  { id: 'notes-dir', name: 'notes', kind: 'directory', path: '/notes' },
-])
-const selectedEntityId = ref('docs-file')
 const history = createVfsCommitHistoryStore()
 const historyMachine = createVfsHistoryStateMachine()
 const saveRequestsInFlight = ref(0)
 const rollbackRequestsInFlight = ref(0)
 const saveInProgress = ref(false)
 const rollbackInProgress = ref(false)
-const slideshowDirectories = ref([
-  { id: 'docs', name: 'Docs', pages: ['docs-1', 'docs-2', 'docs-3'] },
-  { id: 'notes', name: 'Notes', pages: ['notes-1', 'notes-2'] },
-])
+const currentDirectoryPath = ref<string>(ROOT_PATH)
+const selectedPath = ref<string | null>(null)
+const slideshowDirectoryPath = ref<string>(ROOT_PATH)
+const codec = new DeflateContentCodec()
 
 const readerHtml = computed(() => editorContent.value)
-const selectedEntity = computed(() => entityList.value.find((item) => item.id === selectedEntityId.value) ?? null)
 const editorHistoryRecords = computed<VfsCommitHistoryRecord[]>(() => history.records.value)
+const chatSnapshot = computed(() => vfsPersistenceStore.getState().chat.chatVfsSnapshot)
 
 const logRefreshToken = ref(0)
 let disposeMessageHooks: (() => void) | null = null
@@ -66,33 +66,94 @@ const updateLayout = () => {
   layoutMode.value = window.innerWidth >= 1024 ? 'desktop' : 'mobile'
 }
 
-function toEntityList(snapshot: VfsSnapshot): VfsManagerEntity[] {
-  return Object.values(snapshot.nodes)
-    .filter((node) => node.type === 'file' || node.type === 'directory')
-    .filter((node) => node.path !== '/')
+function ensureWorkTreeConfig(existing: WorkTreeConfig | null): WorkTreeConfig {
+  if (existing) return existing
+  return {
+    defaultRule: { ...DEFAULT_DIRECTORY_RULE },
+    directoryOverrides: {},
+    directoryRulesEnabled: {},
+    selectedFiles: [],
+  }
+}
+
+function getNodeByPath(snapshot: VfsSnapshot, path: string) {
+  const p = normalizePath(path)
+  return Object.values(snapshot.nodes).find((candidate) => candidate.path === p) ?? null
+}
+
+function listDirectoryEntries(snapshot: VfsSnapshot, directoryPath: string): VfsBrowserEntity[] {
+  const dirNode = getNodeByPath(snapshot, directoryPath)
+  if (!dirNode || dirNode.type !== 'directory') return []
+  return dirNode.children
+    .map((id) => snapshot.nodes[id])
+    .filter(Boolean)
     .map((node) => ({
-      id: node.id,
-      name: node.name,
-      kind: node.type === 'file' ? 'file' : 'directory',
       path: node.path,
+      name: node.name,
+      kind: (node.type === 'file' ? 'file' : 'directory') as 'file' | 'directory',
     }))
+    .sort((a, b) => {
+      if (a.kind !== b.kind) return a.kind === 'directory' ? -1 : 1
+      return a.name.localeCompare(b.name)
+    })
 }
 
 function readFileContentFromSnapshot(snapshot: VfsSnapshot, path: string): string {
-  const node = Object.values(snapshot.nodes).find((candidate) => candidate.type === 'file' && candidate.path === path)
+  const node = getNodeByPath(snapshot, path)
   if (!node || node.type !== 'file') return ''
-  return node.content.encoding === 'plain' ? node.content.data : ''
+  return codec.decode(node.content)
+}
+
+function applySnapshotMutation(mutator: (core: VfsCore) => void): void {
+  const core = new VfsCore(codec)
+  core.importSnapshot(chatSnapshot.value)
+  mutator(core)
+  const next = core.exportSnapshot()
+  vfsPersistenceStore.updateChat((draft) => ({
+    ...draft,
+    chatVfsSnapshot: next,
+  }))
+}
+
+function replaceWorkTreePaths(oldPath: string, newPath: string): void {
+  // WHY: rename/delete must not leave dangling path references inside macro configuration.
+  vfsPersistenceStore.updateChat((draft) => {
+    const config = ensureWorkTreeConfig(draft.workTree)
+    const selectedFiles = config.selectedFiles.map((p) => (p === oldPath ? newPath : p))
+    const directoryRulesEnabled: Record<string, boolean> = {}
+    for (const [k, v] of Object.entries(config.directoryRulesEnabled)) {
+      directoryRulesEnabled[k === oldPath ? newPath : k] = v
+    }
+    const directoryOverrides: Record<string, DirectoryRule> = {}
+    for (const [k, v] of Object.entries(config.directoryOverrides)) {
+      directoryOverrides[k === oldPath ? newPath : k] = v
+    }
+    return {
+      ...draft,
+      workTree: {
+        ...config,
+        selectedFiles,
+        directoryRulesEnabled,
+        directoryOverrides,
+      },
+    }
+  })
+}
+
+function removeWorkTreePaths(removedPath: string): void {
+  vfsPersistenceStore.updateChat((draft) => {
+    const config = ensureWorkTreeConfig(draft.workTree)
+    const selectedFiles = config.selectedFiles.filter((p) => p !== removedPath)
+    const directoryRulesEnabled = { ...config.directoryRulesEnabled }
+    delete directoryRulesEnabled[removedPath]
+    const directoryOverrides = { ...config.directoryOverrides }
+    delete directoryOverrides[removedPath]
+    return { ...draft, workTree: { ...config, selectedFiles, directoryRulesEnabled, directoryOverrides } }
+  })
 }
 
 function refreshAuthoritativeState(): void {
   const chatState = vfsPersistenceStore.getState().chat
-  const entities = toEntityList(chatState.chatVfsSnapshot)
-  if (entities.length > 0) {
-    entityList.value = entities
-    if (!entities.some((item) => item.id === selectedEntityId.value)) {
-      selectedEntityId.value = entities[0].id
-    }
-  }
   history.replaceRecords(
     chatState.chatVfsVersions.map((entry) => ({
       commitId: entry.id,
@@ -103,9 +164,24 @@ function refreshAuthoritativeState(): void {
       sourceVersionId: entry.sourceVersion?.id,
     })),
   )
-  const selectedPath = selectedEntity.value?.path
-  if (!selectedPath) return
-  const source = readFileContentFromSnapshot(chatState.chatVfsSnapshot, selectedPath)
+
+  const normalizedDir = (() => {
+    try {
+      return normalizePath(currentDirectoryPath.value || ROOT_PATH)
+    } catch {
+      return ROOT_PATH
+    }
+  })()
+  currentDirectoryPath.value = normalizedDir
+
+  if (selectedPath.value) {
+    const node = getNodeByPath(chatState.chatVfsSnapshot, selectedPath.value)
+    if (!node) selectedPath.value = null
+  }
+
+  const node = selectedPath.value ? getNodeByPath(chatState.chatVfsSnapshot, selectedPath.value) : null
+  if (!node || node.type !== 'file') return
+  const source = readFileContentFromSnapshot(chatState.chatVfsSnapshot, node.path)
   editorContent.value = source
   savedContent.value = source
   isDirty.value = false
@@ -205,18 +281,149 @@ function requestModeChange(nextMode: 'list' | 'reader' | 'editor' | 'slideshow')
   }
 }
 
+const directoryEntries = computed(() => listDirectoryEntries(chatSnapshot.value, currentDirectoryPath.value))
+const selectedEntity = computed<VfsManagerEntity | null>(() => {
+  if (!selectedPath.value) return null
+  const node = getNodeByPath(chatSnapshot.value, selectedPath.value)
+  if (!node || (node.type !== 'file' && node.type !== 'directory')) return null
+  return {
+    id: node.id,
+    name: node.name,
+    kind: (node.type === 'file' ? 'file' : 'directory') as 'file' | 'directory',
+    path: node.path,
+  }
+})
+
+const slideshowDirectoryOptions = computed(() =>
+  directoryEntries.value.filter((entry) => entry.kind === 'directory').map((entry) => ({ path: entry.path, name: entry.name })),
+)
+
+const slideshowPages = computed(() => {
+  const snapshot = chatSnapshot.value
+  const dirPath = slideshowDirectoryPath.value
+  const entries = listDirectoryEntries(snapshot, dirPath)
+  const files = entries.filter((entry) => entry.kind === 'file')
+  return files.map((entry) => ({
+    path: entry.path,
+    title: entry.name,
+    content: readFileContentFromSnapshot(snapshot, entry.path),
+  }))
+})
+
+function onSelected(path: string): void {
+  selectedPath.value = path
+}
+
+function onOpened(path: string): void {
+  currentDirectoryPath.value = path
+  selectedPath.value = null
+  requestModeChange('list')
+}
+
+function onUpRequested(): void {
+  if (currentDirectoryPath.value === ROOT_PATH) return
+  currentDirectoryPath.value = dirname(currentDirectoryPath.value)
+  selectedPath.value = null
+  requestModeChange('list')
+}
+
 function handleEntityAction(action: VfsEntityAction): void {
   if (!isActionTriggerable(selectedEntity.value, action)) return
+  const entity = selectedEntity.value
+  if (!entity) return
   switch (action) {
-    case 'view':
+    case 'view': {
+      if (entity.kind !== 'file') return
       requestModeChange('reader')
-      break
-    case 'edit':
+      return
+    }
+    case 'edit': {
+      if (entity.kind !== 'file') return
       requestModeChange('editor')
-      break
-    case 'open-slideshow':
+      return
+    }
+    case 'open-slideshow': {
+      if (entity.kind !== 'directory') return
+      slideshowDirectoryPath.value = entity.path
       requestModeChange('slideshow')
-      break
+      return
+    }
+    case 'toggle-status': {
+      const path = entity.path
+      vfsPersistenceStore.updateChat((draft) => {
+        const config = ensureWorkTreeConfig(draft.workTree)
+        if (entity.kind === 'file') {
+          const selected = new Set(config.selectedFiles)
+          if (selected.has(path)) selected.delete(path)
+          else selected.add(path)
+          return { ...draft, workTree: { ...config, selectedFiles: [...selected] } }
+        }
+        const enabled = config.directoryRulesEnabled[path] === true
+        return {
+          ...draft,
+          workTree: { ...config, directoryRulesEnabled: { ...config.directoryRulesEnabled, [path]: !enabled } },
+        }
+      })
+      requestModeChange('list')
+      return
+    }
+    case 'delete': {
+      if (!window.confirm(`Delete ${entity.path}?`)) return
+      try {
+        applySnapshotMutation((core) => core.delete(entity.path, { recursive: true }))
+        removeWorkTreePaths(entity.path)
+        selectedPath.value = null
+        requestModeChange('list')
+      } catch (e) {
+        toastr.error(toVfsErrorToast(VFS_ERROR_CODES.DELETE_FAILED, '删除失败'))
+      }
+      return
+    }
+    case 'rename': {
+      const nextName = window.prompt('New name', entity.name)?.trim()
+      if (!nextName) return
+      const oldPath = entity.path
+      try {
+        applySnapshotMutation((core) => core.rename(oldPath, nextName))
+        const parent = dirname(oldPath)
+        const nextPath = normalizePath(`${parent}/${nextName}`)
+        replaceWorkTreePaths(oldPath, nextPath)
+        selectedPath.value = nextPath
+        requestModeChange('list')
+      } catch {
+        toastr.error(toVfsErrorToast(VFS_ERROR_CODES.RENAME_FAILED, '重命名失败'))
+      }
+      return
+    }
+    case 'apply-strategy': {
+      if (entity.kind !== 'directory') return
+      const headCount = Number(window.prompt('Head count (0..1000)', '0') ?? '0')
+      const tailCount = Number(window.prompt('Tail count (0..1000)', '0') ?? '0')
+      const fill = (window.prompt('Fill strategy: filename | frontmatter | omit', 'omit') ?? 'omit').trim()
+      try {
+        vfsPersistenceStore.updateChat((draft) => {
+          const config = ensureWorkTreeConfig(draft.workTree)
+          const nextRule: DirectoryRule = {
+            ...config.defaultRule,
+            headCount: Number.isFinite(headCount) ? Math.max(0, Math.min(1000, Math.floor(headCount))) : 0,
+            tailCount: Number.isFinite(tailCount) ? Math.max(0, Math.min(1000, Math.floor(tailCount))) : 0,
+            fill: fill === 'filename' || fill === 'frontmatter' || fill === 'omit' ? fill : 'omit',
+          }
+          return {
+            ...draft,
+            workTree: {
+              ...config,
+              directoryOverrides: { ...config.directoryOverrides, [entity.path]: nextRule },
+              directoryRulesEnabled: { ...config.directoryRulesEnabled, [entity.path]: true },
+            },
+          }
+        })
+      } catch {
+        toastr.error(toVfsErrorToast(VFS_ERROR_CODES.STRATEGY_APPLY_FAILED, '展示策略应用失败'))
+      }
+      requestModeChange('list')
+      return
+    }
     default:
       requestModeChange('list')
   }
@@ -271,17 +478,19 @@ async function handleEditorSaveRequested(): Promise<void> {
     >
       <div v-if="layoutMode === 'desktop'" class="vfs-desktop-grid" data-testid="vfs-desktop-grid">
         <aside class="vfs-sidebar">
-          <VfsFileManagerPanel :key="`fm-${viewRefreshToken}`" :mode="mode">
-            <select v-model="selectedEntityId">
-              <option v-for="entity in entityList" :key="entity.id" :value="entity.id">
-                {{ entity.kind }}: {{ entity.name }}
-              </option>
-            </select>
-            <VfsActionMenu :entity="selectedEntity" @action-selected="handleEntityAction" />
-            <select v-model="activeDirectory">
-              <option value="docs">docs</option>
-              <option value="notes">notes</option>
-            </select>
+          <VfsFileManagerPanel
+            :key="`fm-${viewRefreshToken}`"
+            :mode="mode"
+            :current-path="currentDirectoryPath"
+            :entries="directoryEntries"
+            :selected-path="selectedPath"
+            @selected="onSelected"
+            @opened="onOpened"
+            @up-requested="onUpRequested"
+          >
+            <template #actions>
+              <VfsActionMenu :entity="selectedEntity" @action-selected="handleEntityAction" />
+            </template>
           </VfsFileManagerPanel>
         </aside>
 
@@ -298,23 +507,31 @@ async function handleEditorSaveRequested(): Promise<void> {
             @save-requested="handleEditorSaveRequested"
             @manual-rollback-requested="handleEditorManualRollback"
           />
-          <SlideshowScreen v-else-if="mode === 'slideshow'" :directories="slideshowDirectories" />
+          <SlideshowScreen
+            v-else-if="mode === 'slideshow'"
+            :directories="slideshowDirectoryOptions"
+            :pages="slideshowPages"
+            :initial-directory-path="slideshowDirectoryPath"
+          />
           <section v-else class="vfs-empty" data-testid="vfs-desktop-empty">Select an item then use More.</section>
         </main>
       </div>
 
       <div v-else class="vfs-mobile-stack">
-        <VfsFileManagerPanel v-if="mode === 'list'" :key="`fm-${viewRefreshToken}`" :mode="mode">
-          <select v-model="selectedEntityId">
-            <option v-for="entity in entityList" :key="entity.id" :value="entity.id">
-              {{ entity.kind }}: {{ entity.name }}
-            </option>
-          </select>
-          <VfsActionMenu :entity="selectedEntity" @action-selected="handleEntityAction" />
-          <select v-model="activeDirectory">
-            <option value="docs">docs</option>
-            <option value="notes">notes</option>
-          </select>
+        <VfsFileManagerPanel
+          v-if="mode === 'list'"
+          :key="`fm-${viewRefreshToken}`"
+          :mode="mode"
+          :current-path="currentDirectoryPath"
+          :entries="directoryEntries"
+          :selected-path="selectedPath"
+          @selected="onSelected"
+          @opened="onOpened"
+          @up-requested="onUpRequested"
+        >
+          <template #actions>
+            <VfsActionMenu :entity="selectedEntity" @action-selected="handleEntityAction" />
+          </template>
         </VfsFileManagerPanel>
 
         <section v-else class="vfs-mobile-content">
@@ -331,7 +548,12 @@ async function handleEditorSaveRequested(): Promise<void> {
             @save-requested="handleEditorSaveRequested"
             @manual-rollback-requested="handleEditorManualRollback"
           />
-          <SlideshowScreen v-else :directories="slideshowDirectories" />
+          <SlideshowScreen
+            v-else
+            :directories="slideshowDirectoryOptions"
+            :pages="slideshowPages"
+            :initial-directory-path="slideshowDirectoryPath"
+          />
         </section>
       </div>
     </div>
