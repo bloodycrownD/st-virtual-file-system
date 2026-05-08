@@ -4,13 +4,13 @@ import { useVfsBatchRollbackAction } from '@/app/composables/components-composab
 
 const selectedIds = ref<string[]>([])
 const emits = defineEmits<{
-  rollbackStatus: [status: 'batchRollingBack' | 'succeeded' | 'failed']
+  rollbackStatus: [payload: { kind: 'batch'; status: 'batchRollingBack' | 'succeeded' | 'failed'; sourceVersionId?: string }]
 }>()
 
 async function rollbackSelected(): Promise<void> {
-  emits('rollbackStatus', 'batchRollingBack')
+  emits('rollbackStatus', { kind: 'batch', status: 'batchRollingBack' })
   const ok = await useVfsBatchRollbackAction(selectedIds.value)
-  emits('rollbackStatus', ok ? 'succeeded' : 'failed')
+  emits('rollbackStatus', { kind: 'batch', status: ok ? 'succeeded' : 'failed', sourceVersionId: selectedIds.value[0] })
 }
 </script>
 

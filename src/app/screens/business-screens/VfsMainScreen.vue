@@ -1,6 +1,16 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import VfsActionMenu from '@/app/components/business-components/VfsActionMenu.vue'
+import {
+  createVfsCommitHistoryStore,
+  type VfsCommitActionType,
+  type VfsCommitHistoryRecord,
+} from '@/app/composables/components-composables/useVfsCommitHistory'
+import {
+  isActionTriggerable,
+  type VfsEntityAction,
+  type VfsManagerEntity,
+} from '@/app/composables/components-composables/useVfsFileManagerModel'
 import VfsFileManagerPanel from '@/app/components/business-components/VfsFileManagerPanel.vue'
 import VfsLogPanel from '@/app/components/business-components/VfsLogPanel.vue'
 import { VFS_STATE_REFRESH_REQUIRED } from '@/app/composables/components-composables/useVfsMessageHooks'
@@ -15,24 +25,49 @@ const editorContent = ref('')
 const isDirty = ref(false)
 const viewRefreshToken = ref(0)
 const activeDirectory = ref('docs')
+const layoutMode = ref<'mobile' | 'desktop'>(window.innerWidth >= 1024 ? 'desktop' : 'mobile')
+const entityList = ref<VfsManagerEntity[]>([
+  { id: 'docs-file', name: 'docs.md', kind: 'file', path: '/docs/docs.md' },
+  { id: 'notes-dir', name: 'notes', kind: 'directory', path: '/notes' },
+])
+const selectedEntityId = ref('docs-file')
+const history = createVfsCommitHistoryStore()
 const slideshowDirectories = ref([
   { id: 'docs', name: 'Docs', pages: ['docs-1', 'docs-2', 'docs-3'] },
   { id: 'notes', name: 'Notes', pages: ['notes-1', 'notes-2'] },
 ])
 
 const readerHtml = computed(() => editorContent.value)
+const selectedEntity = computed(() => entityList.value.find((item) => item.id === selectedEntityId.value) ?? null)
+const editorHistoryRecords = computed<VfsCommitHistoryRecord[]>(() => history.records.value)
+
+const updateLayout = () => {
+  layoutMode.value = window.innerWidth >= 1024 ? 'desktop' : 'mobile'
+}
 
 const refreshAllViews = () => {
   // WHY: one monotonic token keeps file manager/reader/editor/history refresh in sync after rollback.
   viewRefreshToken.value += 1
 }
 
+function appendHistory(actionType: VfsCommitActionType, scope: string, sourceVersionId?: string): void {
+  history.appendRecord({
+    time: new Date().toISOString(),
+    operator: 'assistant',
+    actionType,
+    scope,
+    sourceVersionId,
+  })
+}
+
 onMounted(() => {
   window.addEventListener(VFS_STATE_REFRESH_REQUIRED, refreshAllViews)
+  window.addEventListener('resize', updateLayout)
 })
 
 onUnmounted(() => {
   window.removeEventListener(VFS_STATE_REFRESH_REQUIRED, refreshAllViews)
+  window.removeEventListener('resize', updateLayout)
 })
 
 function tryLeaveEditor(nextMode: 'list' | 'reader' | 'slideshow'): void {
@@ -46,13 +81,42 @@ function tryLeaveEditor(nextMode: 'list' | 'reader' | 'slideshow'): void {
     mode.value = nextMode
   }
 }
+
+function handleEntityAction(action: VfsEntityAction): void {
+  if (!isActionTriggerable(selectedEntity.value, action)) return
+  switch (action) {
+    case 'view':
+      mode.value = 'reader'
+      break
+    case 'edit':
+      mode.value = 'editor'
+      break
+    case 'open-slideshow':
+      mode.value = 'slideshow'
+      break
+    default:
+      mode.value = 'list'
+  }
+  appendHistory('save', selectedEntity.value?.path ?? '/', selectedEntity.value?.id)
+}
+
+function handleEditorManualRollback(payload: { sourceVersionId: string }): void {
+  // WHY: source-version trace commit keeps rollback provenance auditable across tabs.
+  appendHistory('trace-rollback', selectedEntity.value?.path ?? '/', payload.sourceVersionId)
+  refreshAllViews()
+}
 </script>
 
 <template>
   <VfsTabShellScreen v-slot="{ activeTab }">
-    <div v-if="activeTab === 'files'">
+    <div v-if="activeTab === 'files'" data-testid="vfs-main-layout" :data-layout="layoutMode" :class="`layout-${layoutMode}`">
       <VfsFileManagerPanel :key="`fm-${viewRefreshToken}`" :mode="mode">
-        <VfsActionMenu entity-type="file" />
+        <select v-model="selectedEntityId">
+          <option v-for="entity in entityList" :key="entity.id" :value="entity.id">
+            {{ entity.kind }}: {{ entity.name }}
+          </option>
+        </select>
+        <VfsActionMenu :entity="selectedEntity" @action-selected="handleEntityAction" />
         <select v-model="activeDirectory">
           <option value="docs">docs</option>
           <option value="notes">notes</option>
@@ -67,7 +131,9 @@ function tryLeaveEditor(nextMode: 'list' | 'reader' | 'slideshow'): void {
         v-if="mode === 'editor'"
         :key="`editor-${viewRefreshToken}`"
         v-model="editorContent"
+        :history-records="editorHistoryRecords"
         @update:model-value="isDirty = true"
+        @manual-rollback-requested="handleEditorManualRollback"
       />
       <SlideshowScreen v-if="mode === 'slideshow'" :directories="slideshowDirectories" />
     </div>
