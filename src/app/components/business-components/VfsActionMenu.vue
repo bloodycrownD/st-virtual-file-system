@@ -13,6 +13,12 @@ const emits = defineEmits<{
 }>()
 
 const actions = computed(() => getVisibleActions(props.entity))
+const isDisabled = computed(() => !props.entity || actions.value.length === 0)
+
+function onToggleClick(event: MouseEvent): void {
+  if (!isDisabled.value) return
+  event.preventDefault()
+}
 
 function triggerAction(action: VfsEntityAction): void {
   // WHY: keep runtime checks as source of truth; render filtering alone can be bypassed by stale state.
@@ -22,9 +28,42 @@ function triggerAction(action: VfsEntityAction): void {
 </script>
 
 <template>
-  <ul class="vfs-action-menu">
-    <li v-for="action in actions" :key="action">
-      <button type="button" :data-action="action" @click="triggerAction(action)">{{ action }}</button>
-    </li>
-  </ul>
+  <details class="vfs-action-menu" :data-disabled="isDisabled ? 'true' : 'false'">
+    <summary
+      class="vfs-action-menu__toggle"
+      data-testid="vfs-action-menu-toggle"
+      :aria-disabled="isDisabled"
+      @click="onToggleClick"
+    >
+      More
+    </summary>
+    <ul class="vfs-action-menu__list" role="menu">
+      <li v-for="action in actions" :key="action" role="none">
+        <button type="button" role="menuitem" :data-action="action" @click="triggerAction(action)">
+          {{ action }}
+        </button>
+      </li>
+    </ul>
+  </details>
 </template>
+
+<style scoped>
+.vfs-action-menu__toggle {
+  cursor: pointer;
+  user-select: none;
+}
+
+.vfs-action-menu[data-disabled='true'] .vfs-action-menu__toggle {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.vfs-action-menu__list {
+  margin: 8px 0 0;
+  padding: 8px;
+  list-style: none;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.25);
+}
+</style>

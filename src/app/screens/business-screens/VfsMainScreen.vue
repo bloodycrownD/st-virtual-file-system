@@ -13,7 +13,11 @@ import {
 } from '@/app/composables/components-composables/useVfsFileManagerModel'
 import VfsFileManagerPanel from '@/app/components/business-components/VfsFileManagerPanel.vue'
 import VfsLogPanel from '@/app/components/business-components/VfsLogPanel.vue'
-import { VFS_STATE_REFRESH_REQUIRED } from '@/app/composables/components-composables/useVfsMessageHooks'
+import {
+  useVfsMessageHooks,
+  VFS_LOG_REFRESH_AUTO,
+  VFS_STATE_REFRESH_REQUIRED,
+} from '@/app/composables/components-composables/useVfsMessageHooks'
 import VfsHistoryScreen from '@/app/screens/business-screens/VfsHistoryScreen.vue'
 import EditorScreen from '@/app/screens/pure-screens/EditorScreen.vue'
 import ReaderScreen from '@/app/screens/pure-screens/ReaderScreen.vue'
@@ -32,6 +36,7 @@ const isDirty = ref(false)
 const viewRefreshToken = ref(0)
 const activeDirectory = ref('docs')
 const layoutMode = ref<'mobile' | 'desktop'>(window.innerWidth >= 1024 ? 'desktop' : 'mobile')
+const activeTab = ref<'files' | 'history' | 'logs'>('files')
 const entityList = ref<VfsManagerEntity[]>([
   { id: 'docs-file', name: 'docs.md', kind: 'file', path: '/docs/docs.md' },
   { id: 'notes-dir', name: 'notes', kind: 'directory', path: '/notes' },
@@ -50,6 +55,10 @@ const slideshowDirectories = ref([
 const readerHtml = computed(() => editorContent.value)
 const selectedEntity = computed(() => entityList.value.find((item) => item.id === selectedEntityId.value) ?? null)
 const editorHistoryRecords = computed<VfsCommitHistoryRecord[]>(() => history.records.value)
+
+const logRefreshToken = ref(0)
+const pendingAutoLogRefresh = ref(false)
+let disposeMessageHooks: (() => void) | null = null
 
 const updateLayout = () => {
   layoutMode.value = window.innerWidth >= 1024 ? 'desktop' : 'mobile'
@@ -98,16 +107,39 @@ function handlePopupBeforeClose(event: Event): void {
   event.preventDefault()
 }
 
+function onLogRefreshAutoRequested(): void {
+  // WHY: log refresh is allowed to be triggered by message events even when Tab3 is not active.
+  // We defer the actual refresh until logs tab becomes active to avoid hidden background work.
+  if (activeTab.value === 'logs') {
+    logRefreshToken.value += 1
+    return
+  }
+  pendingAutoLogRefresh.value = true
+}
+
+function handleTabChanged(nextTab: 'files' | 'history' | 'logs'): void {
+  activeTab.value = nextTab
+  if (nextTab === 'logs' && pendingAutoLogRefresh.value) {
+    pendingAutoLogRefresh.value = false
+    logRefreshToken.value += 1
+  }
+}
+
 onMounted(() => {
   window.addEventListener(VFS_STATE_REFRESH_REQUIRED, refreshAllViews)
   window.addEventListener(VFS_POPUP_BEFORE_CLOSE, handlePopupBeforeClose)
+  window.addEventListener(VFS_LOG_REFRESH_AUTO, onLogRefreshAutoRequested)
   window.addEventListener('resize', updateLayout)
+  disposeMessageHooks = useVfsMessageHooks()
 })
 
 onUnmounted(() => {
   window.removeEventListener(VFS_STATE_REFRESH_REQUIRED, refreshAllViews)
   window.removeEventListener(VFS_POPUP_BEFORE_CLOSE, handlePopupBeforeClose)
+  window.removeEventListener(VFS_LOG_REFRESH_AUTO, onLogRefreshAutoRequested)
   window.removeEventListener('resize', updateLayout)
+  disposeMessageHooks?.()
+  disposeMessageHooks = null
 })
 
 function discardEditorDraft(): void {
@@ -190,39 +222,105 @@ async function handleEditorSaveRequested(): Promise<void> {
 </script>
 
 <template>
-  <VfsTabShellScreen :before-tab-change="guardTabChange" v-slot="{ activeTab }">
-    <div v-if="activeTab === 'files'" data-testid="vfs-main-layout" :data-layout="layoutMode" :class="`layout-${layoutMode}`">
-      <VfsFileManagerPanel :key="`fm-${viewRefreshToken}`" :mode="mode">
-        <select v-model="selectedEntityId">
-          <option v-for="entity in entityList" :key="entity.id" :value="entity.id">
-            {{ entity.kind }}: {{ entity.name }}
-          </option>
-        </select>
-        <VfsActionMenu :entity="selectedEntity" @action-selected="handleEntityAction" />
-        <select v-model="activeDirectory">
-          <option value="docs">docs</option>
-          <option value="notes">notes</option>
-        </select>
-        <button type="button" @click="requestModeChange('reader')">Open Reader</button>
-        <button type="button" @click="requestModeChange('editor')">Open Editor</button>
-        <button type="button" @click="requestModeChange('slideshow')">Open Slideshow</button>
-        <button type="button" @click="requestModeChange('list')">Back to List</button>
-      </VfsFileManagerPanel>
-      <ReaderScreen v-if="mode === 'reader'" :key="`reader-${viewRefreshToken}`" :html="readerHtml" />
-      <EditorScreen
-        v-if="mode === 'editor'"
-        :key="`editor-${viewRefreshToken}`"
-        v-model="editorContent"
-        :history-records="editorHistoryRecords"
-        :save-in-progress="saveInProgress"
-        :rollback-in-progress="rollbackInProgress"
-        @update:model-value="isDirty = true"
-        @save-requested="handleEditorSaveRequested"
-        @manual-rollback-requested="handleEditorManualRollback"
-      />
-      <SlideshowScreen v-if="mode === 'slideshow'" :directories="slideshowDirectories" />
+  <VfsTabShellScreen :before-tab-change="guardTabChange" @tab-changed="handleTabChanged" v-slot="{ activeTab: slotTab }">
+    <div
+      v-if="slotTab === 'files'"
+      data-testid="vfs-main-layout"
+      :data-layout="layoutMode"
+      :class="['vfs-main-layout', `layout-${layoutMode}`]"
+    >
+      <div v-if="layoutMode === 'desktop'" class="vfs-desktop-grid" data-testid="vfs-desktop-grid">
+        <aside class="vfs-sidebar">
+          <VfsFileManagerPanel :key="`fm-${viewRefreshToken}`" :mode="mode">
+            <select v-model="selectedEntityId">
+              <option v-for="entity in entityList" :key="entity.id" :value="entity.id">
+                {{ entity.kind }}: {{ entity.name }}
+              </option>
+            </select>
+            <VfsActionMenu :entity="selectedEntity" @action-selected="handleEntityAction" />
+            <select v-model="activeDirectory">
+              <option value="docs">docs</option>
+              <option value="notes">notes</option>
+            </select>
+          </VfsFileManagerPanel>
+        </aside>
+
+        <main class="vfs-content">
+          <ReaderScreen v-if="mode === 'reader'" :key="`reader-${viewRefreshToken}`" :html="readerHtml" />
+          <EditorScreen
+            v-else-if="mode === 'editor'"
+            :key="`editor-${viewRefreshToken}`"
+            v-model="editorContent"
+            :history-records="editorHistoryRecords"
+            :save-in-progress="saveInProgress"
+            :rollback-in-progress="rollbackInProgress"
+            @update:model-value="isDirty = true"
+            @save-requested="handleEditorSaveRequested"
+            @manual-rollback-requested="handleEditorManualRollback"
+          />
+          <SlideshowScreen v-else-if="mode === 'slideshow'" :directories="slideshowDirectories" />
+          <section v-else class="vfs-empty" data-testid="vfs-desktop-empty">Select an item then use More.</section>
+        </main>
+      </div>
+
+      <div v-else class="vfs-mobile-stack">
+        <VfsFileManagerPanel v-if="mode === 'list'" :key="`fm-${viewRefreshToken}`" :mode="mode">
+          <select v-model="selectedEntityId">
+            <option v-for="entity in entityList" :key="entity.id" :value="entity.id">
+              {{ entity.kind }}: {{ entity.name }}
+            </option>
+          </select>
+          <VfsActionMenu :entity="selectedEntity" @action-selected="handleEntityAction" />
+          <select v-model="activeDirectory">
+            <option value="docs">docs</option>
+            <option value="notes">notes</option>
+          </select>
+        </VfsFileManagerPanel>
+
+        <section v-else class="vfs-mobile-content">
+          <button type="button" data-testid="vfs-mobile-back" @click="requestModeChange('list')">Back</button>
+          <ReaderScreen v-if="mode === 'reader'" :key="`reader-${viewRefreshToken}`" :html="readerHtml" />
+          <EditorScreen
+            v-else-if="mode === 'editor'"
+            :key="`editor-${viewRefreshToken}`"
+            v-model="editorContent"
+            :history-records="editorHistoryRecords"
+            :save-in-progress="saveInProgress"
+            :rollback-in-progress="rollbackInProgress"
+            @update:model-value="isDirty = true"
+            @save-requested="handleEditorSaveRequested"
+            @manual-rollback-requested="handleEditorManualRollback"
+          />
+          <SlideshowScreen v-else :directories="slideshowDirectories" />
+        </section>
+      </div>
     </div>
-    <VfsHistoryScreen v-else-if="activeTab === 'history'" :key="`history-${viewRefreshToken}`" />
-    <VfsLogPanel v-else />
+
+    <VfsHistoryScreen v-else-if="slotTab === 'history'" :key="`history-${viewRefreshToken}`" />
+    <VfsLogPanel v-else :refresh-token="logRefreshToken" />
   </VfsTabShellScreen>
 </template>
+
+<style scoped>
+.vfs-desktop-grid {
+  display: grid;
+  grid-template-columns: minmax(280px, 360px) 1fr;
+  gap: 12px;
+  align-items: start;
+}
+
+.vfs-sidebar {
+  border-right: 1px solid rgba(255, 255, 255, 0.12);
+  padding-right: 12px;
+}
+
+.vfs-content {
+  min-height: 320px;
+}
+
+.vfs-mobile-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+</style>

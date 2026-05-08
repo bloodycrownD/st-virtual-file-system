@@ -1,12 +1,6 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, watch, ref } from 'vue'
 import { VFS_ERROR_CODES } from '@/app/constants/vfsErrorCodes'
-import {
-  emitVfsEvent,
-  useVfsMessageHooks,
-  VFS_LOG_REFRESH_AUTO,
-  VFS_LOG_REFRESH_REQUESTED,
-} from '@/app/composables/components-composables/useVfsMessageHooks'
 import { createVfsServerLogPagination } from '@/app/composables/components-composables/useVfsLogPagination'
 import { fetchLogs } from '@/app/services/vfs/logService'
 import { toVfsErrorToast } from '@/app/utils/vfsErrorMapper'
@@ -15,6 +9,10 @@ interface LogItem {
   id: string
   message: string
 }
+
+const props = defineProps<{
+  refreshToken: number
+}>()
 
 const logs = ref<LogItem[]>([])
 const isLoading = ref(false)
@@ -59,27 +57,17 @@ async function refreshLogs(page = currentPage.value): Promise<void> {
 }
 
 function requestManualRefresh(): void {
-  emitVfsEvent(VFS_LOG_REFRESH_REQUESTED)
-}
-
-const autoRefreshHandler = () => {
   void refreshLogs(currentPage.value)
 }
 
-let disposeMessageHooks: (() => void) | null = null
-
-onMounted(() => {
-  disposeMessageHooks = useVfsMessageHooks()
-  window.addEventListener(VFS_LOG_REFRESH_AUTO, autoRefreshHandler)
-  window.addEventListener(VFS_LOG_REFRESH_REQUESTED, autoRefreshHandler)
-})
-
-onUnmounted(() => {
-  disposeMessageHooks?.()
-  disposeMessageHooks = null
-  window.removeEventListener(VFS_LOG_REFRESH_AUTO, autoRefreshHandler)
-  window.removeEventListener(VFS_LOG_REFRESH_REQUESTED, autoRefreshHandler)
-})
+watch(
+  () => props.refreshToken,
+  (token) => {
+    if (token <= 0) return
+    void refreshLogs(currentPage.value)
+  },
+  { immediate: true },
+)
 </script>
 
 <template>

@@ -11,11 +11,15 @@ const TAB_LABELS: Record<(typeof tabs)[number], string> = {
 const props = defineProps<{
   beforeTabChange?: (nextTab: (typeof tabs)[number]) => boolean
 }>()
+const emits = defineEmits<{
+  tabChanged: [tab: (typeof tabs)[number]]
+}>()
 
 function trySwitchTab(nextTab: (typeof tabs)[number]): void {
   if (nextTab === activeTab.value) return
   if (props.beforeTabChange && !props.beforeTabChange(nextTab)) return
   activeTab.value = nextTab
+  emits('tabChanged', nextTab)
 }
 </script>
 
