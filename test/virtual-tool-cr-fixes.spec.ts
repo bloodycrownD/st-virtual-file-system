@@ -77,6 +77,8 @@ describe('virtual tool CR fixes', () => {
               name: 'seed.txt',
               parentId: 'root',
               mtime: 1,
+              ctime: 1,
+              updatedBy: 'assistant',
               size: 4,
               content: { encoding: 'plain', data: 'seed', originalSize: 4 },
             },

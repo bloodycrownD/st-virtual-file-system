@@ -8,18 +8,20 @@ import type { VfsPersistenceStore } from '@/app/stores/vfs-persistence-store'
 import { renderVirtualFileTree } from '@/domain/work-tree/virtual-file-tree-render'
 import { renderVirtualWorkTree } from '@/domain/work-tree/work-tree-engine'
 
-export function registerVfsMacros(store: VfsPersistenceStore): void {
+export function registerVfsMacros(store: VfsPersistenceStore, ensureChatInitialized?: () => void): void {
   if (typeof SillyTavern === 'undefined') {
     return
   }
   const { registerMacro } = SillyTavern.getContext()
 
   registerMacro('VIRTUAL_FILE_TREE', () => {
+    ensureChatInitialized?.()
     const snapshot = store.getState().chat.chatVfsSnapshot
     return renderVirtualFileTree(snapshot)
   })
 
   registerMacro('VIRTUAL_WORK_TREE', () => {
+    ensureChatInitialized?.()
     const { chatVfsSnapshot, workTree } = store.getState().chat
     return renderVirtualWorkTree(chatVfsSnapshot, workTree)
   })

@@ -46,7 +46,7 @@ function directChildFiles(snapshot: VfsSnapshot, dirPath: string): VfsFileNodeSn
 }
 
 function sortFieldValue(f: VfsFileNodeSnapshot, field: DirectoryRule['sortField']): string | number {
-  if (field === 'name') return f.name.toLowerCase()
+  if (field === 'name') return f.name
   if (field === 'ctime') return f.ctime
   return f.mtime
 }
@@ -59,6 +59,8 @@ function sortFiles(files: VfsFileNodeSnapshot[], rule: DirectoryRule): VfsFileNo
     let c = 0
     if (typeof va === 'number' && typeof vb === 'number') c = va === vb ? 0 : va < vb ? -1 : 1
     else c = String(va).localeCompare(String(vb))
+    // Deterministic tie-breaker: should only trigger on equal timestamps/names.
+    if (c === 0) c = a.path.localeCompare(b.path)
     return c * dir
   })
 }
@@ -152,20 +154,57 @@ function buildRenderModes(snapshot: VfsSnapshot, config: WorkTreeConfig): Map<st
   return modes
 }
 
-/** Walk directory tree: children sorted by name; dirs before files in name order (mixed sort). */
-export function walkFilePathsInTreeOrder(snapshot: VfsSnapshot): string[] {
+function buildEmissionOrder(snapshot: VfsSnapshot, config: WorkTreeConfig, modes: Map<string, RenderMode>): string[] {
   const root = snapshot.nodes[snapshot.rootId]
   if (!root || root.type !== 'directory') return []
   const out: string[] = []
 
-  const visit = (dir: VfsDirectoryNodeSnapshot) => {
-    const children = dir.children.map((id) => snapshot.nodes[id]).filter(Boolean) as VfsNodeSnapshot[]
-    children.sort((a, b) => a.name.localeCompare(b.name))
-    for (const node of children) {
-      if (node.type === 'directory') visit(node)
-      else out.push(node.path)
+  const defaultNameRule: DirectoryRule = {
+    ...config.defaultRule,
+    sortField: 'name',
+    sortDirection: 'asc',
+  }
+
+  const sortNodeValue = (node: VfsNodeSnapshot, field: DirectoryRule['sortField']): string | number => {
+    if (field === 'name') return node.name
+    // Directories don't have `ctime`; for ordering we reuse `mtime` when users select created/updated-like fields.
+    if (node.type === 'file') {
+      return field === 'ctime' ? node.ctime : node.mtime
+    }
+    return node.mtime
+  }
+
+  const sortNodeCompare = (a: VfsNodeSnapshot, b: VfsNodeSnapshot, rule: DirectoryRule): number => {
+    const dir = rule.sortDirection === 'desc' ? -1 : 1
+    const va = sortNodeValue(a, rule.sortField)
+    const vb = sortNodeValue(b, rule.sortField)
+    let c = 0
+    if (typeof va === 'number' && typeof vb === 'number') c = va === vb ? 0 : va < vb ? -1 : 1
+    else c = String(va).localeCompare(String(vb))
+    if (c === 0) c = a.path.localeCompare(b.path)
+    return c * dir
+  }
+
+  const visit = (dir: VfsDirectoryNodeSnapshot): void => {
+    const dirPath = dir.path
+    const enabled = config.directoryRulesEnabled[dirPath] === true
+    const rule = enabled ? (config.directoryOverrides[dirPath] ?? config.defaultRule) : defaultNameRule
+
+    const children: VfsNodeSnapshot[] = dir.children
+      .map((id) => snapshot.nodes[id])
+      .filter(Boolean) as VfsNodeSnapshot[]
+
+    children.sort((a, b) => sortNodeCompare(a, b, rule))
+
+    for (const child of children) {
+      if (child.type === 'directory') {
+        visit(child)
+      } else if (modes.has(child.path)) {
+        out.push(child.path)
+      }
     }
   }
+
   visit(root)
   return out
 }
@@ -209,7 +248,7 @@ function renderOneFile(snapshot: VfsSnapshot, path: string, mode: RenderMode): s
 export function renderVirtualWorkTree(snapshot: VfsSnapshot, workTree: WorkTreeConfig | null): string {
   if (!workTree) return ''
   const modes = buildRenderModes(snapshot, workTree)
-  const order = walkFilePathsInTreeOrder(snapshot)
+  const order = buildEmissionOrder(snapshot, workTree, modes)
   const blocks: string[] = []
   for (const p of order) {
     const mode = modes.get(p)

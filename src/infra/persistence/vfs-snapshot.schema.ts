@@ -47,18 +47,19 @@ function parseNode(raw: unknown): VfsNodeSnapshot {
     return { ...common, type, children }
   }
 
-  const mtime = common.mtime
-  const ctimeRaw = raw.ctime
-  const ctime = typeof ctimeRaw === 'number' ? ctimeRaw : mtime
-  const ub = raw.updatedBy === 'user' || raw.updatedBy === 'assistant' ? raw.updatedBy : 'assistant'
+  // File nodes must provide strict metadata for the AI-facing `<file>` macro.
+  // Missing these fields is a spec violation and should not be silently backfilled.
+  if (typeof raw.mtime !== 'number') throw new VfsInvalidPathError('Missing file mtime')
+  if (typeof raw.ctime !== 'number') throw new VfsInvalidPathError('Missing file ctime')
+  if (raw.updatedBy !== 'user' && raw.updatedBy !== 'assistant') throw new VfsInvalidPathError('Missing file updatedBy')
 
   return {
     ...common,
     type,
     size: typeof raw.size === 'number' ? raw.size : 0,
     content: parseContent(raw.content),
-    ctime,
-    updatedBy: ub,
+    ctime: raw.ctime,
+    updatedBy: raw.updatedBy,
   }
 }
 

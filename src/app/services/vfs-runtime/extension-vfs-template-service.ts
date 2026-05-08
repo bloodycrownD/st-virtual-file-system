@@ -72,13 +72,14 @@ export class ExtensionVfsTemplateService {
    */
   overwriteChatWithTemplate(): void {
     const state = this.store.getState()
-    if (!state.extension.extensionTemplateVfsSnapshot) return
+    const templateSnapshot = state.extension.extensionTemplateVfsSnapshot
+    if (!templateSnapshot) return
     // Keep a rollback point before destructive template overwrite.
     // 覆盖前后都打 manual commit：前者是回退锚点，后者是新状态落点。
     this.versionService.commitByManualSave('pre-template-overwrite', ['*'])
     this.store.updateChat((draft) => ({
       ...draft,
-      chatVfsSnapshot: state.extension.extensionTemplateVfsSnapshot,
+      chatVfsSnapshot: templateSnapshot,
       templateInitialized: true,
     }))
     this.versionService.commitByManualSave('manual-template-overwrite', ['*'])
