@@ -3,7 +3,18 @@ import { VFS_ERROR_CODES } from '@/app/constants/vfsErrorCodes'
 import { saveCommit } from '@/app/services/vfs/commitService'
 
 const updateChatMock = vi.fn()
-const getStateMock = vi.fn(() => ({ chat: { chatVfsVersions: [] as unknown[] } }))
+const getStateMock = vi.fn(() => ({
+  chat: {
+    chatVfsVersions: [] as unknown[],
+    chatVfsSnapshot: {
+      schemaVersion: 1,
+      rootId: 'root',
+      nodes: {
+        root: { id: 'root', type: 'directory', path: '/', name: '', parentId: null, children: [], mtime: 1 },
+      },
+    },
+  },
+}))
 
 vi.mock('@/app/stores/vfs-store-singleton', () => ({
   vfsPersistenceStore: {

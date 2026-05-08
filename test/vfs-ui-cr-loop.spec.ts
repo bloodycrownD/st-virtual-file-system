@@ -1,5 +1,5 @@
 import { mount } from '@vue/test-utils'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import VfsActionMenu from '@/app/components/business-components/VfsActionMenu.vue'
 import VfsCommitTab from '@/app/components/business-components/VfsCommitTab.vue'
 import VfsHistoryScreen from '@/app/screens/business-screens/VfsHistoryScreen.vue'
@@ -13,7 +13,21 @@ import { vfsPersistenceStore } from '@/app/stores/vfs-store-singleton'
 const dispatchSpy = vi.fn()
 const useVfsCommitActionsMock = vi.fn<(summary: string) => Promise<boolean>>()
 const useVfsRollbackActionMock = vi.fn<(commitId: string) => Promise<boolean>>()
+const useVfsBatchRollbackActionMock = vi.fn<(commitIds: string[]) => Promise<boolean>>()
 const fetchLogsMock = vi.fn(async () => ({ items: [], total: 0 }))
+
+const mountedWrappers: Array<{ unmount: () => void }> = []
+function mountTracked<T>(...args: Parameters<typeof mount<T>>) {
+  const wrapper = mount<T>(...args)
+  mountedWrappers.push(wrapper)
+  return wrapper
+}
+
+afterEach(() => {
+  while (mountedWrappers.length) {
+    mountedWrappers.pop()?.unmount()
+  }
+})
 
 function getButtonByText(wrapper: ReturnType<typeof mount>, label: string) {
   const button = wrapper
@@ -65,6 +79,7 @@ vi.mock('@/app/composables/components-composables/useVfsCommitActions', () => ({
 
 vi.mock('@/app/composables/components-composables/useVfsRollbackActions', () => ({
   useVfsRollbackAction: (commitId: string) => useVfsRollbackActionMock(commitId),
+  useVfsBatchRollbackAction: (commitIds: string[]) => useVfsBatchRollbackActionMock(commitIds),
 }))
 
 vi.mock('@/app/services/vfs/logService', () => ({
@@ -79,6 +94,8 @@ describe('vfs ui cr loop fixes', () => {
     useVfsRollbackActionMock.mockReset()
     useVfsCommitActionsMock.mockResolvedValue(true)
     useVfsRollbackActionMock.mockResolvedValue(true)
+    useVfsBatchRollbackActionMock.mockReset()
+    useVfsBatchRollbackActionMock.mockResolvedValue(true)
     fetchLogsMock.mockClear()
     const now = Date.now()
     vfsPersistenceStore.updateChat((draft) => ({
@@ -133,7 +150,7 @@ describe('vfs ui cr loop fixes', () => {
   })
 
   it('maps rollback success and failure to history events', async () => {
-    const wrapper = mount(VfsHistoryScreen)
+    const wrapper = mountTracked(VfsHistoryScreen)
 
     await wrapper.findComponent(VfsCommitTab).vm.$emit('rollback-status', { kind: 'single', status: 'succeeded' })
     expect(dispatchSpy).toHaveBeenCalledWith({ type: 'ROLLBACK_SUCCESS' })
@@ -146,10 +163,24 @@ describe('vfs ui cr loop fixes', () => {
       errorCode: 'E_ROLLBACK_FAILED',
       message: 'Rollback failed',
     })
+
+    await wrapper.findComponent(VfsCommitTab).vm.$emit('rollback-status', {
+      kind: 'batch',
+      status: 'rollingBack',
+      sourceVersionIds: ['commit-1', 'commit-2'],
+    })
+    expect(dispatchSpy).toHaveBeenCalledWith({ type: 'BATCH_ROLLBACK_REQUEST' })
+
+    await wrapper.findComponent(VfsCommitTab).vm.$emit('rollback-status', {
+      kind: 'batch',
+      status: 'succeeded',
+      sourceVersionIds: ['commit-1', 'commit-2'],
+    })
+    expect(dispatchSpy).toHaveBeenCalledWith({ type: 'BATCH_ROLLBACK_SUCCESS' })
   })
 
   it('guards runtime action triggering by entity kind', async () => {
-    const wrapper = mount(VfsActionMenu, {
+    const wrapper = mountTracked(VfsActionMenu, {
       props: {
         entity: { id: 'file-1', name: 'a.md', kind: 'file', path: '/a.md' },
       },
@@ -186,7 +217,7 @@ describe('vfs ui cr loop fixes', () => {
   })
 
   it('shows editor history panel and emits manual rollback with source version', async () => {
-    const wrapper = mount(EditorScreen, {
+    const wrapper = mountTracked(EditorScreen, {
       props: {
         modelValue: 'draft',
         historyRecords: [
@@ -209,7 +240,7 @@ describe('vfs ui cr loop fixes', () => {
   })
 
   it('maps manual rollback selection to valid commit snapshot ids', async () => {
-    const wrapper = mount(EditorScreen, {
+    const wrapper = mountTracked(EditorScreen, {
       props: {
         modelValue: 'draft',
         historyRecords: [
@@ -231,8 +262,8 @@ describe('vfs ui cr loop fixes', () => {
     expect(wrapper.emitted('manualRollbackRequested')?.[0]).toEqual([{ sourceVersionId: 'commit-raw-1' }])
   })
 
-  it('uses single-target rollback interaction in commit tab', async () => {
-    const wrapper = mount(VfsCommitTab, {
+  it('supports batch rollback selection flow in commit tab', async () => {
+    const wrapper = mountTracked(VfsCommitTab, {
       props: {
         commits: [
           {
@@ -253,24 +284,28 @@ describe('vfs ui cr loop fixes', () => {
       },
     })
 
-    const rollbackButtonBefore = wrapper.get('button')
-    expect(rollbackButtonBefore.text()).toContain('回滚到所选提交')
-    expect(rollbackButtonBefore.attributes('disabled')).toBeDefined()
+    const batchButtonBefore = wrapper.get('button')
+    expect(batchButtonBefore.text()).toContain('批量回滚')
+    expect(batchButtonBefore.attributes('disabled')).toBeDefined()
 
-    const radios = wrapper.findAll('input[type="radio"]')
-    await radios[0].setValue(true)
+    const checks = wrapper.findAll('input[type="checkbox"]')
+    expect(checks.length).toBeGreaterThan(1)
+    await checks[0].setValue(true)
+    await checks[1].setValue(true)
     await wrapper.get('button').trigger('click')
 
-    expect(useVfsRollbackActionMock).toHaveBeenCalledWith('commit-1')
-    expect(wrapper.emitted('rollbackStatus')?.[0]).toEqual([{ kind: 'single', status: 'rollingBack', sourceVersionId: 'commit-1' }])
+    expect(useVfsBatchRollbackActionMock).toHaveBeenCalledWith(['commit-1', 'commit-2'])
+    expect(wrapper.emitted('rollbackStatus')?.[0]).toEqual([
+      { kind: 'batch', status: 'rollingBack', sourceVersionIds: ['commit-1', 'commit-2'] },
+    ])
     expect(wrapper.emitted('rollbackStatus')?.[1]).toEqual([
-      { kind: 'single', status: 'succeeded', sourceVersionId: 'commit-1' },
+      { kind: 'batch', status: 'succeeded', sourceVersionIds: ['commit-1', 'commit-2'] },
     ])
   })
 
   it('switches between mobile and desktop layout modes', async () => {
     window.innerWidth = 375
-    const wrapper = mount(VfsMainScreen)
+    const wrapper = mountTracked(VfsMainScreen)
     expect(wrapper.get('[data-testid="vfs-main-layout"]').attributes('data-layout')).toBe('mobile')
 
     window.innerWidth = 1366
@@ -282,7 +317,7 @@ describe('vfs ui cr loop fixes', () => {
 
   it('prompts before action-driven mode switch and keeps editor when cancelled', async () => {
     const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false)
-    const wrapper = mount(VfsMainScreen)
+    const wrapper = mountTracked(VfsMainScreen)
 
     await selectDocsFile(wrapper)
     await triggerEntityAction(wrapper, 'edit')
@@ -295,7 +330,7 @@ describe('vfs ui cr loop fixes', () => {
 
   it('prompts before action-driven mode switch and discards draft on force leave', async () => {
     const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true)
-    const wrapper = mount(VfsMainScreen)
+    const wrapper = mountTracked(VfsMainScreen)
 
     await selectDocsFile(wrapper)
     await triggerEntityAction(wrapper, 'edit')
@@ -311,7 +346,7 @@ describe('vfs ui cr loop fixes', () => {
 
   it('prompts before tab switch and stays on files when cancelled', async () => {
     const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false)
-    const wrapper = mount(VfsMainScreen)
+    const wrapper = mountTracked(VfsMainScreen)
 
     await selectDocsFile(wrapper)
     await triggerEntityAction(wrapper, 'edit')
@@ -324,7 +359,7 @@ describe('vfs ui cr loop fixes', () => {
   })
 
   it('wires editor save action to commit flow and appends commit record on success', async () => {
-    const wrapper = mount(VfsMainScreen)
+    const wrapper = mountTracked(VfsMainScreen)
     await selectDocsFile(wrapper)
     await triggerEntityAction(wrapper, 'edit')
     await wrapper.get('textarea.vfs-editor').setValue('new content')
@@ -352,7 +387,7 @@ describe('vfs ui cr loop fixes', () => {
       }),
     )
 
-    const wrapper = mount(VfsMainScreen)
+    const wrapper = mountTracked(VfsMainScreen)
     await selectDocsFile(wrapper)
     await triggerEntityAction(wrapper, 'edit')
     await wrapper.get('textarea.vfs-editor').setValue('pending save')
@@ -373,7 +408,7 @@ describe('vfs ui cr loop fixes', () => {
 
   it('applies dirty guard to popup-close exit event and cancels close when requested', async () => {
     const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false)
-    const wrapper = mount(VfsMainScreen)
+    const wrapper = mountTracked(VfsMainScreen)
     await selectDocsFile(wrapper)
     await triggerEntityAction(wrapper, 'edit')
     await wrapper.get('textarea.vfs-editor').setValue('unsaved by popup close')
@@ -391,7 +426,7 @@ describe('vfs ui cr loop fixes', () => {
         resolveRollback = resolve
       }),
     )
-    const wrapper = mount(VfsHistoryPanel)
+    const wrapper = mountTracked(VfsHistoryPanel)
     await wrapper.get('input').setValue('commit-1')
     await wrapper.get('button').trigger('click')
     await wrapper.vm.$nextTick()
@@ -408,7 +443,7 @@ describe('vfs ui cr loop fixes', () => {
 
   it('renders a real desktop enhanced layout without losing actions', async () => {
     window.innerWidth = 1366
-    const wrapper = mount(VfsMainScreen)
+    const wrapper = mountTracked(VfsMainScreen)
     expect(wrapper.get('[data-testid="vfs-desktop-grid"]').exists()).toBe(true)
 
     await selectDocsFile(wrapper)
@@ -419,16 +454,28 @@ describe('vfs ui cr loop fixes', () => {
   })
 
   it('uses More dropdown semantics for Tab1 actions', async () => {
-    const wrapper = mount(VfsMainScreen)
+    const wrapper = mountTracked(VfsMainScreen)
     const menu = wrapper.findComponent(VfsActionMenu)
     expect(menu.get('summary').text()).toContain('更多操作')
     expect(menu.get('details.vfs-action-menu').exists()).toBe(true)
   })
 
-  it('triggers one immediate auto log refresh on message event', async () => {
-    const wrapper = mount(VfsMainScreen)
-    window.dispatchEvent(new CustomEvent(VFS_LOG_REFRESH_AUTO))
+  it('does not auto-fetch logs on tab enter (manual by default)', async () => {
+    const wrapper = mountTracked(VfsMainScreen)
     await wrapper.get('.vfs-tabs button:nth-of-type(3)').trigger('click')
+    await Promise.resolve()
+    await wrapper.vm.$nextTick()
+
+    expect(fetchLogsMock).toHaveBeenCalledTimes(0)
+  })
+
+  it('triggers one auto log refresh when message event fires while Tab3 is open', async () => {
+    const wrapper = mountTracked(VfsMainScreen)
+    await wrapper.get('.vfs-tabs button:nth-of-type(3)').trigger('click')
+    await Promise.resolve()
+    await wrapper.vm.$nextTick()
+
+    window.dispatchEvent(new CustomEvent(VFS_LOG_REFRESH_AUTO))
     await Promise.resolve()
     await wrapper.vm.$nextTick()
 

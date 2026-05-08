@@ -31,10 +31,28 @@ onUnmounted(() => {
 })
 
 function onRollbackStatus(payload: {
-  kind: 'single'
+  kind: 'single' | 'batch'
   status: 'rollingBack' | 'succeeded' | 'failed'
   sourceVersionId?: string
+  sourceVersionIds?: string[]
 }): void {
+  if (payload.kind === 'batch') {
+    if (payload.status === 'rollingBack') {
+      machine.dispatch({ type: 'BATCH_ROLLBACK_REQUEST' })
+      return
+    }
+    if (payload.status === 'succeeded') {
+      machine.dispatch({ type: 'BATCH_ROLLBACK_SUCCESS' })
+      return
+    }
+    machine.dispatch({
+      type: 'BATCH_ROLLBACK_FAILED',
+      errorCode: VFS_ERROR_CODES.BATCH_ROLLBACK_FAILED,
+      message: 'Batch rollback failed',
+    })
+    return
+  }
+
   if (payload.status === 'rollingBack') {
     machine.dispatch({ type: 'ROLLBACK_REQUEST' })
     return

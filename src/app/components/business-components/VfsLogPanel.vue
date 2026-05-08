@@ -30,6 +30,7 @@ const pagination = computed(() => {
 })
 
 async function refreshLogs(page = currentPage.value): Promise<void> {
+  if (isLoading.value) return
   isLoading.value = true
   status.value = 'refreshing'
   try {
@@ -66,7 +67,7 @@ watch(
     if (token <= 0) return
     void refreshLogs(currentPage.value)
   },
-  { immediate: true },
+  { immediate: false },
 )
 </script>
 
