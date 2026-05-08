@@ -3,10 +3,19 @@ export const VFS_LOG_REFRESH_AUTO = 'VFS_LOG_REFRESH_AUTO'
 export const VFS_STATE_REFRESH_REQUIRED = 'VFS_STATE_REFRESH_REQUIRED'
 export const VFS_POPUP_OPENED = 'VFS_POPUP_OPENED'
 export const VFS_POPUP_CLOSED = 'VFS_POPUP_CLOSED'
+export const VFS_POPUP_BEFORE_CLOSE = 'VFS_POPUP_BEFORE_CLOSE'
 
 export function emitVfsEvent(eventName: string): void {
   if (typeof window === 'undefined') return
   window.dispatchEvent(new CustomEvent(eventName))
+}
+
+export function requestVfsPopupClose(): boolean {
+  if (typeof window === 'undefined') return true
+  const event = new CustomEvent(VFS_POPUP_BEFORE_CLOSE, {
+    cancelable: true,
+  })
+  return window.dispatchEvent(event)
 }
 
 export function useVfsMessageHooks(): () => void {

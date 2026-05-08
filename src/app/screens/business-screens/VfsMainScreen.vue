@@ -19,7 +19,11 @@ import EditorScreen from '@/app/screens/pure-screens/EditorScreen.vue'
 import ReaderScreen from '@/app/screens/pure-screens/ReaderScreen.vue'
 import SlideshowScreen from '@/app/screens/pure-screens/SlideshowScreen.vue'
 import VfsTabShellScreen from '@/app/screens/pure-screens/VfsTabShellScreen.vue'
+import { useVfsCommitActions } from '@/app/composables/components-composables/useVfsCommitActions'
+import { createVfsHistoryStateMachine } from '@/app/composables/screens-composables/useVfsHistoryStateMachine'
 import { useVfsRollbackAction } from '@/app/composables/components-composables/useVfsRollbackActions'
+import { VFS_ERROR_CODES } from '@/app/constants/vfsErrorCodes'
+import { VFS_POPUP_BEFORE_CLOSE } from '@/app/composables/components-composables/useVfsMessageHooks'
 
 const mode = ref<'list' | 'reader' | 'editor' | 'slideshow'>('list')
 const editorContent = ref('')
@@ -34,6 +38,10 @@ const entityList = ref<VfsManagerEntity[]>([
 ])
 const selectedEntityId = ref('docs-file')
 const history = createVfsCommitHistoryStore()
+const historyMachine = createVfsHistoryStateMachine()
+const writeScopesInProgress = ref(new Set<string>())
+const saveInProgress = ref(false)
+const rollbackInProgress = ref(false)
 const slideshowDirectories = ref([
   { id: 'docs', name: 'Docs', pages: ['docs-1', 'docs-2', 'docs-3'] },
   { id: 'notes', name: 'Notes', pages: ['notes-1', 'notes-2'] },
@@ -62,13 +70,43 @@ function appendHistory(actionType: VfsCommitActionType, scope: string, sourceVer
   })
 }
 
+function withWriteScopeGuard(scope: string, action: 'save' | 'rollback', task: () => Promise<void>): Promise<void> {
+  // WHY: saves and rollbacks both mutate the same file timeline; serialize by scope to avoid overlap races.
+  if (writeScopesInProgress.value.has(scope)) return Promise.resolve()
+  writeScopesInProgress.value.add(scope)
+  if (action === 'save') {
+    saveInProgress.value = true
+  } else {
+    rollbackInProgress.value = true
+  }
+  return task().finally(() => {
+    writeScopesInProgress.value.delete(scope)
+    if (action === 'save') {
+      saveInProgress.value = false
+    } else {
+      rollbackInProgress.value = false
+    }
+  })
+}
+
+function handlePopupBeforeClose(event: Event): void {
+  if (mode.value !== 'editor' || !isDirty.value) return
+  if (window.confirm('Unsaved changes will be discarded. Continue?')) {
+    discardEditorDraft()
+    return
+  }
+  event.preventDefault()
+}
+
 onMounted(() => {
   window.addEventListener(VFS_STATE_REFRESH_REQUIRED, refreshAllViews)
+  window.addEventListener(VFS_POPUP_BEFORE_CLOSE, handlePopupBeforeClose)
   window.addEventListener('resize', updateLayout)
 })
 
 onUnmounted(() => {
   window.removeEventListener(VFS_STATE_REFRESH_REQUIRED, refreshAllViews)
+  window.removeEventListener(VFS_POPUP_BEFORE_CLOSE, handlePopupBeforeClose)
   window.removeEventListener('resize', updateLayout)
 })
 
@@ -118,12 +156,36 @@ function guardTabChange(nextTab: 'files' | 'history' | 'logs'): boolean {
 }
 
 async function handleEditorManualRollback(payload: { sourceVersionId: string }): Promise<void> {
-  const ok = await useVfsRollbackAction(payload.sourceVersionId)
-  if (!ok) return
-  // WHY: rollback success is a new commit entry; failures must preserve the current editor draft.
-  appendHistory('rollback', selectedEntity.value?.path ?? '/', payload.sourceVersionId)
-  savedContent.value = editorContent.value
-  isDirty.value = false
+  const scope = selectedEntity.value?.path ?? '/'
+  await withWriteScopeGuard(scope, 'rollback', async () => {
+    const ok = await useVfsRollbackAction(payload.sourceVersionId)
+    if (!ok) return
+    // WHY: rollback success is a new commit entry; failures must preserve the current editor draft.
+    appendHistory('rollback', scope, payload.sourceVersionId)
+    savedContent.value = editorContent.value
+    isDirty.value = false
+  })
+}
+
+async function handleEditorSaveRequested(): Promise<void> {
+  const scope = selectedEntity.value?.path ?? '/'
+  await withWriteScopeGuard(scope, 'save', async () => {
+    // WHY: Save transitions stay explicit for auditability and predictable async status.
+    historyMachine.dispatch({ type: 'SAVE_REQUEST' })
+    const ok = await useVfsCommitActions(scope)
+    if (!ok) {
+      historyMachine.dispatch({
+        type: 'SAVE_FAILED',
+        errorCode: VFS_ERROR_CODES.SAVE_FAILED,
+        message: 'Save failed',
+      })
+      return
+    }
+    historyMachine.dispatch({ type: 'SAVE_SUCCESS' })
+    appendHistory('save', scope)
+    savedContent.value = editorContent.value
+    isDirty.value = false
+  })
 }
 </script>
 
@@ -152,7 +214,10 @@ async function handleEditorManualRollback(payload: { sourceVersionId: string }):
         :key="`editor-${viewRefreshToken}`"
         v-model="editorContent"
         :history-records="editorHistoryRecords"
+        :save-in-progress="saveInProgress"
+        :rollback-in-progress="rollbackInProgress"
         @update:model-value="isDirty = true"
+        @save-requested="handleEditorSaveRequested"
         @manual-rollback-requested="handleEditorManualRollback"
       />
       <SlideshowScreen v-if="mode === 'slideshow'" :directories="slideshowDirectories" />

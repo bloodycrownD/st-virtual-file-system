@@ -7,20 +7,30 @@ const model = defineModel<string>({ required: true })
 const props = withDefaults(
   defineProps<{
     historyRecords?: VfsCommitHistoryRecord[]
+    saveInProgress?: boolean
+    rollbackInProgress?: boolean
   }>(),
   {
     historyRecords: () => [],
+    saveInProgress: false,
+    rollbackInProgress: false,
   },
 )
 const emits = defineEmits<{
   manualRollbackRequested: [payload: { sourceVersionId: string }]
+  saveRequested: []
 }>()
 const previewMode = ref(false)
 const rollbackSourceVersionId = ref('')
 
 function requestManualRollback(): void {
-  if (!rollbackSourceVersionId.value.trim()) return
+  if (!rollbackSourceVersionId.value.trim() || props.rollbackInProgress) return
   emits('manualRollbackRequested', { sourceVersionId: rollbackSourceVersionId.value.trim() })
+}
+
+function requestSave(): void {
+  if (props.saveInProgress) return
+  emits('saveRequested')
 }
 </script>
 
@@ -29,6 +39,9 @@ function requestManualRollback(): void {
     <header class="vfs-editor-toolbar">
       <button type="button" @click="previewMode = !previewMode">
         {{ previewMode ? 'Source' : 'Preview' }}
+      </button>
+      <button data-testid="editor-save-submit" type="button" :disabled="props.saveInProgress" @click="requestSave">
+        {{ props.saveInProgress ? 'Saving...' : 'Save' }}
       </button>
     </header>
     <textarea v-if="!previewMode" v-model="model" class="vfs-editor"></textarea>
@@ -50,7 +63,14 @@ function requestManualRollback(): void {
         type="text"
         placeholder="source version id"
       />
-      <button data-testid="editor-history-rollback-submit" type="button" @click="requestManualRollback">Rollback</button>
+      <button
+        data-testid="editor-history-rollback-submit"
+        type="button"
+        :disabled="props.rollbackInProgress"
+        @click="requestManualRollback"
+      >
+        {{ props.rollbackInProgress ? 'Rolling back...' : 'Rollback' }}
+      </button>
     </aside>
   </section>
 </template>

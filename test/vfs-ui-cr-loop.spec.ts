@@ -5,9 +5,13 @@ import VfsCommitTab from '@/app/components/business-components/VfsCommitTab.vue'
 import VfsHistoryScreen from '@/app/screens/business-screens/VfsHistoryScreen.vue'
 import VfsMainScreen from '@/app/screens/business-screens/VfsMainScreen.vue'
 import EditorScreen from '@/app/screens/pure-screens/EditorScreen.vue'
+import VfsHistoryPanel from '@/app/components/business-components/VfsHistoryPanel.vue'
 import { createVfsCommitHistoryStore } from '@/app/composables/components-composables/useVfsCommitHistory'
 
 const dispatchSpy = vi.fn()
+const useVfsCommitActionsMock = vi.fn<(summary: string) => Promise<boolean>>()
+const useVfsRollbackActionMock = vi.fn<(commitId: string) => Promise<boolean>>()
+const useVfsBatchRollbackActionMock = vi.fn<(commitIds: string[]) => Promise<boolean>>()
 
 function getButtonByText(wrapper: ReturnType<typeof mount>, label: string) {
   const button = wrapper
@@ -26,9 +30,24 @@ vi.mock('@/app/composables/screens-composables/useVfsHistoryStateMachine', () =>
   }),
 }))
 
+vi.mock('@/app/composables/components-composables/useVfsCommitActions', () => ({
+  useVfsCommitActions: (summary: string) => useVfsCommitActionsMock(summary),
+}))
+
+vi.mock('@/app/composables/components-composables/useVfsRollbackActions', () => ({
+  useVfsRollbackAction: (commitId: string) => useVfsRollbackActionMock(commitId),
+  useVfsBatchRollbackAction: (commitIds: string[]) => useVfsBatchRollbackActionMock(commitIds),
+}))
+
 describe('vfs ui cr loop fixes', () => {
   beforeEach(() => {
     dispatchSpy.mockReset()
+    useVfsCommitActionsMock.mockReset()
+    useVfsRollbackActionMock.mockReset()
+    useVfsBatchRollbackActionMock.mockReset()
+    useVfsCommitActionsMock.mockResolvedValue(true)
+    useVfsRollbackActionMock.mockResolvedValue(true)
+    useVfsBatchRollbackActionMock.mockResolvedValue(true)
   })
 
   it('maps batch rollback success and failure to batch events', async () => {
@@ -157,5 +176,85 @@ describe('vfs ui cr loop fixes', () => {
     expect(confirmSpy).toHaveBeenCalled()
     expect(wrapper.find('textarea.vfs-editor').exists()).toBe(true)
     expect(wrapper.get('[data-testid="vfs-main-layout"]').exists()).toBe(true)
+  })
+
+  it('wires editor save action to commit flow and appends commit record on success', async () => {
+    const wrapper = mount(VfsMainScreen)
+    await getButtonByText(wrapper, 'Open Editor').trigger('click')
+    await wrapper.get('textarea.vfs-editor').setValue('new content')
+    await wrapper.get('[data-testid="editor-save-submit"]').trigger('click')
+    await Promise.resolve()
+    await wrapper.vm.$nextTick()
+
+    expect(useVfsCommitActionsMock).toHaveBeenCalledTimes(1)
+    expect(useVfsCommitActionsMock).toHaveBeenCalledWith('/docs/docs.md')
+    expect(dispatchSpy).toHaveBeenCalledWith({ type: 'SAVE_REQUEST' })
+    expect(dispatchSpy).toHaveBeenCalledWith({ type: 'SAVE_SUCCESS' })
+    expect(wrapper.text()).toContain('save')
+    expect(wrapper.text()).toContain('/docs/docs.md')
+
+    await getButtonByText(wrapper, 'Open Reader').trigger('click')
+    expect(wrapper.find('textarea.vfs-editor').exists()).toBe(false)
+    expect(wrapper.find('.vfs-reader').exists()).toBe(true)
+  })
+
+  it('guards overlapping save and rollback write flows per file', async () => {
+    let resolveSave: ((value: boolean) => void) | undefined
+    useVfsCommitActionsMock.mockReturnValue(
+      new Promise<boolean>((resolve) => {
+        resolveSave = resolve
+      }),
+    )
+
+    const wrapper = mount(VfsMainScreen)
+    await getButtonByText(wrapper, 'Open Editor').trigger('click')
+    await wrapper.get('textarea.vfs-editor').setValue('pending save')
+    await wrapper.get('[data-testid="editor-save-submit"]').trigger('click')
+    await wrapper.get('[data-testid="editor-save-submit"]').trigger('click')
+    await wrapper.get('[data-testid="editor-history-rollback-id"]').setValue('v1')
+    await wrapper.get('[data-testid="editor-history-rollback-submit"]').trigger('click')
+
+    expect(useVfsCommitActionsMock).toHaveBeenCalledTimes(1)
+    expect(useVfsRollbackActionMock).toHaveBeenCalledTimes(0)
+
+    resolveSave?.(true)
+    await Promise.resolve()
+    await wrapper.vm.$nextTick()
+    await wrapper.get('[data-testid="editor-history-rollback-submit"]').trigger('click')
+    expect(useVfsRollbackActionMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('applies dirty guard to popup-close exit event and cancels close when requested', async () => {
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false)
+    const wrapper = mount(VfsMainScreen)
+    await getButtonByText(wrapper, 'Open Editor').trigger('click')
+    await wrapper.get('textarea.vfs-editor').setValue('unsaved by popup close')
+    const beforeCloseEvent = new CustomEvent('VFS_POPUP_BEFORE_CLOSE', { cancelable: true })
+    const allowed = window.dispatchEvent(beforeCloseEvent)
+
+    expect(confirmSpy).toHaveBeenCalled()
+    expect(allowed).toBe(false)
+  })
+
+  it('disables rollback controls while rollback request is in progress', async () => {
+    let resolveRollback: ((value: boolean) => void) | undefined
+    useVfsRollbackActionMock.mockReturnValue(
+      new Promise<boolean>((resolve) => {
+        resolveRollback = resolve
+      }),
+    )
+    const wrapper = mount(VfsHistoryPanel)
+    await wrapper.get('input').setValue('commit-1')
+    await wrapper.get('button').trigger('click')
+    await wrapper.vm.$nextTick()
+
+    const rollbackButton = wrapper.get('button')
+    expect(rollbackButton.attributes('disabled')).toBeDefined()
+    expect(rollbackButton.text().toLowerCase()).toContain('rolling')
+
+    resolveRollback?.(true)
+    await Promise.resolve()
+    await wrapper.vm.$nextTick()
+    expect(wrapper.get('button').attributes('disabled')).toBeUndefined()
   })
 })
