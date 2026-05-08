@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 export type VfsCommitActionType = 'save' | 'rollback' | 'batch-rollback' | 'trace-rollback'
 
 export interface VfsCommitHistoryRecord {
+  commitId?: string
   time: string
   operator: string
   actionType: VfsCommitActionType

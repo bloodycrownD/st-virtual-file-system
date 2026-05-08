@@ -157,6 +157,64 @@ describe('vfs ui cr loop fixes', () => {
     expect(wrapper.emitted('manualRollbackRequested')?.[0]).toEqual([{ sourceVersionId: 'v42' }])
   })
 
+  it('allows manual rollback target from normal history versions', async () => {
+    const wrapper = mount(EditorScreen, {
+      props: {
+        modelValue: 'draft',
+        historyRecords: [
+          {
+            commitId: 'commit-raw-1',
+            time: '2026-05-08T12:00:00.000Z',
+            operator: 'assistant',
+            actionType: 'save',
+            scope: '/docs/a.md',
+          },
+        ],
+      },
+    })
+
+    await wrapper.get('[data-testid="editor-history-rollback-list"] input[type="radio"]').setValue(true)
+    await wrapper.get('[data-testid="editor-history-rollback-submit"]').trigger('click')
+
+    expect(wrapper.emitted('manualRollbackRequested')?.[0]).toEqual([{ sourceVersionId: 'commit-raw-1' }])
+  })
+
+  it('uses single-target rollback interaction in commit tab', async () => {
+    const wrapper = mount(VfsCommitTab, {
+      props: {
+        commits: [
+          {
+            id: 'commit-1',
+            time: '2026-05-08T11:00:00.000Z',
+            operator: 'assistant',
+            actionType: 'save',
+            scope: '/docs/a.md',
+          },
+          {
+            id: 'commit-2',
+            time: '2026-05-08T10:00:00.000Z',
+            operator: 'assistant',
+            actionType: 'save',
+            scope: '/docs/b.md',
+          },
+        ],
+      },
+    })
+
+    const rollbackButtonBefore = wrapper.get('button')
+    expect(rollbackButtonBefore.text()).toContain('回滚所选提交')
+    expect(rollbackButtonBefore.attributes('disabled')).toBeDefined()
+
+    const radios = wrapper.findAll('input[type="radio"]')
+    await radios[0].setValue(true)
+    await radios[1].setValue(true)
+    await wrapper.get('button').trigger('click')
+
+    expect(useVfsRollbackActionMock).toHaveBeenCalledWith('commit-2')
+    expect(wrapper.emitted('rollbackStatus')?.[0]).toEqual([{ kind: 'single', status: 'rollingBack' }])
+    expect(wrapper.emitted('rollbackStatus')?.[1]).toEqual([{ kind: 'single', status: 'succeeded', sourceVersionId: 'commit-2' }])
+  })
+
   it('switches between mobile and desktop layout modes', async () => {
     window.innerWidth = 375
     const wrapper = mount(VfsMainScreen)

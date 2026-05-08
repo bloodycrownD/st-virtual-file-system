@@ -23,13 +23,15 @@ const emits = defineEmits<{
 const previewMode = ref(false)
 const rollbackSourceVersionId = ref<string | null>(null)
 const rollbackOptions = computed(() =>
-  props.historyRecords
-    .filter((record) => record.sourceVersionId)
-    .map((record) => ({
-      key: `${record.time}-${record.scope}-${record.sourceVersionId}`,
+  props.historyRecords.flatMap((record) => {
+    const targetId = record.sourceVersionId ?? record.commitId
+    if (!targetId) return []
+    return {
+      key: `${record.time}-${record.scope}-${targetId}`,
       label: `${record.time} · ${record.actionType} · ${record.scope}`,
-      sourceVersionId: record.sourceVersionId as string,
-    })),
+      sourceVersionId: targetId,
+    }
+  }),
 )
 
 function requestManualRollback(): void {

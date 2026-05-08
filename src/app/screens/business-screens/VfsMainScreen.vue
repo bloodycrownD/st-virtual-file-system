@@ -95,11 +95,12 @@ function refreshAuthoritativeState(): void {
   }
   history.replaceRecords(
     chatState.chatVfsVersions.map((entry) => ({
+      commitId: entry.id,
       time: entry.time,
       operator: entry.operator,
       actionType: entry.actionType,
       scope: entry.scope,
-      sourceVersionId: entry.sourceVersion?.id,
+      sourceVersionId: entry.sourceVersion?.id ?? entry.id,
     })),
   )
   const selectedPath = selectedEntity.value?.path
