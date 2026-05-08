@@ -22,7 +22,7 @@
  */
 import { createApp } from 'vue'
 import App from './App.vue'
-import { initVfsPersistenceStore, vfsPersistenceStore } from '@/app/stores/vfs-store-singleton'
+import { initVfsPersistenceStore, registerVfsChatReloadHook, vfsPersistenceStore } from '@/app/stores/vfs-store-singleton'
 import { createMessageController } from '@/app/controllers/message-controller'
 import { createMessagePipeline } from '@/app/services/message/message-pipeline'
 import { createStMessageEventAdapter } from '@/infra/sillytarvern/events/st-event-adapter'
@@ -55,8 +55,9 @@ initVfsPersistenceStore()
 // - ST prompt macros read the same store snapshot (sync handlers)
 // - runtime + handler wired into message pipeline and ST event source
 const versionService = new ChatVfsVersionService(vfsPersistenceStore)
-const templateService = new ExtensionVfsTemplateService(vfsPersistenceStore, versionService)
+const templateService = new ExtensionVfsTemplateService(vfsPersistenceStore)
 templateService.initializeChatFromTemplateIfNeeded()
+registerVfsChatReloadHook(templateService.initializeChatFromTemplateIfNeeded.bind(templateService))
 registerVfsMacros(vfsPersistenceStore, templateService.initializeChatFromTemplateIfNeeded.bind(templateService))
 const runtime = new ChatVfsRuntime(vfsPersistenceStore, new ToolDispatcher(), versionService, templateService)
 const logs = new ChatVfsLogService(vfsPersistenceStore)

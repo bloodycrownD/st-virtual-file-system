@@ -124,4 +124,16 @@ describe('vfs ui contracts', () => {
 
     popup.close()
   })
+
+  it('opens template popup with Tab1-only capabilities', () => {
+    const popup = useVfsPopupLifecycle()
+    popup.open({ scope: 'template', title: '模板管理' })
+
+    const tabs = Array.from(document.querySelectorAll('.vfs-tabs button')).map((button) => button.textContent?.trim() ?? '')
+    expect(tabs).toEqual(['文件管理器'])
+    expect(document.body.textContent).not.toContain('提交记录')
+    expect(document.body.textContent).not.toContain('日志')
+
+    popup.close()
+  })
 })

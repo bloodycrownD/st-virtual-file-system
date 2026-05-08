@@ -9,6 +9,8 @@ import VfsHistoryPanel from '@/app/components/business-components/VfsHistoryPane
 import { createVfsCommitHistoryStore } from '@/app/composables/components-composables/useVfsCommitHistory'
 import { VFS_LOG_REFRESH_AUTO } from '@/app/composables/components-composables/useVfsMessageHooks'
 import { vfsPersistenceStore } from '@/app/stores/vfs-store-singleton'
+import { DeflateContentCodec } from '@/infra/serialization/deflate-codec'
+import type { VfsSnapshot } from '@/domain/vfs/types'
 
 const dispatchSpy = vi.fn()
 const useVfsCommitActionsMock = vi.fn<(summary: string) => Promise<boolean>>()
@@ -66,6 +68,22 @@ async function selectDocsFile(wrapper: ReturnType<typeof mount>) {
   await fileButton.trigger('click')
 }
 
+function decodeFileFromSnapshot(snapshot: VfsSnapshot, path: string): string {
+  const node = Object.values(snapshot.nodes).find((candidate) => candidate.path === path)
+  if (!node || node.type !== 'file') return ''
+  return new DeflateContentCodec().decode(node.content)
+}
+
+async function selectTemplateFile(wrapper: ReturnType<typeof mount>) {
+  const list = wrapper.get('[data-testid="vfs-file-manager-list"]')
+  const candidates = list.findAll('button.vfs-fm-item')
+  const fileButton = candidates.find((btn) => btn.text().includes('template.md'))
+  if (!fileButton) {
+    throw new Error('template.md not found')
+  }
+  await fileButton.trigger('click')
+}
+
 vi.mock('@/app/composables/screens-composables/useVfsHistoryStateMachine', () => ({
   createVfsHistoryStateMachine: () => ({
     state: { status: 'idle' },
@@ -98,6 +116,37 @@ describe('vfs ui cr loop fixes', () => {
     useVfsBatchRollbackActionMock.mockResolvedValue(true)
     fetchLogsMock.mockClear()
     const now = Date.now()
+    const templateSnapshot = {
+      schemaVersion: 1,
+      rootId: 't-root',
+      nodes: {
+        't-root': {
+          id: 't-root',
+          type: 'directory',
+          path: '/',
+          name: '',
+          parentId: null,
+          children: ['t-file'],
+          mtime: now,
+        },
+        't-file': {
+          id: 't-file',
+          type: 'file',
+          path: '/template.md',
+          name: 'template.md',
+          parentId: 't-root',
+          size: 8,
+          content: { encoding: 'plain', data: 'template', originalSize: 8 },
+          mtime: now,
+          ctime: now,
+          updatedBy: 'assistant',
+        },
+      },
+    }
+    vfsPersistenceStore.updateExtension((draft) => ({
+      ...draft,
+      extensionTemplateVfsSnapshot: templateSnapshot,
+    }))
     vfsPersistenceStore.updateChat((draft) => ({
       ...draft,
       chatVfsSnapshot: {
@@ -147,6 +196,65 @@ describe('vfs ui cr loop fixes', () => {
         },
       ],
     }))
+  })
+
+  it('requires explicit destructive confirmation before template overwrite', async () => {
+    const initial = JSON.stringify(vfsPersistenceStore.getState().chat.chatVfsSnapshot)
+    const initialLogs = vfsPersistenceStore.getState().chat.chatVfsLogs.length
+    const initialVersions = vfsPersistenceStore.getState().chat.chatVfsVersions.length
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false)
+    const wrapper = mountTracked(VfsMainScreen)
+
+    const overwriteButton = getButtonByText(wrapper, '模板覆盖当前目录')
+    await overwriteButton.trigger('click')
+
+    expect(confirmSpy).toHaveBeenCalledTimes(1)
+    expect(JSON.stringify(vfsPersistenceStore.getState().chat.chatVfsSnapshot)).toBe(initial)
+    expect(vfsPersistenceStore.getState().chat.chatVfsLogs.length).toBe(initialLogs)
+    expect(vfsPersistenceStore.getState().chat.chatVfsVersions.length).toBe(initialVersions)
+  })
+
+  it('overwrites chat snapshot and resets chat logs/version history after confirmation', async () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+    const wrapper = mountTracked(VfsMainScreen)
+
+    const overwriteButton = getButtonByText(wrapper, '模板覆盖当前目录')
+    await overwriteButton.trigger('click')
+
+    const state = vfsPersistenceStore.getState()
+    const template = state.extension.extensionTemplateVfsSnapshot
+    expect(template).not.toBeNull()
+    expect(state.chat.chatVfsSnapshot).toEqual(template)
+    expect(state.chat.chatVfsLogs).toEqual([])
+    expect(state.chat.chatVfsVersions).toEqual([])
+    expect(state.chat.templateInitialized).toBe(true)
+  })
+
+  it('forces Tab1-only when mounted in template scope', async () => {
+    const wrapper = mountTracked(VfsMainScreen, {
+      props: {
+        scope: 'template',
+      },
+    })
+
+    const tabs = wrapper.findAll('.vfs-tabs button').map((button) => button.text().trim())
+    expect(tabs).toEqual(['文件管理器'])
+    expect(wrapper.text()).not.toContain('模板覆盖当前目录')
+  })
+
+  it('hides history and rollback controls in template mode editor', async () => {
+    const wrapper = mountTracked(VfsMainScreen, {
+      props: {
+        scope: 'template',
+      },
+    })
+
+    await selectTemplateFile(wrapper)
+    await triggerEntityAction(wrapper, 'edit')
+    expect(wrapper.find('textarea.vfs-editor').exists()).toBe(true)
+    expect(wrapper.text()).not.toContain('History')
+    expect(wrapper.find('[data-testid="editor-history-rollback-list"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="editor-history-rollback-submit"]').exists()).toBe(false)
   })
 
   it('maps rollback success and failure to history events', async () => {
@@ -367,6 +475,8 @@ describe('vfs ui cr loop fixes', () => {
     await Promise.resolve()
     await wrapper.vm.$nextTick()
 
+    const snapshot = vfsPersistenceStore.getState().chat.chatVfsSnapshot
+    expect(decodeFileFromSnapshot(snapshot, '/docs/docs.md')).toBe('new content')
     expect(useVfsCommitActionsMock).toHaveBeenCalledTimes(1)
     expect(useVfsCommitActionsMock).toHaveBeenCalledWith('/docs/docs.md')
     expect(dispatchSpy).toHaveBeenCalledWith({ type: 'SAVE_REQUEST' })
@@ -377,6 +487,27 @@ describe('vfs ui cr loop fixes', () => {
     await triggerEntityAction(wrapper, 'view')
     expect(wrapper.find('textarea.vfs-editor').exists()).toBe(false)
     expect(wrapper.find('.vfs-reader').exists()).toBe(true)
+  })
+
+  it('persists edited content into extension template snapshot in template mode save', async () => {
+    const wrapper = mountTracked(VfsMainScreen, {
+      props: {
+        scope: 'template',
+      },
+    })
+
+    await selectTemplateFile(wrapper)
+    await triggerEntityAction(wrapper, 'edit')
+    await wrapper.get('textarea.vfs-editor').setValue('template updated')
+    await wrapper.get('[data-testid="editor-save-submit"]').trigger('click')
+    await Promise.resolve()
+    await wrapper.vm.$nextTick()
+
+    const template = vfsPersistenceStore.getState().extension.extensionTemplateVfsSnapshot
+    expect(template).not.toBeNull()
+    expect(decodeFileFromSnapshot(template!, '/template.md')).toBe('template updated')
+    // WHY: template mode is Tab1-only and should not append chat commit history.
+    expect(useVfsCommitActionsMock).not.toHaveBeenCalled()
   })
 
   it('allows overlapping save and rollback requests and leaves resolution to execution result', async () => {

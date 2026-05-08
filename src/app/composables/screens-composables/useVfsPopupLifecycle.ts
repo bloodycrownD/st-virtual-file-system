@@ -8,6 +8,11 @@ import {
 
 const POPUP_ID = 'st-vfs-popup'
 const POPUP_APP_ID = 'st-vfs-popup-app'
+type VfsPopupScope = 'chat' | 'template'
+interface VfsPopupOpenOptions {
+  scope?: VfsPopupScope
+  title?: string
+}
 
 export function useVfsPopupLifecycle() {
   let popup: HTMLDialogElement | null = null
@@ -42,7 +47,7 @@ export function useVfsPopupLifecycle() {
     disposePopup()
   }
 
-  const open = () => {
+  const open = (options?: VfsPopupOpenOptions) => {
     if (typeof document === 'undefined') return null
     if (popup && popup.open) return popup
     if (popup) {
@@ -52,6 +57,9 @@ export function useVfsPopupLifecycle() {
     popup.id = POPUP_ID
     popup.style.width = '80vw'
     popup.style.maxWidth = '960px'
+    if (options?.title) {
+      popup.setAttribute('aria-label', options.title)
+    }
     popup.innerHTML = `<div id="${POPUP_APP_ID}"></div>`
     popup.addEventListener('close', onClose)
     popup.addEventListener('cancel', onCancel)
@@ -63,7 +71,10 @@ export function useVfsPopupLifecycle() {
     }
     const appRoot = popup.querySelector(`#${POPUP_APP_ID}`)
     if (appRoot) {
-      popupApp = createApp(VfsMainScreen)
+      popupApp = createApp(VfsMainScreen, {
+        scope: options?.scope ?? 'chat',
+        tabs: options?.scope === 'template' ? ['files'] : ['files', 'history', 'logs'],
+      })
       popupApp.mount(appRoot)
     }
     return popup

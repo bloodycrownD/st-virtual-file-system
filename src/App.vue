@@ -8,6 +8,7 @@ import { createMessageController } from '@/app/controllers/message-controller'
 import { createMessagePipeline } from '@/app/services/message/message-pipeline'
 import { initVfsPersistenceStore, vfsPersistenceStore } from '@/app/stores/vfs-store-singleton'
 import { createStMessageEventAdapter } from '@/infra/sillytarvern/events/st-event-adapter'
+import { useVfsPopupLifecycle } from '@/app/composables/screens-composables/useVfsPopupLifecycle'
 
 /** 与 checkbox 双向绑定；勾选状态变化时在 handleToggle 里写回 store */
 const enabled = ref(true)
@@ -20,6 +21,7 @@ let unsubscribe: (() => void) | null = null
  * Adapter 只在 start() 时向 ST 注册事件；真正业务在 pipeline（当前为桩实现）。
  */
 const messageEventAdapter = createStMessageEventAdapter(createMessageController(createMessagePipeline()))
+const popup = useVfsPopupLifecycle()
 
 onMounted(() => {
   /** 初始化持久化 + 监听 CHAT_CHANGED 以重载 chatMetadata 对应内存状态 */
@@ -44,6 +46,10 @@ onUnmounted(() => {
 const handleToggle = () => {
   vfsPersistenceStore.setExtensionEnabled(enabled.value)
 }
+
+const openTemplateManager = () => {
+  popup.open({ scope: 'template', title: '模板管理' })
+}
 </script>
 
 <template>
@@ -61,6 +67,9 @@ const handleToggle = () => {
             <input v-model="enabled" type="checkbox" @change="handleToggle" />
             <span>启用虚拟文件系统</span>
           </label>
+          <div class="vfs-actions">
+            <button type="button" class="menu_button" @click="openTemplateManager">模板管理</button>
+          </div>
         </div>
       </div>
     </div>
@@ -82,5 +91,9 @@ const handleToggle = () => {
 
 .vfs-panel {
   padding: 10px;
+}
+
+.vfs-actions {
+  margin-top: 10px;
 }
 </style>

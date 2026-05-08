@@ -45,4 +45,29 @@ describe('vfs store singleton integration', () => {
 
     expect(singletonModule.vfsPersistenceStore.getState().chat.mounted).toBe(true)
   })
+
+  it('runs registered chat reload hook after CHAT_CHANGED reload', async () => {
+    let registeredHandler: (() => void) | undefined
+    const on = vi.fn((_: string, handler: () => void) => {
+      registeredHandler = handler
+    })
+    ;(globalThis as Record<string, unknown>).SillyTavern = {
+      getContext: () => ({
+        event_types: { CHAT_CHANGED: 'chat_changed' },
+        eventSource: { on },
+        extensionSettings: {},
+        chatMetadata: { 'st-virtual-file-system': {} },
+        saveSettingsDebounced: vi.fn(),
+        saveMetadata: vi.fn(),
+      }),
+    }
+
+    const singletonModule = await import('@/app/stores/vfs-store-singleton')
+    const chatReloadHook = vi.fn()
+    singletonModule.registerVfsChatReloadHook(chatReloadHook)
+    singletonModule.initVfsPersistenceStore()
+
+    registeredHandler?.()
+    expect(chatReloadHook).toHaveBeenCalledTimes(1)
+  })
 })

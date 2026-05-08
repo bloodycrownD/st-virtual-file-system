@@ -36,6 +36,20 @@ import { DeflateContentCodec } from '@/infra/serialization/deflate-codec'
 import { VfsCore } from '@/domain/vfs/vfs-core'
 import { DEFAULT_DIRECTORY_RULE, type DirectoryRule, type WorkTreeConfig } from '@/domain/work-tree/work-tree.types'
 import { toVfsErrorToast } from '@/app/utils/vfsErrorMapper'
+import { createEmptyVfsSnapshot, serializeVfsSnapshot } from '@/infra/persistence/vfs-snapshot.schema'
+
+type VfsScreenScope = 'chat' | 'template'
+type VfsScreenTab = 'files' | 'history' | 'logs'
+const props = withDefaults(
+  defineProps<{
+    scope?: VfsScreenScope
+    tabs?: VfsScreenTab[]
+  }>(),
+  {
+    scope: 'chat',
+    tabs: () => ['files', 'history', 'logs'],
+  },
+)
 
 const mode = ref<'list' | 'reader' | 'editor' | 'slideshow'>('list')
 const editorContent = ref('')
@@ -43,7 +57,7 @@ const savedContent = ref('')
 const isDirty = ref(false)
 const viewRefreshToken = ref(0)
 const layoutMode = ref<'mobile' | 'desktop'>(window.innerWidth >= 1024 ? 'desktop' : 'mobile')
-const activeTab = ref<'files' | 'history' | 'logs'>('files')
+const activeTab = ref<VfsScreenTab>('files')
 const history = createVfsCommitHistoryStore()
 const historyMachine = createVfsHistoryStateMachine()
 const saveRequestsInFlight = ref(0)
@@ -57,7 +71,17 @@ const codec = new DeflateContentCodec()
 
 const readerHtml = computed(() => editorContent.value)
 const editorHistoryRecords = computed<VfsCommitHistoryRecord[]>(() => history.records.value)
-const chatSnapshot = computed(() => vfsPersistenceStore.getState().chat.chatVfsSnapshot)
+const isTemplateScope = computed(() => props.scope === 'template')
+const resolvedTabs = computed<VfsScreenTab[]>(() => {
+  if (isTemplateScope.value) return ['files']
+  return props.tabs
+})
+const currentSnapshot = computed(() => {
+  if (isTemplateScope.value) {
+    return vfsPersistenceStore.getState().extension.extensionTemplateVfsSnapshot ?? createEmptyVfsSnapshot()
+  }
+  return vfsPersistenceStore.getState().chat.chatVfsSnapshot
+})
 
 const logRefreshToken = ref(0)
 const logAutoRefreshPending = ref(false)
@@ -107,13 +131,17 @@ function readFileContentFromSnapshot(snapshot: VfsSnapshot, path: string): strin
 
 function applySnapshotMutation(mutator: (core: VfsCore) => void): void {
   const core = new VfsCore(codec)
-  core.importSnapshot(chatSnapshot.value)
+  core.importSnapshot(currentSnapshot.value)
   mutator(core)
   const next = core.exportSnapshot()
-  vfsPersistenceStore.updateChat((draft) => ({
-    ...draft,
-    chatVfsSnapshot: next,
-  }))
+  if (isTemplateScope.value) {
+    vfsPersistenceStore.updateExtension((draft) => ({
+      ...draft,
+      extensionTemplateVfsSnapshot: next,
+    }))
+    return
+  }
+  vfsPersistenceStore.updateChat((draft) => ({ ...draft, chatVfsSnapshot: next }))
 }
 
 function replaceWorkTreePaths(oldPath: string, newPath: string): void {
@@ -154,17 +182,21 @@ function removeWorkTreePaths(removedPath: string): void {
 }
 
 function refreshAuthoritativeState(): void {
-  const chatState = vfsPersistenceStore.getState().chat
-  history.replaceRecords(
-    chatState.chatVfsVersions.map((entry) => ({
-      commitId: entry.id,
-      time: entry.time,
-      operator: entry.operator,
-      actionType: entry.actionType,
-      scope: entry.scope,
-      sourceVersionId: entry.sourceVersion?.id,
-    })),
-  )
+  const state = vfsPersistenceStore.getState()
+  if (isTemplateScope.value) {
+    history.replaceRecords([])
+  } else {
+    history.replaceRecords(
+      state.chat.chatVfsVersions.map((entry) => ({
+        commitId: entry.id,
+        time: entry.time,
+        operator: entry.operator,
+        actionType: entry.actionType,
+        scope: entry.scope,
+        sourceVersionId: entry.sourceVersion?.id,
+      })),
+    )
+  }
 
   const normalizedDir = (() => {
     try {
@@ -176,13 +208,13 @@ function refreshAuthoritativeState(): void {
   currentDirectoryPath.value = normalizedDir
 
   if (selectedPath.value) {
-    const node = getNodeByPath(chatState.chatVfsSnapshot, selectedPath.value)
+    const node = getNodeByPath(currentSnapshot.value, selectedPath.value)
     if (!node) selectedPath.value = null
   }
 
-  const node = selectedPath.value ? getNodeByPath(chatState.chatVfsSnapshot, selectedPath.value) : null
+  const node = selectedPath.value ? getNodeByPath(currentSnapshot.value, selectedPath.value) : null
   if (!node || node.type !== 'file') return
-  const source = readFileContentFromSnapshot(chatState.chatVfsSnapshot, node.path)
+  const source = readFileContentFromSnapshot(currentSnapshot.value, node.path)
   editorContent.value = source
   savedContent.value = source
   isDirty.value = false
@@ -252,19 +284,46 @@ function handleTabChanged(nextTab: 'files' | 'history' | 'logs'): void {
   }
 }
 
+function overwriteCurrentChatWithTemplate(): void {
+  if (isTemplateScope.value) return
+  if (!window.confirm('此操作将用模板覆盖当前 chat 目录，并清空日志与版本历史。此操作不可恢复，确认继续？')) return
+  const template = vfsPersistenceStore.getState().extension.extensionTemplateVfsSnapshot
+  if (!template) {
+    toastr.error(toVfsErrorToast(VFS_ERROR_CODES.SAVE_FAILED, '模板为空，无法覆盖'))
+    return
+  }
+  try {
+    // WHY: overwrite is treated as chat re-initialization; clear logs/versions to avoid stale history after reset.
+    vfsPersistenceStore.updateChat((draft) => ({
+      ...draft,
+      chatVfsSnapshot: serializeVfsSnapshot(template),
+      chatVfsLogs: [],
+      chatVfsVersions: [],
+      templateInitialized: true,
+    }))
+    refreshAllViews()
+  } catch {
+    toastr.error(toVfsErrorToast(VFS_ERROR_CODES.SAVE_FAILED, '模板覆盖失败'))
+  }
+}
+
 onMounted(() => {
-  window.addEventListener(VFS_STATE_REFRESH_REQUIRED, refreshAllViews)
-  window.addEventListener(VFS_POPUP_BEFORE_CLOSE, handlePopupBeforeClose)
-  window.addEventListener(VFS_LOG_REFRESH_AUTO, onLogRefreshAutoRequested)
+  if (!isTemplateScope.value) {
+    window.addEventListener(VFS_STATE_REFRESH_REQUIRED, refreshAllViews)
+    window.addEventListener(VFS_POPUP_BEFORE_CLOSE, handlePopupBeforeClose)
+    window.addEventListener(VFS_LOG_REFRESH_AUTO, onLogRefreshAutoRequested)
+  }
   window.addEventListener('resize', updateLayout)
-  disposeMessageHooks = useVfsMessageHooks()
+  if (!isTemplateScope.value) disposeMessageHooks = useVfsMessageHooks()
   refreshAuthoritativeState()
 })
 
 onUnmounted(() => {
-  window.removeEventListener(VFS_STATE_REFRESH_REQUIRED, refreshAllViews)
-  window.removeEventListener(VFS_POPUP_BEFORE_CLOSE, handlePopupBeforeClose)
-  window.removeEventListener(VFS_LOG_REFRESH_AUTO, onLogRefreshAutoRequested)
+  if (!isTemplateScope.value) {
+    window.removeEventListener(VFS_STATE_REFRESH_REQUIRED, refreshAllViews)
+    window.removeEventListener(VFS_POPUP_BEFORE_CLOSE, handlePopupBeforeClose)
+    window.removeEventListener(VFS_LOG_REFRESH_AUTO, onLogRefreshAutoRequested)
+  }
   window.removeEventListener('resize', updateLayout)
   disposeMessageHooks?.()
   disposeMessageHooks = null
@@ -291,10 +350,10 @@ function requestModeChange(nextMode: 'list' | 'reader' | 'editor' | 'slideshow')
   }
 }
 
-const directoryEntries = computed(() => listDirectoryEntries(chatSnapshot.value, currentDirectoryPath.value))
+const directoryEntries = computed(() => listDirectoryEntries(currentSnapshot.value, currentDirectoryPath.value))
 const selectedEntity = computed<VfsManagerEntity | null>(() => {
   if (!selectedPath.value) return null
-  const node = getNodeByPath(chatSnapshot.value, selectedPath.value)
+  const node = getNodeByPath(currentSnapshot.value, selectedPath.value)
   if (!node || (node.type !== 'file' && node.type !== 'directory')) return null
   return {
     id: node.id,
@@ -309,7 +368,7 @@ const slideshowDirectoryOptions = computed(() =>
 )
 
 const slideshowPages = computed(() => {
-  const snapshot = chatSnapshot.value
+  const snapshot = currentSnapshot.value
   const dirPath = slideshowDirectoryPath.value
   const entries = listDirectoryEntries(snapshot, dirPath)
   const files = entries.filter((entry) => entry.kind === 'file')
@@ -461,8 +520,8 @@ async function handleEditorSaveRequested(): Promise<void> {
   await withWriteScopeGuard(scope, 'save', async () => {
     // WHY: Save transitions stay explicit for auditability and predictable async status.
     historyMachine.dispatch({ type: 'SAVE_REQUEST' })
-    const ok = await useVfsCommitActions(scope)
-    if (!ok) {
+    const targetPath = selectedEntity.value?.kind === 'file' ? selectedEntity.value.path : null
+    if (!targetPath) {
       historyMachine.dispatch({
         type: 'SAVE_FAILED',
         errorCode: VFS_ERROR_CODES.SAVE_FAILED,
@@ -470,16 +529,49 @@ async function handleEditorSaveRequested(): Promise<void> {
       })
       return
     }
+    try {
+      // WHY: save writes editor content into the active scope snapshot (template/chat) before side effects.
+      applySnapshotMutation((core) => core.writeFile(targetPath, editorContent.value))
+    } catch {
+      historyMachine.dispatch({
+        type: 'SAVE_FAILED',
+        errorCode: VFS_ERROR_CODES.SAVE_FAILED,
+        message: 'Save failed',
+      })
+      return
+    }
+    if (!isTemplateScope.value) {
+      const ok = await useVfsCommitActions(scope)
+      if (!ok) {
+        historyMachine.dispatch({
+          type: 'SAVE_FAILED',
+          errorCode: VFS_ERROR_CODES.SAVE_FAILED,
+          message: 'Save failed',
+        })
+        return
+      }
+    }
     historyMachine.dispatch({ type: 'SAVE_SUCCESS' })
-    appendHistory('save', scope)
+    if (!isTemplateScope.value) {
+      appendHistory('save', scope)
+    }
     savedContent.value = editorContent.value
     isDirty.value = false
+    refreshAllViews()
   })
 }
 </script>
 
 <template>
-  <VfsTabShellScreen :before-tab-change="guardTabChange" @tab-changed="handleTabChanged" v-slot="{ activeTab: slotTab }">
+  <VfsTabShellScreen
+    :tabs="resolvedTabs"
+    :before-tab-change="guardTabChange"
+    @tab-changed="handleTabChanged"
+    v-slot="{ activeTab: slotTab }"
+  >
+    <div v-if="!isTemplateScope && slotTab === 'files'" class="vfs-chat-actions">
+      <button type="button" class="menu_button" @click="overwriteCurrentChatWithTemplate">模板覆盖当前目录</button>
+    </div>
     <div
       v-if="slotTab === 'files'"
       data-testid="vfs-main-layout"
@@ -513,6 +605,7 @@ async function handleEditorSaveRequested(): Promise<void> {
             :history-records="editorHistoryRecords"
             :save-in-progress="saveInProgress"
             :rollback-in-progress="rollbackInProgress"
+            :show-history-controls="!isTemplateScope"
             @update:model-value="isDirty = true"
             @save-requested="handleEditorSaveRequested"
             @manual-rollback-requested="handleEditorManualRollback"
@@ -555,6 +648,7 @@ async function handleEditorSaveRequested(): Promise<void> {
             :history-records="editorHistoryRecords"
             :save-in-progress="saveInProgress"
             :rollback-in-progress="rollbackInProgress"
+            :show-history-controls="!isTemplateScope"
             @update:model-value="isDirty = true"
             @save-requested="handleEditorSaveRequested"
             @manual-rollback-requested="handleEditorManualRollback"
@@ -596,5 +690,9 @@ async function handleEditorSaveRequested(): Promise<void> {
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+
+.vfs-chat-actions {
+  margin-bottom: 8px;
 }
 </style>

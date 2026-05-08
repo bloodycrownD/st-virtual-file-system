@@ -9,11 +9,13 @@ const props = withDefaults(
     historyRecords?: VfsCommitHistoryRecord[]
     saveInProgress?: boolean
     rollbackInProgress?: boolean
+    showHistoryControls?: boolean
   }>(),
   {
     historyRecords: () => [],
     saveInProgress: false,
     rollbackInProgress: false,
+    showHistoryControls: true,
   },
 )
 const emits = defineEmits<{
@@ -56,7 +58,7 @@ function requestSave(): void {
     </header>
     <textarea v-if="!previewMode" v-model="model" class="vfs-editor"></textarea>
     <ReaderScreen v-else :html="model" />
-    <aside class="vfs-editor-history-panel">
+    <aside v-if="props.showHistoryControls" class="vfs-editor-history-panel">
       <h4>History</h4>
       <ul>
         <li v-for="record in props.historyRecords" :key="`${record.time}-${record.scope}`">

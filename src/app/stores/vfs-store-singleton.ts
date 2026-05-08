@@ -24,6 +24,11 @@ const EXTENSION_NAME = 'st-virtual-file-system'
 export const vfsPersistenceStore = createVfsPersistenceStore(createStContextAdapter(EXTENSION_NAME))
 
 let isInitialized = false
+let onChatReloadHook: (() => void) | null = null
+
+export function registerVfsChatReloadHook(hook: (() => void) | null): void {
+  onChatReloadHook = hook
+}
 
 /**
  * Initializes the singleton store once.
@@ -42,6 +47,8 @@ export function initVfsPersistenceStore() {
     const chatChangedEvent = context.event_types.CHAT_CHANGED
     context.eventSource.on(chatChangedEvent, () => {
       vfsPersistenceStore.reloadChatState()
+      // WHY: a chat switch may land on a fresh metadata segment; run post-reload hook to rehydrate derived state.
+      onChatReloadHook?.()
     })
   }
 
