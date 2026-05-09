@@ -15,6 +15,7 @@
 - 将 action menu 动作拆分为两类：
   - **Global actions（不依赖选中）**：`create-file` / `create-directory`
   - **Entity actions（依赖选中）**：现有 `view/edit/rename/delete/...`
+- “更多操作”触发器采用 icon-only 方案（与后续 toolbar-button-unification 保持一致），并通过 `title/aria-label="更多操作"` 提供可见提示与可访问语义。
 - `VfsActionMenu` 的禁用逻辑改为：
   - 当 `globalActions` 非空时，summary 永远可展开
   - entity actions 在 `entity=null` 时不渲染或渲染为 disabled
@@ -111,6 +112,7 @@ src/styles/
 
 - **TC-1 未选中也能新建**
   - 列表为空/未选中时，展开“更多操作”能看到“新建目录/新建文件”
+  - 触发器可为 icon-only；hover title 与 aria-label 为“更多操作”
 
 - **TC-2 新建 modal 风格化**
   - 点击新建不会出现浏览器原生 prompt
