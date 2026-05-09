@@ -120,6 +120,24 @@
   display: none;
 }
 
+/*
+  More Actions dropdown items (default state only).
+  Keep scope inside the VFS popup to avoid leaking into host menus.
+*/
+#st-vfs-popup .vfs-action-menu__list button[role='menuitem'] {
+  width: 100%;
+  text-align: left;
+  justify-content: flex-start;
+  padding: 6px 10px;
+  border-radius: 8px;
+  color: var(--SmartThemeBodyColor, rgba(255, 255, 255, 0.92));
+}
+
+#st-vfs-popup .vfs-action-menu__list button[role='menuitem'].menu_button {
+  /* Ensure menu_button doesn't shrink and keeps alignment. */
+  min-width: 100%;
+}
+
 #st-vfs-popup .vfs-create-modal__overlay {
   position: absolute;
   inset: 0;

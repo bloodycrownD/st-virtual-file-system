@@ -62,13 +62,25 @@ function triggerGlobalAction(action: VfsGlobalAction): void {
     </summary>
     <ul class="vfs-action-menu__list" role="menu">
       <li v-for="action in globalActions" :key="action" role="none">
-        <button type="button" role="menuitem" :data-action="action" @click="triggerGlobalAction(action)">
+        <button
+          type="button"
+          class="menu_button"
+          role="menuitem"
+          :data-action="action"
+          @click="triggerGlobalAction(action)"
+        >
           {{ GLOBAL_ACTION_LABELS[action] }}
         </button>
       </li>
       <li v-if="actions.length > 0" class="vfs-action-menu__separator" role="separator" aria-hidden="true"></li>
       <li v-for="action in actions" :key="action" role="none">
-        <button type="button" role="menuitem" :data-action="action" @click="triggerAction(action)">
+        <button
+          type="button"
+          class="menu_button"
+          role="menuitem"
+          :data-action="action"
+          @click="triggerAction(action)"
+        >
           {{ ACTION_LABELS[action] }}
         </button>
       </li>
