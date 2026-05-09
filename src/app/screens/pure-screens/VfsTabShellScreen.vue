@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 
 const ALL_TABS = ['files', 'history', 'logs'] as const
 type VfsTab = (typeof ALL_TABS)[number]
@@ -8,9 +8,6 @@ const TAB_LABELS: Record<VfsTab, string> = {
   files: '文件管理',
   history: '提交记录',
   logs: '日志',
-}
-const TAB_ICONS: Partial<Record<VfsTab, string>> = {
-  files: 'fa-solid fa-folder-tree',
 }
 const props = defineProps<{
   tabs?: VfsTab[]
@@ -23,6 +20,7 @@ const resolvedTabs = () => {
   if (!props.tabs || props.tabs.length === 0) return ALL_TABS
   return props.tabs
 }
+const showTabsHeader = computed(() => resolvedTabs().length > 1)
 
 function trySwitchTab(nextTab: VfsTab): void {
   if (nextTab === activeTab.value) return
@@ -34,7 +32,7 @@ function trySwitchTab(nextTab: VfsTab): void {
 
 <template>
   <section class="vfs-tab-shell">
-    <header class="vfs-tabs">
+    <header v-if="showTabsHeader" class="vfs-tabs">
       <button
         v-for="tab in resolvedTabs()"
         :key="tab"
@@ -44,8 +42,7 @@ function trySwitchTab(nextTab: VfsTab): void {
         :aria-label="TAB_LABELS[tab]"
         @click="trySwitchTab(tab)"
       >
-        <i v-if="TAB_ICONS[tab]" :class="TAB_ICONS[tab]" aria-hidden="true"></i>
-        <span v-else>{{ TAB_LABELS[tab] }}</span>
+        <span>{{ TAB_LABELS[tab] }}</span>
       </button>
     </header>
     <div class="vfs-tab-content">
@@ -68,10 +65,6 @@ function trySwitchTab(nextTab: VfsTab): void {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-}
-.vfs-tab i {
-  font-size: 14px;
-  line-height: 1;
 }
 .active {
   font-weight: 700;

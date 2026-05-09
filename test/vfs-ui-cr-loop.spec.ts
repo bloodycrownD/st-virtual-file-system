@@ -241,10 +241,8 @@ describe('vfs ui cr loop fixes', () => {
       },
     })
 
-    const tabButtons = wrapper.findAll('.vfs-tabs button')
-    const tabs = tabButtons.map((button) => button.text().trim())
-    expect(tabs).toEqual([''])
-    expect(tabButtons[0]?.attributes('aria-label')).toBe('文件管理')
+    // WHY: template scope exposes a single logical tab, so the header should be hidden.
+    expect(wrapper.find('.vfs-tabs').exists()).toBe(false)
     expect(wrapper.text()).not.toContain('文件管理器')
     expect(wrapper.text()).not.toContain('模板覆盖当前目录')
   })
@@ -422,8 +420,8 @@ describe('vfs ui cr loop fixes', () => {
     window.innerWidth = 375
     const wrapper = mountTracked(VfsMainScreen)
     expect(wrapper.get('[data-testid="vfs-main-layout"]').attributes('data-layout')).toBe('mobile')
-    // WHY: Tab1 is icon-only; regression guard against restored text label in mobile layout.
-    expect(wrapper.findAll('.vfs-tabs button')[0]?.text().trim()).toBe('')
+    // WHY: files tab should be text-only to avoid duplicating the folder icon semantics with panel header.
+    expect(wrapper.findAll('.vfs-tabs button')[0]?.text().trim()).toBe('文件管理')
     expect(wrapper.text()).not.toContain('文件管理器')
 
     window.innerWidth = 1366
@@ -431,8 +429,8 @@ describe('vfs ui cr loop fixes', () => {
     await wrapper.vm.$nextTick()
 
     expect(wrapper.get('[data-testid="vfs-main-layout"]').attributes('data-layout')).toBe('desktop')
-    // WHY: Keep desktop behavior aligned with mobile for the icon-only file-manager tab.
-    expect(wrapper.findAll('.vfs-tabs button')[0]?.text().trim()).toBe('')
+    // WHY: Keep desktop behavior aligned with mobile for text-only files tab semantics.
+    expect(wrapper.findAll('.vfs-tabs button')[0]?.text().trim()).toBe('文件管理')
     expect(wrapper.text()).not.toContain('文件管理器')
   })
 
