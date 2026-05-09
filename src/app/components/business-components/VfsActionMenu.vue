@@ -19,6 +19,10 @@ const globalActions: VfsGlobalAction[] = ['create-directory', 'create-file']
 // WHY: "more actions" must stay usable even without selection so users can trigger create actions globally.
 const isDisabled = computed(() => globalActions.length === 0 && actions.value.length === 0)
 const disabledHint = computed(() => (isDisabled.value ? '当前没有可执行操作' : ''))
+const toggleLabel = '更多操作'
+const toggleTitle = computed(() => (disabledHint.value ? `${toggleLabel}（${disabledHint.value}）` : toggleLabel))
+// Intent: keep icon choices in one place so toolbar controls share a predictable visual language.
+const ACTION_MENU_ICON = 'fa-solid fa-ellipsis'
 const ACTION_LABELS: Record<VfsEntityAction, string> = {
   'toggle-status': '切换状态',
   delete: '删除',
@@ -55,10 +59,11 @@ function triggerGlobalAction(action: VfsGlobalAction): void {
       class="vfs-action-menu__toggle"
       data-testid="vfs-action-menu-toggle"
       :aria-disabled="isDisabled"
-      :title="disabledHint"
+      :aria-label="toggleLabel"
+      :title="toggleTitle"
       @click="onToggleClick"
     >
-      更多操作
+      <i :class="ACTION_MENU_ICON" aria-hidden="true"></i>
     </summary>
     <ul class="vfs-action-menu__list" role="menu">
       <li v-for="action in globalActions" :key="action" role="none">
@@ -97,6 +102,17 @@ function triggerGlobalAction(action: VfsGlobalAction): void {
   cursor: pointer;
   user-select: none;
   list-style: none;
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.vfs-action-menu__toggle i {
+  font-size: 14px;
+  line-height: 1;
 }
 
 .vfs-action-menu[data-disabled='true'] .vfs-action-menu__toggle {

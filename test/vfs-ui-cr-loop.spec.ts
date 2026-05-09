@@ -594,7 +594,9 @@ describe('vfs ui cr loop fixes', () => {
   it('uses More dropdown semantics for Tab1 actions', async () => {
     const wrapper = mountTracked(VfsMainScreen)
     const menu = wrapper.findComponent(VfsActionMenu)
-    expect(menu.get('summary').text()).toContain('更多操作')
+    const toggle = menu.get('summary')
+    expect(toggle.attributes('aria-label')).toBe('更多操作')
+    expect(toggle.attributes('title')).toContain('更多操作')
     expect(menu.get('details.vfs-action-menu').exists()).toBe(true)
   })
 
