@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import {
   getVisibleActions,
   isActionTriggerable,
@@ -8,16 +8,33 @@ import {
   type VfsManagerEntity,
 } from '@/app/composables/components-composables/useVfsFileManagerModel'
 
-const props = defineProps<{ entity: VfsManagerEntity | null }>()
+type VfsActionMenuMode = 'combined' | 'global-create' | 'entity-actions'
+
+const props = withDefaults(
+  defineProps<{
+    entity: VfsManagerEntity | null
+    mode?: VfsActionMenuMode
+  }>(),
+  {
+    mode: 'combined',
+  },
+)
 const emits = defineEmits<{
   actionSelected: [action: VfsEntityAction]
   globalActionSelected: [action: VfsGlobalAction]
+  toggleClicked: [event: MouseEvent]
 }>()
 
-const actions = computed(() => getVisibleActions(props.entity))
-const globalActions: VfsGlobalAction[] = ['create-directory', 'create-file']
+const detailsRef = ref<HTMLDetailsElement | null>(null)
+
+const entityActions = computed(() => getVisibleActions(props.entity))
+const globalCreateActions: VfsGlobalAction[] = ['create-directory', 'create-file']
+
+const globalActions = computed(() => (props.mode === 'entity-actions' ? [] : globalCreateActions))
+const actions = computed(() => (props.mode === 'global-create' ? [] : entityActions.value))
+
 // WHY: "more actions" must stay usable even without selection so users can trigger create actions globally.
-const isDisabled = computed(() => globalActions.length === 0 && actions.value.length === 0)
+const isDisabled = computed(() => globalActions.value.length === 0 && actions.value.length === 0)
 const disabledHint = computed(() => (isDisabled.value ? '当前没有可执行操作' : ''))
 const toggleLabel = '更多操作'
 const toggleTitle = computed(() => (disabledHint.value ? `${toggleLabel}（${disabledHint.value}）` : toggleLabel))
@@ -38,6 +55,7 @@ const GLOBAL_ACTION_LABELS: Record<VfsGlobalAction, string> = {
 }
 
 function onToggleClick(event: MouseEvent): void {
+  emits('toggleClicked', event)
   if (!isDisabled.value) return
   event.preventDefault()
 }
@@ -46,15 +64,17 @@ function triggerAction(action: VfsEntityAction): void {
   // WHY: keep runtime checks as source of truth; render filtering alone can be bypassed by stale state.
   if (!isActionTriggerable(props.entity, action)) return
   emits('actionSelected', action)
+  detailsRef.value?.removeAttribute('open')
 }
 
 function triggerGlobalAction(action: VfsGlobalAction): void {
   emits('globalActionSelected', action)
+  detailsRef.value?.removeAttribute('open')
 }
 </script>
 
 <template>
-  <details class="vfs-action-menu" :data-disabled="isDisabled ? 'true' : 'false'">
+  <details ref="detailsRef" class="vfs-action-menu" :data-disabled="isDisabled ? 'true' : 'false'">
     <summary
       class="vfs-action-menu__toggle"
       data-testid="vfs-action-menu-toggle"
@@ -77,7 +97,12 @@ function triggerGlobalAction(action: VfsGlobalAction): void {
           {{ GLOBAL_ACTION_LABELS[action] }}
         </button>
       </li>
-      <li v-if="actions.length > 0" class="vfs-action-menu__separator" role="separator" aria-hidden="true"></li>
+      <li
+        v-if="globalActions.length > 0 && actions.length > 0"
+        class="vfs-action-menu__separator"
+        role="separator"
+        aria-hidden="true"
+      ></li>
       <li v-for="action in actions" :key="action" role="none">
         <button
           type="button"

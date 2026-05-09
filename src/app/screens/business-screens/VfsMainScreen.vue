@@ -477,9 +477,9 @@ function handleGlobalAction(action: VfsGlobalAction): void {
   }
 }
 
-function handleEntityAction(action: VfsEntityAction): void {
-  if (!isActionTriggerable(selectedEntity.value, action)) return
-  const entity = selectedEntity.value
+function handleEntityAction(action: VfsEntityAction, entityOverride?: VfsManagerEntity | null): void {
+  const entity = entityOverride ?? selectedEntity.value
+  if (!isActionTriggerable(entity, action)) return
   if (!entity) return
   switch (action) {
     case 'view': {
@@ -579,6 +579,11 @@ function handleEntityAction(action: VfsEntityAction): void {
   }
 }
 
+function handleRowEntityActionRequested(payload: { entity: VfsManagerEntity; action: VfsEntityAction }): void {
+  selectedPath.value = payload.entity.path
+  handleEntityAction(payload.action, payload.entity)
+}
+
 function guardTabChange(nextTab: 'files' | 'history' | 'logs'): boolean {
   if (nextTab === 'files' || mode.value !== 'editor' || !isDirty.value) return true
   if (!window.confirm('Unsaved changes will be discarded. Continue?')) return false
@@ -669,11 +674,12 @@ async function handleEditorSaveRequested(): Promise<void> {
           @selected="onSelected"
           @opened="onOpened"
           @up-requested="onUpRequested"
+          @entity-action-requested="handleRowEntityActionRequested"
         >
           <template #actions>
             <VfsActionMenu
-              :entity="selectedEntity"
-              @action-selected="handleEntityAction"
+              :entity="null"
+              mode="global-create"
               @global-action-selected="handleGlobalAction"
             />
           </template>
@@ -691,11 +697,12 @@ async function handleEditorSaveRequested(): Promise<void> {
             @selected="onSelected"
             @opened="onOpened"
             @up-requested="onUpRequested"
+            @entity-action-requested="handleRowEntityActionRequested"
           >
             <template #actions>
               <VfsActionMenu
-                :entity="selectedEntity"
-                @action-selected="handleEntityAction"
+                :entity="null"
+                mode="global-create"
                 @global-action-selected="handleGlobalAction"
               />
             </template>
