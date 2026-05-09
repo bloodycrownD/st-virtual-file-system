@@ -5,9 +5,12 @@ const ALL_TABS = ['files', 'history', 'logs'] as const
 type VfsTab = (typeof ALL_TABS)[number]
 const activeTab = ref<VfsTab>('files')
 const TAB_LABELS: Record<VfsTab, string> = {
-  files: '文件管理器',
+  files: '文件管理',
   history: '提交记录',
   logs: '日志',
+}
+const TAB_ICONS: Partial<Record<VfsTab, string>> = {
+  files: 'fa-solid fa-folder-tree',
 }
 const props = defineProps<{
   tabs?: VfsTab[]
@@ -37,9 +40,12 @@ function trySwitchTab(nextTab: VfsTab): void {
         :key="tab"
         type="button"
         :class="['menu_button', 'vfs-tab', { active: activeTab === tab }]"
+        :title="TAB_LABELS[tab]"
+        :aria-label="TAB_LABELS[tab]"
         @click="trySwitchTab(tab)"
       >
-        {{ TAB_LABELS[tab] }}
+        <i v-if="TAB_ICONS[tab]" :class="TAB_ICONS[tab]" aria-hidden="true"></i>
+        <span v-else>{{ TAB_LABELS[tab] }}</span>
       </button>
     </header>
     <div class="vfs-tab-content">
@@ -59,6 +65,13 @@ function trySwitchTab(nextTab: VfsTab): void {
   writing-mode: horizontal-tb;
   white-space: nowrap;
   flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.vfs-tab i {
+  font-size: 14px;
+  line-height: 1;
 }
 .active {
   font-weight: 700;
