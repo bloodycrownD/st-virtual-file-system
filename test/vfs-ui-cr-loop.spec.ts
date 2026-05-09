@@ -734,13 +734,23 @@ describe('vfs ui cr loop fixes', () => {
     const rowMenu = wrapper.findAllComponents(VfsActionMenu).find((menu) => menu.props('mode') === 'entity-actions')
     if (!rowMenu) throw new Error('entity row VfsActionMenu not found')
 
+    const list = wrapper.get('[data-testid="vfs-file-manager-list"]')
+    ;(list.element as HTMLElement).scrollTop = 24
+    const listScrollBefore = (list.element as HTMLElement).scrollTop
+
     const details = rowMenu.get('details.vfs-action-menu')
     await rowMenu.get('summary.vfs-action-menu__toggle').trigger('click')
     expect(details.attributes('open')).toBeDefined()
+    const selectedPathBefore = wrapper.get('li.vfs-fm-row[data-selected="true"]').attributes('data-path')
 
     document.body.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     await wrapper.vm.$nextTick()
     expect(details.attributes('open')).toBeUndefined()
+
+    const selectedPathAfter = wrapper.get('li.vfs-fm-row[data-selected="true"]').attributes('data-path')
+    const listScrollAfter = (list.element as HTMLElement).scrollTop
+    expect(selectedPathAfter).toBe(selectedPathBefore)
+    expect(listScrollAfter).toBe(listScrollBefore)
   })
 
   it('blocks path-like names in create modal submit path', async () => {
