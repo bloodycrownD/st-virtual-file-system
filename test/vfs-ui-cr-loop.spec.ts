@@ -576,14 +576,17 @@ describe('vfs ui cr loop fixes', () => {
     expect(wrapper.get('button').attributes('disabled')).toBeUndefined()
   })
 
-  it('renders a real desktop enhanced layout without losing actions', async () => {
+  it('uses list-only layout on desktop and switches to preview grid when needed', async () => {
     window.innerWidth = 1366
     const wrapper = mountTracked(VfsMainScreen)
-    expect(wrapper.get('[data-testid="vfs-desktop-grid"]').exists()).toBe(true)
+    // In list mode we intentionally render a single full-width file manager pane.
+    expect(wrapper.get('[data-testid="vfs-list-only-layout"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="vfs-desktop-grid"]').exists()).toBe(false)
 
     await selectDocsFile(wrapper)
     await triggerEntityAction(wrapper, 'edit')
     expect(wrapper.find('textarea.vfs-editor').exists()).toBe(true)
+    // Preview modes still use the desktop split grid path.
     expect(wrapper.get('[data-testid="vfs-desktop-grid"]').exists()).toBe(true)
     expect(wrapper.findComponent(VfsActionMenu).exists()).toBe(true)
   })
