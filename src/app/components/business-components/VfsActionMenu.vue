@@ -29,6 +29,7 @@ const detailsRef = ref<HTMLDetailsElement | null>(null)
 const toggleRef = ref<HTMLElement | null>(null)
 const overlayInlineStyle = ref<Record<string, string>>({})
 let syncPositionWithViewport: (() => void) | null = null
+let dismissOnOutsideClick: ((event: MouseEvent) => void) | null = null
 
 const entityActions = computed(() => getVisibleActions(props.entity))
 const globalCreateActions: VfsGlobalAction[] = ['create-directory', 'create-file']
@@ -67,12 +68,16 @@ function onToggleClick(event: MouseEvent): void {
   if (!isEntityActionsMenu.value) return
   const details = detailsRef.value
   if (!details) return
-  // WHY: close peer row menus before opening current one to keep a single active row menu.
-  const container = details.closest('.vfs-file-manager-panel') ?? details.closest('.vfs-tab-shell') ?? details.parentElement
-  container?.querySelectorAll<HTMLDetailsElement>('details.vfs-action-menu[open]').forEach((peer) => {
-    if (peer === details) return
-    peer.removeAttribute('open')
-  })
+  // WHY: row menus use explicit open/close to avoid browser `summary` default toggling races in nested click chains.
+  event.preventDefault()
+  if (details.open) {
+    details.removeAttribute('open')
+    void syncEntityMenuLifecycle(details)
+    return
+  }
+  closePeerRowMenus(details)
+  details.setAttribute('open', '')
+  void syncEntityMenuLifecycle(details)
 }
 
 function teardownViewportSync(): void {
@@ -80,6 +85,21 @@ function teardownViewportSync(): void {
   window.removeEventListener('resize', syncPositionWithViewport)
   window.removeEventListener('scroll', syncPositionWithViewport, true)
   syncPositionWithViewport = null
+}
+
+function teardownOutsideDismiss(): void {
+  if (!dismissOnOutsideClick) return
+  document.removeEventListener('click', dismissOnOutsideClick, true)
+  dismissOnOutsideClick = null
+}
+
+function closePeerRowMenus(details: HTMLDetailsElement): void {
+  // WHY: keep one active row menu so action focus is deterministic.
+  const container = details.closest('.vfs-file-manager-panel') ?? details.closest('.vfs-tab-shell') ?? details.parentElement
+  container?.querySelectorAll<HTMLDetailsElement>('details.vfs-action-menu[open]').forEach((peer) => {
+    if (peer === details) return
+    peer.removeAttribute('open')
+  })
 }
 
 function updateEntityMenuAnchor(): void {
@@ -98,17 +118,24 @@ function updateEntityMenuAnchor(): void {
 async function onOpenStateChanged(event: Event): Promise<void> {
   const details = event.currentTarget as HTMLDetailsElement | null
   if (!details || !isEntityActionsMenu.value) return
+  await syncEntityMenuLifecycle(details)
+}
+
+async function syncEntityMenuLifecycle(details: HTMLDetailsElement): Promise<void> {
   teardownViewportSync()
+  teardownOutsideDismiss()
   if (!details.open) return
-  // WHY: row menus must be mutually exclusive to avoid stacked menus from multiple rows.
-  const container =
-    details.closest('.vfs-file-manager-panel') ?? details.closest('.vfs-tab-shell') ?? details.parentElement
-  container?.querySelectorAll<HTMLDetailsElement>('details.vfs-action-menu[open]').forEach((peer) => {
-    if (peer === details) return
-    peer.removeAttribute('open')
-  })
+  closePeerRowMenus(details)
   await nextTick()
   updateEntityMenuAnchor()
+  // WHY: capture outside clicks early so dismiss works even when other handlers stop bubble-phase events.
+  const outsideDismiss = (clickEvent: MouseEvent) => {
+    if (!detailsRef.value?.open) return
+    if (details.contains(clickEvent.target as Node | null)) return
+    details.removeAttribute('open')
+  }
+  dismissOnOutsideClick = outsideDismiss
+  document.addEventListener('click', outsideDismiss, true)
   const reposition = () => {
     if (!detailsRef.value?.open) return
     updateEntityMenuAnchor()
@@ -132,6 +159,7 @@ function triggerGlobalAction(action: VfsGlobalAction): void {
 
 onBeforeUnmount(() => {
   teardownViewportSync()
+  teardownOutsideDismiss()
 })
 </script>
 

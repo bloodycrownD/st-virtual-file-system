@@ -709,6 +709,40 @@ describe('vfs ui cr loop fixes', () => {
     expect(listScrollAfter).toBe(listScrollBefore)
   })
 
+  it.each([
+    { label: 'chat', scope: undefined },
+    { label: 'template', scope: 'template' as const },
+  ])('keeps row menu toggle stable after repeated clicks in $label scope', async ({ scope }) => {
+    const wrapper = mountTracked(VfsMainScreen, scope ? { props: { scope } } : undefined)
+    const rowMenu = wrapper.findAllComponents(VfsActionMenu).find((menu) => menu.props('mode') === 'entity-actions')
+    if (!rowMenu) throw new Error('entity row VfsActionMenu not found')
+    const details = rowMenu.get('details.vfs-action-menu')
+    const toggle = rowMenu.get('summary.vfs-action-menu__toggle')
+
+    for (let i = 0; i < 10; i += 1) {
+      await toggle.trigger('click')
+      const shouldBeOpen = i % 2 === 0
+      expect(details.attributes('open') !== undefined).toBe(shouldBeOpen)
+    }
+  })
+
+  it.each([
+    { label: 'chat', scope: undefined },
+    { label: 'template', scope: 'template' as const },
+  ])('dismisses row menu on outside click in $label scope', async ({ scope }) => {
+    const wrapper = mountTracked(VfsMainScreen, scope ? { props: { scope } } : undefined)
+    const rowMenu = wrapper.findAllComponents(VfsActionMenu).find((menu) => menu.props('mode') === 'entity-actions')
+    if (!rowMenu) throw new Error('entity row VfsActionMenu not found')
+
+    const details = rowMenu.get('details.vfs-action-menu')
+    await rowMenu.get('summary.vfs-action-menu__toggle').trigger('click')
+    expect(details.attributes('open')).toBeDefined()
+
+    document.body.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    await wrapper.vm.$nextTick()
+    expect(details.attributes('open')).toBeUndefined()
+  })
+
   it('blocks path-like names in create modal submit path', async () => {
     const wrapper = mountTracked(VfsMainScreen)
     const beforeSnapshot = JSON.stringify(vfsPersistenceStore.getState().chat.chatVfsSnapshot)
