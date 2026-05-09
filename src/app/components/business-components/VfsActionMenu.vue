@@ -60,8 +60,19 @@ const GLOBAL_ACTION_LABELS: Record<VfsGlobalAction, string> = {
 
 function onToggleClick(event: MouseEvent): void {
   emits('toggleClicked', event)
-  if (!isDisabled.value) return
-  event.preventDefault()
+  if (isDisabled.value) {
+    event.preventDefault()
+    return
+  }
+  if (!isEntityActionsMenu.value) return
+  const details = detailsRef.value
+  if (!details) return
+  // WHY: close peer row menus before opening current one to keep a single active row menu.
+  const container = details.closest('.vfs-file-manager-panel') ?? details.closest('.vfs-tab-shell') ?? details.parentElement
+  container?.querySelectorAll<HTMLDetailsElement>('details.vfs-action-menu[open]').forEach((peer) => {
+    if (peer === details) return
+    peer.removeAttribute('open')
+  })
 }
 
 function teardownViewportSync(): void {
@@ -89,6 +100,13 @@ async function onOpenStateChanged(event: Event): Promise<void> {
   if (!details || !isEntityActionsMenu.value) return
   teardownViewportSync()
   if (!details.open) return
+  // WHY: row menus must be mutually exclusive to avoid stacked menus from multiple rows.
+  const container =
+    details.closest('.vfs-file-manager-panel') ?? details.closest('.vfs-tab-shell') ?? details.parentElement
+  container?.querySelectorAll<HTMLDetailsElement>('details.vfs-action-menu[open]').forEach((peer) => {
+    if (peer === details) return
+    peer.removeAttribute('open')
+  })
   await nextTick()
   updateEntityMenuAnchor()
   const reposition = () => {

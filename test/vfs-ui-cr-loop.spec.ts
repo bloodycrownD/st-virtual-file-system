@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import VfsActionMenu from '@/app/components/business-components/VfsActionMenu.vue'
 import VfsCommitTab from '@/app/components/business-components/VfsCommitTab.vue'
 import VfsCreateEntityModal from '@/app/components/business-components/VfsCreateEntityModal.vue'
+import VfsFileManagerPanel from '@/app/components/business-components/VfsFileManagerPanel.vue'
 import VfsHistoryScreen from '@/app/screens/business-screens/VfsHistoryScreen.vue'
 import VfsMainScreen from '@/app/screens/business-screens/VfsMainScreen.vue'
 import EditorScreen from '@/app/screens/pure-screens/EditorScreen.vue'
@@ -652,6 +653,58 @@ describe('vfs ui cr loop fixes', () => {
 
     const listScrollAfter = (list.element as HTMLElement).scrollTop
     const menuList = rowMenu.get('ul.vfs-action-menu__list')
+    expect(menuList.classes()).toContain('vfs-action-menu__list--entity-overlay')
+    expect(listScrollAfter).toBe(listScrollBefore)
+  })
+
+  it('keeps only one row menu open at a time', async () => {
+    const wrapper = mountTracked(VfsFileManagerPanel, {
+      props: {
+        mode: 'list',
+        currentPath: '/',
+        selectedPath: null,
+        entries: [
+          { path: '/a.md', name: 'a.md', kind: 'file' },
+          { path: '/b.md', name: 'b.md', kind: 'file' },
+        ],
+      },
+      slots: {
+        actions: '<div />',
+      },
+    })
+    const rowMenus = wrapper.findAllComponents(VfsActionMenu).filter((menu) => menu.props('mode') === 'entity-actions')
+    expect(rowMenus.length).toBeGreaterThan(1)
+
+    await rowMenus[0]!.get('summary.vfs-action-menu__toggle').trigger('click')
+    expect(rowMenus[0]!.get('details.vfs-action-menu').attributes('open')).toBeDefined()
+
+    await rowMenus[1]!.get('summary.vfs-action-menu__toggle').trigger('click')
+    expect(rowMenus[0]!.get('details.vfs-action-menu').attributes('open')).toBeUndefined()
+    expect(rowMenus[1]!.get('details.vfs-action-menu').attributes('open')).toBeDefined()
+  })
+
+  it.each([
+    { label: 'chat-desktop', scope: undefined, width: 1366 },
+    { label: 'chat-mobile', scope: undefined, width: 375 },
+    { label: 'template-desktop', scope: 'template' as const, width: 1366 },
+    { label: 'template-mobile', scope: 'template' as const, width: 375 },
+  ])('keeps row menu overlay stable without parent scroll shift in $label', async ({ scope, width }) => {
+    window.innerWidth = width
+    const wrapper = mountTracked(VfsMainScreen, scope ? { props: { scope } } : undefined)
+    window.dispatchEvent(new Event('resize'))
+    await wrapper.vm.$nextTick()
+
+    const rowMenu = wrapper.findAllComponents(VfsActionMenu).find((menu) => menu.props('mode') === 'entity-actions')
+    if (!rowMenu) throw new Error('entity row VfsActionMenu not found')
+
+    const list = wrapper.get('[data-testid="vfs-file-manager-list"]')
+    ;(list.element as HTMLElement).scrollTop = 24
+    const listScrollBefore = (list.element as HTMLElement).scrollTop
+
+    await rowMenu.get('summary.vfs-action-menu__toggle').trigger('click')
+    const menuList = rowMenu.get('ul.vfs-action-menu__list')
+    const listScrollAfter = (list.element as HTMLElement).scrollTop
+
     expect(menuList.classes()).toContain('vfs-action-menu__list--entity-overlay')
     expect(listScrollAfter).toBe(listScrollBefore)
   })
