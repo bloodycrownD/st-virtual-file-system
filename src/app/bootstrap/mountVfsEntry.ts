@@ -8,58 +8,62 @@ let mountObserver: MutationObserver | null = null
 let mountRetryTimer: number | null = null
 let mountAttempts = 0
 const MAX_MOUNT_ATTEMPTS = 40
+const ENTRY_SELECTOR = '.extraMesButtons #st-vfs-entry-button'
 
 export function mountVfsEntryButton(): void {
-  // WHY: `.extraMesButtons` can be created/replaced after initial extension load (chat switch/rerender).
-  // Keep a bounded retry loop; once mount succeeds we dispose the observer/timer.
-  const stopRetry = () => {
-    mountObserver?.disconnect()
-    mountObserver = null
+  const onOpen = () => {
+    popup.open()
+    emitVfsEvent(VFS_POPUP_OPENED)
+  }
+  const clearRetryTimer = () => {
     if (mountRetryTimer) {
       window.clearInterval(mountRetryTimer)
       mountRetryTimer = null
     }
-    mountAttempts = 0
   }
-
-  const nextCleanup = mountVfsEntry(() => {
-    popup.open()
-    emitVfsEvent(VFS_POPUP_OPENED)
-  })
-  // WHY: repeated bootstrap runs must not overwrite/drop the active cleanup handle when a mount
-  // attempt fails (e.g. host not present yet). Only replace the handle when we successfully mount.
-  if (nextCleanup) {
-    cleanupMount = nextCleanup
-    stopRetry()
-    return
-  }
-
-  if (typeof document === 'undefined') return
-  if (mountObserver || mountRetryTimer) return
-
+  const hasMountedEntry = () => typeof document !== 'undefined' && Boolean(document.querySelector(ENTRY_SELECTOR))
   const tryMount = () => {
-    mountAttempts += 1
-    const mounted = mountVfsEntry(() => {
-      popup.open()
-      emitVfsEvent(VFS_POPUP_OPENED)
-    })
+    if (hasMountedEntry()) {
+      mountAttempts = 0
+      clearRetryTimer()
+      return true
+    }
+    const mounted = mountVfsEntry(onOpen)
     if (mounted) {
       cleanupMount = mounted
-      stopRetry()
-      return
+      mountAttempts = 0
+      clearRetryTimer()
+      return true
     }
-    if (mountAttempts >= MAX_MOUNT_ATTEMPTS) {
-      stopRetry()
-    }
+    return false
   }
-
-  if (typeof MutationObserver !== 'undefined') {
+  const ensureRetryLoop = () => {
+    if (mountRetryTimer) return
+    mountRetryTimer = window.setInterval(() => {
+      mountAttempts += 1
+      if (tryMount()) return
+      if (mountAttempts >= MAX_MOUNT_ATTEMPTS) {
+        clearRetryTimer()
+      }
+    }, 250)
+  }
+  const ensureObserver = () => {
+    if (mountObserver || typeof MutationObserver === 'undefined') return
+    // WHY: host rerenders can happen long after first success; keep watcher alive to self-heal remounts.
     mountObserver = new MutationObserver(() => {
-      tryMount()
+      if (hasMountedEntry()) return
+      if (!tryMount()) ensureRetryLoop()
     })
     mountObserver.observe(document.body, { childList: true, subtree: true })
   }
-  mountRetryTimer = window.setInterval(tryMount, 250)
+
+  if (tryMount()) {
+    if (typeof document !== 'undefined') ensureObserver()
+    return
+  }
+  if (typeof document === 'undefined') return
+  ensureObserver()
+  ensureRetryLoop()
 }
 
 export function unmountVfsEntryButton(): void {
