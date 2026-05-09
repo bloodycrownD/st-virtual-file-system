@@ -43,12 +43,25 @@ function getButtonByText(wrapper: ReturnType<typeof mount>, label: string) {
   return button
 }
 
-async function triggerEntityAction(wrapper: ReturnType<typeof mount>, action: string) {
-  const menu = wrapper.findComponent(VfsActionMenu)
-  if (!menu.exists()) {
-    throw new Error('VfsActionMenu not found')
+function getHeaderActionMenu(wrapper: ReturnType<typeof mount>) {
+  const headerActions = wrapper.find('.vfs-fm-action-group')
+  if (!headerActions.exists()) {
+    throw new Error('file manager header action group not found')
   }
-  await menu.get(`[data-action="${action}"]`).trigger('click')
+  const menu = headerActions.findComponent(VfsActionMenu)
+  if (!menu.exists()) {
+    throw new Error('header VfsActionMenu not found')
+  }
+  return menu
+}
+
+async function triggerEntityAction(wrapper: ReturnType<typeof mount>, action: string) {
+  const selectedRow = wrapper.find('li.vfs-fm-row[data-selected="true"]')
+  if (!selectedRow.exists()) {
+    throw new Error('selected file manager row not found')
+  }
+  await selectedRow.get('summary.vfs-action-menu__toggle').trigger('click')
+  await selectedRow.get(`[data-action="${action}"]`).trigger('click')
 }
 
 async function selectDocsFile(wrapper: ReturnType<typeof mount>) {
@@ -595,22 +608,41 @@ describe('vfs ui cr loop fixes', () => {
     expect(wrapper.find('textarea.vfs-editor').exists()).toBe(true)
     // Preview modes still use the desktop split grid path.
     expect(wrapper.get('[data-testid="vfs-desktop-grid"]').exists()).toBe(true)
-    expect(wrapper.findComponent(VfsActionMenu).exists()).toBe(true)
+    expect(getHeaderActionMenu(wrapper).exists()).toBe(true)
   })
 
   it('uses More dropdown semantics for Tab1 actions', async () => {
     const wrapper = mountTracked(VfsMainScreen)
-    const menu = wrapper.findComponent(VfsActionMenu)
+    const menu = getHeaderActionMenu(wrapper)
     const toggle = menu.get('summary')
     expect(toggle.attributes('aria-label')).toBe('更多操作')
     expect(toggle.attributes('title')).toContain('更多操作')
     expect(menu.get('details.vfs-action-menu').exists()).toBe(true)
   })
 
+  it('shows create-only actions in header menu without selection', async () => {
+    const wrapper = mountTracked(VfsMainScreen)
+    const menu = getHeaderActionMenu(wrapper)
+    await menu.get('summary.vfs-action-menu__toggle').trigger('click')
+    expect(menu.text()).toContain('新建目录')
+    expect(menu.text()).toContain('新建文件')
+    expect(menu.text()).not.toContain('查看')
+    expect(menu.text()).not.toContain('编辑')
+  })
+
+  it('auto-selects row when row menu toggle is clicked', async () => {
+    const wrapper = mountTracked(VfsMainScreen)
+    const list = wrapper.get('[data-testid="vfs-file-manager-list"]')
+    const docsRow = list.findAll('li.vfs-fm-row').find((row) => row.text().includes('docs'))
+    if (!docsRow) throw new Error('docs row not found')
+    await docsRow.get('summary.vfs-action-menu__toggle').trigger('click')
+    expect(docsRow.attributes('data-selected')).toBe('true')
+  })
+
   it('blocks path-like names in create modal submit path', async () => {
     const wrapper = mountTracked(VfsMainScreen)
     const beforeSnapshot = JSON.stringify(vfsPersistenceStore.getState().chat.chatVfsSnapshot)
-    await wrapper.findComponent(VfsActionMenu).vm.$emit('global-action-selected', 'create-file')
+    await getHeaderActionMenu(wrapper).vm.$emit('global-action-selected', 'create-file')
     await wrapper.vm.$nextTick()
 
     await wrapper.findComponent(VfsCreateEntityModal).vm.$emit('confirm', 'nested/name')
@@ -623,7 +655,7 @@ describe('vfs ui cr loop fixes', () => {
 it('blocks relative segment "." in create modal submit path', async () => {
   const wrapper = mountTracked(VfsMainScreen)
   const beforeSnapshot = JSON.stringify(vfsPersistenceStore.getState().chat.chatVfsSnapshot)
-  await wrapper.findComponent(VfsActionMenu).vm.$emit('global-action-selected', 'create-file')
+  await getHeaderActionMenu(wrapper).vm.$emit('global-action-selected', 'create-file')
   await wrapper.vm.$nextTick()
 
   await wrapper.findComponent(VfsCreateEntityModal).vm.$emit('confirm', '.')
@@ -636,7 +668,7 @@ it('blocks relative segment "." in create modal submit path', async () => {
 it('blocks relative segment ".." in create modal submit path', async () => {
   const wrapper = mountTracked(VfsMainScreen)
   const beforeSnapshot = JSON.stringify(vfsPersistenceStore.getState().chat.chatVfsSnapshot)
-  await wrapper.findComponent(VfsActionMenu).vm.$emit('global-action-selected', 'create-directory')
+  await getHeaderActionMenu(wrapper).vm.$emit('global-action-selected', 'create-directory')
   await wrapper.vm.$nextTick()
 
   await wrapper.findComponent(VfsCreateEntityModal).vm.$emit('confirm', '..')
@@ -648,7 +680,7 @@ it('blocks relative segment ".." in create modal submit path', async () => {
 
   it('maps create exceptions to user-visible reasons using real error details', async () => {
     const wrapper = mountTracked(VfsMainScreen)
-    await wrapper.findComponent(VfsActionMenu).vm.$emit('global-action-selected', 'create-directory')
+    await getHeaderActionMenu(wrapper).vm.$emit('global-action-selected', 'create-directory')
     await wrapper.vm.$nextTick()
 
     await wrapper.findComponent(VfsCreateEntityModal).vm.$emit('confirm', 'docs')
