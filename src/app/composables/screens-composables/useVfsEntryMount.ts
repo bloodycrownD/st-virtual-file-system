@@ -7,29 +7,26 @@ export function mountVfsEntry(onOpen: () => void): (() => void) | null {
   const host = document.querySelector('.extraMesButtons')
   if (!host) return null
 
-  const existing = host.querySelector<HTMLButtonElement>(`#${ENTRY_BUTTON_ID}`)
+  const existing = host.querySelector<HTMLElement>(`#${ENTRY_BUTTON_ID}`)
   // WHY: mount must be idempotent; repeated calls must keep a valid cleanup handle.
   const button =
     existing ??
     (() => {
-      const created = document.createElement('button')
+      const created = document.createElement('div')
       created.id = ENTRY_BUTTON_ID
-      created.type = 'button'
       // WHY: match SillyTavern's extraMesButtons icon button spec (avoid large text button).
-      created.className = 'mes_button st-vfs-entry'
+      created.className = 'mes_button st-vfs-entry fa-solid fa-box-archive'
       created.title = '虚拟文件系统'
       created.setAttribute('aria-label', '虚拟文件系统')
-      created.innerHTML = `<i class="fa-solid fa-folder-tree" aria-hidden="true"></i>`
+      created.tabIndex = 0
       host.appendChild(created)
       return created
     })()
-  // Ensure an older button (from previous versions) gets normalized to the icon form.
-  button.className = 'mes_button st-vfs-entry'
+  // Ensure an older node (from previous versions) gets normalized to host-like icon form.
+  button.className = 'mes_button st-vfs-entry fa-solid fa-box-archive'
   button.title = '虚拟文件系统'
   button.setAttribute('aria-label', '虚拟文件系统')
-  if (!button.querySelector('.fa-folder-tree')) {
-    button.innerHTML = `<i class="fa-solid fa-folder-tree" aria-hidden="true"></i>`
-  }
+  button.tabIndex = 0
 
   // WHY: host may re-render/replace `.extraMesButtons`; use event delegation to keep click working.
   const jQueryLike = (window as { jQuery?: (el: unknown) => { on: (event: string, selector: string, handler: (e: unknown) => void) => void; off: (event: string, selector?: string) => void } }).jQuery

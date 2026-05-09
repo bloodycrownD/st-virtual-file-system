@@ -7,7 +7,8 @@
 #st-vfs-popup.st-vfs-popup {
   /* Keep popup above common overlays; also fixes "popup opened but unclickable" issues. */
   z-index: 10000;
-  pointer-events: auto;
+  pointer-events: auto !important;
+  position: fixed;
 
   padding: 0;
   border: 1px solid rgba(255, 255, 255, 0.12);
@@ -19,12 +20,56 @@
 
 #st-vfs-popup.st-vfs-popup::backdrop {
   background: rgba(0, 0, 0, 0.55);
+  /* Some themes/plugins accidentally overlay backdrop above the dialog. */
+  pointer-events: none;
 }
 
 /* Ensure the mounted Vue app is always interactive */
 #st-vfs-popup #st-vfs-popup-app {
-  pointer-events: auto;
+  pointer-events: auto !important;
   padding: 12px;
+}
+
+/* Hard guard: if host CSS disables interactions on dialogs, re-enable within popup only. */
+#st-vfs-popup.st-vfs-popup * {
+  pointer-events: auto !important;
+}
+
+/* Popup chrome: close button + title */
+#st-vfs-popup .st-vfs-popup__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px 0;
+}
+
+#st-vfs-popup .st-vfs-popup__header-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+#st-vfs-popup .st-vfs-popup__title {
+  font-weight: 700;
+  opacity: 0.95;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#st-vfs-popup .st-vfs-popup__close {
+  min-width: 32px;
+  height: 28px;
+  line-height: 28px;
+  padding: 0;
+}
+
+#st-vfs-popup .st-vfs-popup__test {
+  min-width: 52px;
+  height: 28px;
+  line-height: 28px;
+  padding: 0 8px;
 }
 
 /* Prevent "vertical text" layout caused by extreme `writing-mode` or narrow buttons */

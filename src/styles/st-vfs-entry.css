@@ -1,0 +1,20 @@
+/*
+  Extra message buttons: VFS entry icon sizing.
+  WHY: keep visual density aligned with neighboring host buttons.
+*/
+
+.extraMesButtons #st-vfs-entry-button.st-vfs-entry {
+  min-width: 22px;
+  min-height: 28px;
+  height: 28px;
+  padding: 0;
+  display: inline-flex;
+  align-items: flex-start;
+  justify-content: center;
+  line-height: 1;
+  padding-top: 2px;
+}
+
+.extraMesButtons #st-vfs-entry-button.st-vfs-entry {
+  font-size: 14px;
+}
