@@ -97,4 +97,35 @@ describe('create refresh immediate', () => {
     const entries = panel.props('entries') as Array<{ name: string }>
     expect(entries.map((entry) => entry.name)).toContain('instant-template-dir')
   })
+
+  it('does not remount file manager panel on create success', async () => {
+    const wrapper = mount(VfsMainScreen)
+    const panelBefore = wrapper.findComponent(VfsFileManagerPanel)
+
+    await wrapper.findComponent(VfsActionMenu).get('[data-action="create-file"]').trigger('click')
+    await wrapper.findComponent(VfsCreateEntityModal).vm.$emit('confirm', 'no-remount.md')
+    await Promise.resolve()
+    await wrapper.vm.$nextTick()
+
+    const panelAfter = wrapper.findComponent(VfsFileManagerPanel)
+    const entries = panelAfter.props('entries') as Array<{ name: string }>
+
+    expect(entries.map((entry) => entry.name)).toContain('no-remount.md')
+    expect(panelAfter.vm.$.uid).toBe(panelBefore.vm.$.uid)
+  })
+
+  it('shows newly created file immediately in mobile layout', async () => {
+    window.innerWidth = 375
+    const wrapper = mount(VfsMainScreen)
+    expect(wrapper.get('[data-testid="vfs-main-layout"]').attributes('data-layout')).toBe('mobile')
+
+    await wrapper.findComponent(VfsActionMenu).get('[data-action="create-file"]').trigger('click')
+    await wrapper.findComponent(VfsCreateEntityModal).vm.$emit('confirm', 'instant-mobile.md')
+    await Promise.resolve()
+    await wrapper.vm.$nextTick()
+
+    const panel = wrapper.findComponent(VfsFileManagerPanel)
+    const entries = panel.props('entries') as Array<{ name: string }>
+    expect(entries.map((entry) => entry.name)).toContain('instant-mobile.md')
+  })
 })

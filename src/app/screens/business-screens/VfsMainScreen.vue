@@ -419,6 +419,20 @@ function closeCreateModal(): void {
   createModalOpen.value = false
 }
 
+function refreshCurrentDirectoryAfterCreate(targetPath: string): void {
+  // WHY: create already updates reactive snapshot; only selection/path guards are needed here.
+  // Avoid global view token bumps so the file-manager instance keeps scroll/focus state.
+  const normalizedDir = (() => {
+    try {
+      return normalizePath(currentDirectoryPath.value || ROOT_PATH)
+    } catch {
+      return ROOT_PATH
+    }
+  })()
+  currentDirectoryPath.value = normalizedDir
+  selectedPath.value = getNodeByPath(currentSnapshot.value, targetPath) ? targetPath : null
+}
+
 function handleCreateConfirm(name: string): void {
   if (!name) {
     toastr.error('名称不能为空')
@@ -441,9 +455,8 @@ function handleCreateConfirm(name: string): void {
     } else {
       applySnapshotMutation((core) => core.writeFile(targetPath, '', { createParents: true }))
     }
-    // WHY: create mutates persistence first; refresh immediately so file-manager list observes the new node in the same interaction flow.
-    refreshAllViews()
-    selectedPath.value = targetPath
+    // WHY: keep create-success refresh narrow (current dir + selection) to avoid keyed remount churn.
+    refreshCurrentDirectoryAfterCreate(targetPath)
     requestModeChange('list')
     closeCreateModal()
   } catch (error) {
