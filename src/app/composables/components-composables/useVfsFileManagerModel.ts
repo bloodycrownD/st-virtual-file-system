@@ -8,6 +8,7 @@ export interface VfsManagerEntity {
 }
 
 export type VfsEntityAction = 'toggle-status' | 'delete' | 'view' | 'edit' | 'rename' | 'apply-strategy' | 'open-slideshow'
+export type VfsGlobalAction = 'create-file' | 'create-directory'
 
 const FILE_ACTIONS: VfsEntityAction[] = ['toggle-status', 'delete', 'view', 'edit', 'rename']
 const DIRECTORY_ACTIONS: VfsEntityAction[] = ['toggle-status', 'delete', 'rename', 'apply-strategy', 'open-slideshow']

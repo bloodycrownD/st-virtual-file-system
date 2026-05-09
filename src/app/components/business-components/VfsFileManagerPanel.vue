@@ -19,8 +19,6 @@ const emits = defineEmits<{
   selected: [path: string]
   opened: [path: string]
   upRequested: []
-  createFileRequested: []
-  createDirectoryRequested: []
 }>()
 
 function isSelected(path: string): boolean {
@@ -44,8 +42,6 @@ function open(entry: VfsBrowserEntity): void {
         <button type="button" class="vfs-fm-up" :disabled="currentPath === '/'" @click="emits('upRequested')">
           Up
         </button>
-        <button type="button" class="menu_button vfs-fm-new" @click="emits('createDirectoryRequested')">新建目录</button>
-        <button type="button" class="menu_button vfs-fm-new" @click="emits('createFileRequested')">新建文件</button>
         <span class="vfs-fm-path-text" :title="currentPath">{{ currentPath }}</span>
       </div>
       <div class="vfs-fm-actions">
@@ -79,12 +75,6 @@ function open(entry: VfsBrowserEntity): void {
   gap: 8px;
   min-width: 0;
   flex-wrap: wrap;
-}
-
-.vfs-fm-new {
-  height: 28px;
-  line-height: 28px;
-  padding: 0 10px;
 }
 
 .vfs-fm-path-text {

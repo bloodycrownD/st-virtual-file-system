@@ -4,17 +4,21 @@ import {
   getVisibleActions,
   isActionTriggerable,
   type VfsEntityAction,
+  type VfsGlobalAction,
   type VfsManagerEntity,
 } from '@/app/composables/components-composables/useVfsFileManagerModel'
 
 const props = defineProps<{ entity: VfsManagerEntity | null }>()
 const emits = defineEmits<{
   actionSelected: [action: VfsEntityAction]
+  globalActionSelected: [action: VfsGlobalAction]
 }>()
 
 const actions = computed(() => getVisibleActions(props.entity))
-const isDisabled = computed(() => !props.entity || actions.value.length === 0)
-const disabledHint = computed(() => (isDisabled.value ? '先选择一个文件/目录，然后使用“更多操作”' : ''))
+const globalActions: VfsGlobalAction[] = ['create-directory', 'create-file']
+// WHY: "more actions" must stay usable even without selection so users can trigger create actions globally.
+const isDisabled = computed(() => globalActions.length === 0 && actions.value.length === 0)
+const disabledHint = computed(() => (isDisabled.value ? '当前没有可执行操作' : ''))
 const ACTION_LABELS: Record<VfsEntityAction, string> = {
   'toggle-status': '切换状态',
   delete: '删除',
@@ -23,6 +27,10 @@ const ACTION_LABELS: Record<VfsEntityAction, string> = {
   rename: '重命名',
   'apply-strategy': '展示策略',
   'open-slideshow': '幻灯片/阅读模式',
+}
+const GLOBAL_ACTION_LABELS: Record<VfsGlobalAction, string> = {
+  'create-directory': '新建目录',
+  'create-file': '新建文件',
 }
 
 function onToggleClick(event: MouseEvent): void {
@@ -34,6 +42,10 @@ function triggerAction(action: VfsEntityAction): void {
   // WHY: keep runtime checks as source of truth; render filtering alone can be bypassed by stale state.
   if (!isActionTriggerable(props.entity, action)) return
   emits('actionSelected', action)
+}
+
+function triggerGlobalAction(action: VfsGlobalAction): void {
+  emits('globalActionSelected', action)
 }
 </script>
 
@@ -49,6 +61,12 @@ function triggerAction(action: VfsEntityAction): void {
       更多操作
     </summary>
     <ul class="vfs-action-menu__list" role="menu">
+      <li v-for="action in globalActions" :key="action" role="none">
+        <button type="button" role="menuitem" :data-action="action" @click="triggerGlobalAction(action)">
+          {{ GLOBAL_ACTION_LABELS[action] }}
+        </button>
+      </li>
+      <li v-if="actions.length > 0" class="vfs-action-menu__separator" role="separator" aria-hidden="true"></li>
       <li v-for="action in actions" :key="action" role="none">
         <button type="button" role="menuitem" :data-action="action" @click="triggerAction(action)">
           {{ ACTION_LABELS[action] }}
@@ -85,5 +103,10 @@ function triggerAction(action: VfsEntityAction): void {
   right: 0;
   min-width: 180px;
   z-index: 2;
+}
+
+.vfs-action-menu__separator {
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  margin: 6px 0;
 }
 </style>

@@ -9,9 +9,11 @@ import {
 import {
   isActionTriggerable,
   type VfsEntityAction,
+  type VfsGlobalAction,
   type VfsManagerEntity,
 } from '@/app/composables/components-composables/useVfsFileManagerModel'
 import VfsFileManagerPanel from '@/app/components/business-components/VfsFileManagerPanel.vue'
+import VfsCreateEntityModal from '@/app/components/business-components/VfsCreateEntityModal.vue'
 import VfsLogPanel from '@/app/components/business-components/VfsLogPanel.vue'
 import {
   useVfsMessageHooks,
@@ -67,6 +69,8 @@ const rollbackInProgress = ref(false)
 const currentDirectoryPath = ref<string>(ROOT_PATH)
 const selectedPath = ref<string | null>(null)
 const slideshowDirectoryPath = ref<string>(ROOT_PATH)
+const createModalOpen = ref(false)
+const createKind = ref<'file' | 'directory'>('directory')
 const codec = new DeflateContentCodec()
 
 const readerHtml = computed(() => editorContent.value)
@@ -396,30 +400,44 @@ function onUpRequested(): void {
   requestModeChange('list')
 }
 
-function onCreateDirectoryRequested(): void {
-  const name = window.prompt('Directory name')?.trim()
-  if (!name) return
+function openCreateModal(kind: 'file' | 'directory'): void {
+  createKind.value = kind
+  createModalOpen.value = true
+}
+
+function closeCreateModal(): void {
+  createModalOpen.value = false
+}
+
+function handleCreateConfirm(name: string): void {
+  if (!name) {
+    toastr.error('名称不能为空')
+    return
+  }
   const targetPath = normalizePath(`${currentDirectoryPath.value}/${name}`)
   try {
-    applySnapshotMutation((core) => core.mkdir(targetPath, { recursive: true }))
-    currentDirectoryPath.value = normalizePath(currentDirectoryPath.value)
+    if (createKind.value === 'directory') {
+      applySnapshotMutation((core) => core.mkdir(targetPath, { recursive: true }))
+    } else {
+      applySnapshotMutation((core) => core.writeFile(targetPath, '', { createParents: true }))
+    }
     selectedPath.value = targetPath
     requestModeChange('list')
+    closeCreateModal()
   } catch {
-    toastr.error(toVfsErrorToast(VFS_ERROR_CODES.SAVE_FAILED, '新建目录失败'))
+    const fallback = createKind.value === 'directory' ? '新建目录失败' : '新建文件失败'
+    toastr.error(toVfsErrorToast(VFS_ERROR_CODES.SAVE_FAILED, fallback))
   }
 }
 
-function onCreateFileRequested(): void {
-  const name = window.prompt('File name')?.trim()
-  if (!name) return
-  const targetPath = normalizePath(`${currentDirectoryPath.value}/${name}`)
-  try {
-    applySnapshotMutation((core) => core.writeFile(targetPath, '', { createParents: true }))
-    selectedPath.value = targetPath
-    requestModeChange('list')
-  } catch {
-    toastr.error(toVfsErrorToast(VFS_ERROR_CODES.SAVE_FAILED, '新建文件失败'))
+function handleGlobalAction(action: VfsGlobalAction): void {
+  // WHY: global actions intentionally ignore selection so "more actions" remains useful in empty state.
+  if (action === 'create-directory') {
+    openCreateModal('directory')
+    return
+  }
+  if (action === 'create-file') {
+    openCreateModal('file')
   }
 }
 
@@ -616,11 +634,13 @@ async function handleEditorSaveRequested(): Promise<void> {
             @selected="onSelected"
             @opened="onOpened"
             @up-requested="onUpRequested"
-            @create-directory-requested="onCreateDirectoryRequested"
-            @create-file-requested="onCreateFileRequested"
           >
             <template #actions>
-              <VfsActionMenu :entity="selectedEntity" @action-selected="handleEntityAction" />
+              <VfsActionMenu
+                :entity="selectedEntity"
+                @action-selected="handleEntityAction"
+                @global-action-selected="handleGlobalAction"
+              />
             </template>
           </VfsFileManagerPanel>
         </aside>
@@ -661,11 +681,13 @@ async function handleEditorSaveRequested(): Promise<void> {
           @selected="onSelected"
           @opened="onOpened"
           @up-requested="onUpRequested"
-          @create-directory-requested="onCreateDirectoryRequested"
-          @create-file-requested="onCreateFileRequested"
         >
           <template #actions>
-            <VfsActionMenu :entity="selectedEntity" @action-selected="handleEntityAction" />
+            <VfsActionMenu
+              :entity="selectedEntity"
+              @action-selected="handleEntityAction"
+              @global-action-selected="handleGlobalAction"
+            />
           </template>
         </VfsFileManagerPanel>
 
@@ -697,6 +719,12 @@ async function handleEditorSaveRequested(): Promise<void> {
 
     <VfsHistoryScreen v-else-if="slotTab === 'history'" :key="`history-${viewRefreshToken}`" />
     <VfsLogPanel v-else :refresh-token="logRefreshToken" />
+    <VfsCreateEntityModal
+      :open="createModalOpen"
+      :kind="createKind"
+      @confirm="handleCreateConfirm"
+      @cancel="closeCreateModal"
+    />
   </VfsTabShellScreen>
 </template>
 

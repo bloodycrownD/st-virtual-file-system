@@ -96,3 +96,38 @@
 #st-vfs-popup summary.vfs-action-menu__toggle::-webkit-details-marker {
   display: none;
 }
+
+#st-vfs-popup .vfs-create-modal__overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.45);
+}
+
+#st-vfs-popup .vfs-create-modal__card {
+  width: min(420px, calc(100% - 24px));
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 10px;
+  background: var(--SmartThemeBlurTintColor, rgba(20, 20, 20, 0.94));
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+  padding: 14px;
+}
+
+#st-vfs-popup .vfs-create-modal__title {
+  margin: 0 0 10px;
+}
+
+#st-vfs-popup .vfs-create-modal__field {
+  display: grid;
+  gap: 6px;
+}
+
+#st-vfs-popup .vfs-create-modal__actions {
+  margin-top: 12px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
