@@ -80,12 +80,13 @@ const resolvedTabs = computed<VfsScreenTab[]>(() => {
   if (isTemplateScope.value) return ['files']
   return props.tabs
 })
-const currentSnapshot = computed(() => {
+function readSnapshotFromStore(): VfsSnapshot {
   if (isTemplateScope.value) {
     return vfsPersistenceStore.getState().extension.extensionTemplateVfsSnapshot ?? createEmptyVfsSnapshot()
   }
   return vfsPersistenceStore.getState().chat.chatVfsSnapshot
-})
+}
+const currentSnapshot = ref<VfsSnapshot>(readSnapshotFromStore())
 
 const logRefreshToken = ref(0)
 const logAutoRefreshPending = ref(false)
@@ -143,9 +144,13 @@ function applySnapshotMutation(mutator: (core: VfsCore) => void): void {
       ...draft,
       extensionTemplateVfsSnapshot: next,
     }))
+    // WHY: template and chat use the same list renderer and both require immediate local snapshot reactivity.
+    currentSnapshot.value = next
     return
   }
   vfsPersistenceStore.updateChat((draft) => ({ ...draft, chatVfsSnapshot: next }))
+  // WHY: keep snapshot reactive locally; store getState() is non-reactive for computed list dependencies.
+  currentSnapshot.value = next
 }
 
 function replaceWorkTreePaths(oldPath: string, newPath: string): void {
@@ -187,6 +192,7 @@ function removeWorkTreePaths(removedPath: string): void {
 
 function refreshAuthoritativeState(): void {
   const state = vfsPersistenceStore.getState()
+  currentSnapshot.value = readSnapshotFromStore()
   if (isTemplateScope.value) {
     history.replaceRecords([])
   } else {
@@ -435,6 +441,8 @@ function handleCreateConfirm(name: string): void {
     } else {
       applySnapshotMutation((core) => core.writeFile(targetPath, '', { createParents: true }))
     }
+    // WHY: create mutates persistence first; refresh immediately so file-manager list observes the new node in the same interaction flow.
+    refreshAllViews()
     selectedPath.value = targetPath
     requestModeChange('list')
     closeCreateModal()
