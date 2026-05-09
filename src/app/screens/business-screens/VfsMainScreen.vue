@@ -382,6 +382,10 @@ const slideshowPages = computed(() => {
     content: readFileContentFromSnapshot(snapshot, entry.path),
   }))
 })
+// WHY: list stage is intentionally single-pane across desktop/mobile to maximize file-manager workspace.
+const isListStage = computed(() => mode.value === 'list')
+// WHY: reader/editor/slideshow keep the split layout so navigation and content remain visible together.
+const isPreviewStage = computed(() => mode.value !== 'list')
 
 function onSelected(path: string): void {
   selectedPath.value = path
@@ -629,7 +633,28 @@ async function handleEditorSaveRequested(): Promise<void> {
       :data-layout="layoutMode"
       :class="['vfs-main-layout', `layout-${layoutMode}`]"
     >
-      <div v-if="layoutMode === 'desktop'" class="vfs-desktop-grid" data-testid="vfs-desktop-grid">
+      <div v-if="isListStage" class="vfs-list-only-layout" data-testid="vfs-list-only-layout">
+        <VfsFileManagerPanel
+          :key="`fm-${viewRefreshToken}`"
+          :mode="mode"
+          :current-path="currentDirectoryPath"
+          :entries="directoryEntries"
+          :selected-path="selectedPath"
+          @selected="onSelected"
+          @opened="onOpened"
+          @up-requested="onUpRequested"
+        >
+          <template #actions>
+            <VfsActionMenu
+              :entity="selectedEntity"
+              @action-selected="handleEntityAction"
+              @global-action-selected="handleGlobalAction"
+            />
+          </template>
+        </VfsFileManagerPanel>
+      </div>
+
+      <div v-else-if="layoutMode === 'desktop' && isPreviewStage" class="vfs-desktop-grid" data-testid="vfs-desktop-grid">
         <aside class="vfs-sidebar">
           <VfsFileManagerPanel
             :key="`fm-${viewRefreshToken}`"
@@ -672,32 +697,11 @@ async function handleEditorSaveRequested(): Promise<void> {
             :directory-path="slideshowDirectoryPath"
             @directory-changed="slideshowDirectoryPath = $event"
           />
-          <section v-else class="vfs-empty" data-testid="vfs-desktop-empty">Select an item then use More.</section>
         </main>
       </div>
 
       <div v-else class="vfs-mobile-stack">
-        <VfsFileManagerPanel
-          v-if="mode === 'list'"
-          :key="`fm-${viewRefreshToken}`"
-          :mode="mode"
-          :current-path="currentDirectoryPath"
-          :entries="directoryEntries"
-          :selected-path="selectedPath"
-          @selected="onSelected"
-          @opened="onOpened"
-          @up-requested="onUpRequested"
-        >
-          <template #actions>
-            <VfsActionMenu
-              :entity="selectedEntity"
-              @action-selected="handleEntityAction"
-              @global-action-selected="handleGlobalAction"
-            />
-          </template>
-        </VfsFileManagerPanel>
-
-        <section v-else class="vfs-mobile-content">
+        <section class="vfs-mobile-content">
           <button type="button" data-testid="vfs-mobile-back" @click="requestModeChange('list')">Back</button>
           <ReaderScreen v-if="mode === 'reader'" :key="`reader-${viewRefreshToken}`" :html="readerHtml" />
           <EditorScreen
@@ -735,6 +739,10 @@ async function handleEditorSaveRequested(): Promise<void> {
 </template>
 
 <style scoped>
+.vfs-list-only-layout {
+  width: 100%;
+}
+
 .vfs-desktop-grid {
   display: grid;
   grid-template-columns: minmax(280px, 360px) 1fr;
