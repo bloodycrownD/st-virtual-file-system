@@ -2,6 +2,7 @@ import { mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import VfsActionMenu from '@/app/components/business-components/VfsActionMenu.vue'
 import VfsCommitTab from '@/app/components/business-components/VfsCommitTab.vue'
+import VfsCreateEntityModal from '@/app/components/business-components/VfsCreateEntityModal.vue'
 import VfsHistoryScreen from '@/app/screens/business-screens/VfsHistoryScreen.vue'
 import VfsMainScreen from '@/app/screens/business-screens/VfsMainScreen.vue'
 import EditorScreen from '@/app/screens/pure-screens/EditorScreen.vue'
@@ -17,6 +18,7 @@ const useVfsCommitActionsMock = vi.fn<(summary: string) => Promise<boolean>>()
 const useVfsRollbackActionMock = vi.fn<(commitId: string) => Promise<boolean>>()
 const useVfsBatchRollbackActionMock = vi.fn<(commitIds: string[]) => Promise<boolean>>()
 const fetchLogsMock = vi.fn(async () => ({ items: [], total: 0 }))
+let toastrErrorMock: ReturnType<typeof vi.fn>
 
 const mountedWrappers: Array<{ unmount: () => void }> = []
 function mountTracked<T>(...args: Parameters<typeof mount<T>>) {
@@ -115,6 +117,8 @@ describe('vfs ui cr loop fixes', () => {
     useVfsBatchRollbackActionMock.mockReset()
     useVfsBatchRollbackActionMock.mockResolvedValue(true)
     fetchLogsMock.mockClear()
+    toastrErrorMock = vi.fn()
+    ;(globalThis as { toastr: { error: (message: string) => void } }).toastr = { error: toastrErrorMock }
     const now = Date.now()
     const templateSnapshot = {
       schemaVersion: 1,
@@ -589,6 +593,33 @@ describe('vfs ui cr loop fixes', () => {
     const menu = wrapper.findComponent(VfsActionMenu)
     expect(menu.get('summary').text()).toContain('更多操作')
     expect(menu.get('details.vfs-action-menu').exists()).toBe(true)
+  })
+
+  it('blocks path-like names in create modal submit path', async () => {
+    const wrapper = mountTracked(VfsMainScreen)
+    const beforeSnapshot = JSON.stringify(vfsPersistenceStore.getState().chat.chatVfsSnapshot)
+    await wrapper.findComponent(VfsActionMenu).vm.$emit('global-action-selected', 'create-file')
+    await wrapper.vm.$nextTick()
+
+    await wrapper.findComponent(VfsCreateEntityModal).vm.$emit('confirm', 'nested/name')
+    await wrapper.vm.$nextTick()
+
+    expect(toastrErrorMock).toHaveBeenCalledWith('名称不能包含路径分隔符')
+    expect(JSON.stringify(vfsPersistenceStore.getState().chat.chatVfsSnapshot)).toBe(beforeSnapshot)
+  })
+
+  it('maps create exceptions to user-visible reasons using real error details', async () => {
+    const wrapper = mountTracked(VfsMainScreen)
+    await wrapper.findComponent(VfsActionMenu).vm.$emit('global-action-selected', 'create-directory')
+    await wrapper.vm.$nextTick()
+
+    await wrapper.findComponent(VfsCreateEntityModal).vm.$emit('confirm', 'docs')
+    await wrapper.vm.$nextTick()
+
+    const calls = toastrErrorMock.mock.calls
+    const lastMessage = String(calls[calls.length - 1]?.[0] ?? '')
+    expect(lastMessage).toContain('[E_RENAME_FAILED]')
+    expect(lastMessage).toContain('Path already exists')
   })
 
   it('does not auto-fetch logs on tab enter (manual by default)', async () => {

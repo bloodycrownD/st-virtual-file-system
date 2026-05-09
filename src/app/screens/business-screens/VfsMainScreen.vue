@@ -37,7 +37,7 @@ import { dirname, normalizePath, ROOT_PATH } from '@/domain/vfs/path-utils'
 import { DeflateContentCodec } from '@/infra/serialization/deflate-codec'
 import { VfsCore } from '@/domain/vfs/vfs-core'
 import { DEFAULT_DIRECTORY_RULE, type DirectoryRule, type WorkTreeConfig } from '@/domain/work-tree/work-tree.types'
-import { toVfsErrorToast } from '@/app/utils/vfsErrorMapper'
+import { mapVfsMutationError, toVfsErrorToast } from '@/app/utils/vfsErrorMapper'
 import { createEmptyVfsSnapshot, serializeVfsSnapshot } from '@/infra/persistence/vfs-snapshot.schema'
 
 type VfsScreenScope = 'chat' | 'template'
@@ -414,6 +414,11 @@ function handleCreateConfirm(name: string): void {
     toastr.error('名称不能为空')
     return
   }
+  // WHY: create modal accepts *name only*; path separators would silently turn into nested paths.
+  if (/[\\/／＼∕∖⧵]/u.test(name)) {
+    toastr.error('名称不能包含路径分隔符')
+    return
+  }
   const targetPath = normalizePath(`${currentDirectoryPath.value}/${name}`)
   try {
     if (createKind.value === 'directory') {
@@ -424,9 +429,10 @@ function handleCreateConfirm(name: string): void {
     selectedPath.value = targetPath
     requestModeChange('list')
     closeCreateModal()
-  } catch {
-    const fallback = createKind.value === 'directory' ? '新建目录失败' : '新建文件失败'
-    toastr.error(toVfsErrorToast(VFS_ERROR_CODES.SAVE_FAILED, fallback))
+  } catch (error) {
+    // WHY: preserve domain exception intent so users see specific reasons instead of a generic failure.
+    const mapped = mapVfsMutationError(error, VFS_ERROR_CODES.SAVE_FAILED)
+    toastr.error(toVfsErrorToast(mapped.code, mapped.message))
   }
 }
 
