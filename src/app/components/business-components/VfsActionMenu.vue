@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, ref } from 'vue'
 import {
   getVisibleActions,
   isActionTriggerable,
@@ -26,12 +26,16 @@ const emits = defineEmits<{
 }>()
 
 const detailsRef = ref<HTMLDetailsElement | null>(null)
+const toggleRef = ref<HTMLElement | null>(null)
+const overlayInlineStyle = ref<Record<string, string>>({})
+let syncPositionWithViewport: (() => void) | null = null
 
 const entityActions = computed(() => getVisibleActions(props.entity))
 const globalCreateActions: VfsGlobalAction[] = ['create-directory', 'create-file']
 
 const globalActions = computed(() => (props.mode === 'entity-actions' ? [] : globalCreateActions))
 const actions = computed(() => (props.mode === 'global-create' ? [] : entityActions.value))
+const isEntityActionsMenu = computed(() => props.mode === 'entity-actions')
 
 // WHY: "more actions" must stay usable even without selection so users can trigger create actions globally.
 const isDisabled = computed(() => globalActions.value.length === 0 && actions.value.length === 0)
@@ -60,6 +64,42 @@ function onToggleClick(event: MouseEvent): void {
   event.preventDefault()
 }
 
+function teardownViewportSync(): void {
+  if (!syncPositionWithViewport) return
+  window.removeEventListener('resize', syncPositionWithViewport)
+  window.removeEventListener('scroll', syncPositionWithViewport, true)
+  syncPositionWithViewport = null
+}
+
+function updateEntityMenuAnchor(): void {
+  if (!isEntityActionsMenu.value) return
+  const toggle = toggleRef.value
+  if (!toggle) return
+  const rect = toggle.getBoundingClientRect()
+  overlayInlineStyle.value = {
+    // Intent: keep row menu anchored to the clicked button and detached from parent scroll containers.
+    '--vfs-menu-anchor-top': `${rect.bottom + 8}px`,
+    '--vfs-menu-anchor-right': `${rect.right}px`,
+    position: 'fixed',
+  }
+}
+
+async function onOpenStateChanged(event: Event): Promise<void> {
+  const details = event.currentTarget as HTMLDetailsElement | null
+  if (!details || !isEntityActionsMenu.value) return
+  teardownViewportSync()
+  if (!details.open) return
+  await nextTick()
+  updateEntityMenuAnchor()
+  const reposition = () => {
+    if (!detailsRef.value?.open) return
+    updateEntityMenuAnchor()
+  }
+  syncPositionWithViewport = reposition
+  window.addEventListener('resize', reposition)
+  window.addEventListener('scroll', reposition, true)
+}
+
 function triggerAction(action: VfsEntityAction): void {
   // WHY: keep runtime checks as source of truth; render filtering alone can be bypassed by stale state.
   if (!isActionTriggerable(props.entity, action)) return
@@ -71,11 +111,21 @@ function triggerGlobalAction(action: VfsGlobalAction): void {
   emits('globalActionSelected', action)
   detailsRef.value?.removeAttribute('open')
 }
+
+onBeforeUnmount(() => {
+  teardownViewportSync()
+})
 </script>
 
 <template>
-  <details ref="detailsRef" class="vfs-action-menu" :data-disabled="isDisabled ? 'true' : 'false'">
+  <details
+    ref="detailsRef"
+    class="vfs-action-menu"
+    :data-disabled="isDisabled ? 'true' : 'false'"
+    @toggle="onOpenStateChanged"
+  >
     <summary
+      ref="toggleRef"
       class="vfs-action-menu__toggle"
       data-testid="vfs-action-menu-toggle"
       :aria-disabled="isDisabled"
@@ -85,7 +135,12 @@ function triggerGlobalAction(action: VfsGlobalAction): void {
     >
       <i :class="ACTION_MENU_ICON" aria-hidden="true"></i>
     </summary>
-    <ul class="vfs-action-menu__list" role="menu">
+    <ul
+      class="vfs-action-menu__list"
+      :class="{ 'vfs-action-menu__list--entity-overlay': isEntityActionsMenu }"
+      :style="isEntityActionsMenu ? overlayInlineStyle : undefined"
+      role="menu"
+    >
       <li v-for="action in globalActions" :key="action" role="none">
         <button
           type="button"
@@ -161,6 +216,14 @@ function triggerGlobalAction(action: VfsGlobalAction): void {
   max-height: min(50vh, 360px);
   overflow: auto;
   box-shadow: 0 10px 24px rgba(0, 0, 0, 0.45);
+}
+
+.vfs-action-menu__list--entity-overlay {
+  /* Intent: row menu must stay overlay-right-bottom, never auto-flip with container constraints. */
+  top: var(--vfs-menu-anchor-top);
+  left: var(--vfs-menu-anchor-right);
+  right: auto;
+  transform: translateX(-100%);
 }
 
 .vfs-action-menu__separator {

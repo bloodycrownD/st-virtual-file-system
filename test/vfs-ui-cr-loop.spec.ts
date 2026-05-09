@@ -639,6 +639,23 @@ describe('vfs ui cr loop fixes', () => {
     expect(docsRow.attributes('data-selected')).toBe('true')
   })
 
+  it('anchors row action menu as fixed overlay-right-bottom without parent layout shift', async () => {
+    const wrapper = mountTracked(VfsMainScreen)
+    const rowMenu = wrapper.findAllComponents(VfsActionMenu).find((menu) => menu.props('mode') === 'entity-actions')
+    if (!rowMenu) throw new Error('entity row VfsActionMenu not found')
+
+    const list = wrapper.get('[data-testid="vfs-file-manager-list"]')
+    ;(list.element as HTMLElement).scrollTop = 24
+    const listScrollBefore = (list.element as HTMLElement).scrollTop
+
+    await rowMenu.get('summary.vfs-action-menu__toggle').trigger('click')
+
+    const listScrollAfter = (list.element as HTMLElement).scrollTop
+    const menuList = rowMenu.get('ul.vfs-action-menu__list')
+    expect(menuList.classes()).toContain('vfs-action-menu__list--entity-overlay')
+    expect(listScrollAfter).toBe(listScrollBefore)
+  })
+
   it('blocks path-like names in create modal submit path', async () => {
     const wrapper = mountTracked(VfsMainScreen)
     const beforeSnapshot = JSON.stringify(vfsPersistenceStore.getState().chat.chatVfsSnapshot)
