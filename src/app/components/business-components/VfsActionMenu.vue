@@ -93,16 +93,21 @@ function triggerGlobalAction(action: VfsGlobalAction): void {
 }
 
 .vfs-action-menu__list {
-  margin: 8px 0 0;
+  /* Intent: render as an overlay so opening it doesn't change dialog layout/scroll. */
+  margin: 0;
   padding: 8px;
   list-style: none;
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 8px;
   background: rgba(0, 0, 0, 0.25);
   position: absolute;
+  top: calc(100% + 8px);
   right: 0;
   min-width: 180px;
-  z-index: 2;
+  z-index: 50;
+  max-height: min(50vh, 360px);
+  overflow: auto;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.45);
 }
 
 .vfs-action-menu__separator {

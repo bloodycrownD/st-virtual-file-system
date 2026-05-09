@@ -739,30 +739,55 @@ async function handleEditorSaveRequested(): Promise<void> {
 </template>
 
 <style scoped>
+.vfs-main-layout {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
 .vfs-list-only-layout {
   width: 100%;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .vfs-desktop-grid {
   display: grid;
   grid-template-columns: minmax(280px, 360px) 1fr;
   gap: 12px;
-  align-items: start;
+  align-items: stretch;
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 .vfs-sidebar {
   border-right: 1px solid rgba(255, 255, 255, 0.12);
   padding-right: 12px;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .vfs-content {
-  min-height: 320px;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .vfs-mobile-content {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  min-height: 0;
+}
+
+.vfs-mobile-stack {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .vfs-chat-actions {

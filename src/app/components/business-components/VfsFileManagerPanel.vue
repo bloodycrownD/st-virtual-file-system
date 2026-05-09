@@ -61,12 +61,20 @@ function open(entry: VfsBrowserEntity): void {
 </template>
 
 <style scoped>
+.vfs-file-manager-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1 1 auto;
+}
+
 .vfs-fm-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
   margin-bottom: 10px;
+  flex: 0 0 auto;
 }
 
 .vfs-fm-path {
@@ -91,6 +99,9 @@ function open(entry: VfsBrowserEntity): void {
   list-style: none;
   display: grid;
   gap: 6px;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
 }
 
 .vfs-fm-item {

@@ -10,6 +10,19 @@
   pointer-events: auto !important;
   position: fixed;
 
+  /*
+    Popup sizing strategy (per spec):
+    - Keep the dialog itself non-scrollable so overlay menus (e.g. "More Actions") don't create a
+      surprise dialog scrollbar.
+    - Push scrolling down into dedicated content areas (file list / panels) for stability.
+  */
+  height: 70vh;
+  max-height: 85vh;
+  overflow: hidden;
+
+  display: flex;
+  flex-direction: column;
+
   padding: 0;
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 12px;
@@ -28,6 +41,16 @@
 #st-vfs-popup #st-vfs-popup-app {
   pointer-events: auto !important;
   padding: 12px;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Vue app root should consume available dialog space. */
+#st-vfs-popup #st-vfs-popup-app > * {
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 /* Hard guard: if host CSS disables interactions on dialogs, re-enable within popup only. */
