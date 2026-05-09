@@ -14,6 +14,7 @@ const emits = defineEmits<{
 
 const actions = computed(() => getVisibleActions(props.entity))
 const isDisabled = computed(() => !props.entity || actions.value.length === 0)
+const disabledHint = computed(() => (isDisabled.value ? '先选择一个文件/目录，然后使用“更多操作”' : ''))
 const ACTION_LABELS: Record<VfsEntityAction, string> = {
   'toggle-status': '切换状态',
   delete: '删除',
@@ -42,6 +43,7 @@ function triggerAction(action: VfsEntityAction): void {
       class="vfs-action-menu__toggle"
       data-testid="vfs-action-menu-toggle"
       :aria-disabled="isDisabled"
+      :title="disabledHint"
       @click="onToggleClick"
     >
       更多操作

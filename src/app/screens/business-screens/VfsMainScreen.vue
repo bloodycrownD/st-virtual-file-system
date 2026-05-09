@@ -396,6 +396,33 @@ function onUpRequested(): void {
   requestModeChange('list')
 }
 
+function onCreateDirectoryRequested(): void {
+  const name = window.prompt('Directory name')?.trim()
+  if (!name) return
+  const targetPath = normalizePath(`${currentDirectoryPath.value}/${name}`)
+  try {
+    applySnapshotMutation((core) => core.mkdir(targetPath, { recursive: true }))
+    currentDirectoryPath.value = normalizePath(currentDirectoryPath.value)
+    selectedPath.value = targetPath
+    requestModeChange('list')
+  } catch {
+    toastr.error(toVfsErrorToast(VFS_ERROR_CODES.SAVE_FAILED, '新建目录失败'))
+  }
+}
+
+function onCreateFileRequested(): void {
+  const name = window.prompt('File name')?.trim()
+  if (!name) return
+  const targetPath = normalizePath(`${currentDirectoryPath.value}/${name}`)
+  try {
+    applySnapshotMutation((core) => core.writeFile(targetPath, '', { createParents: true }))
+    selectedPath.value = targetPath
+    requestModeChange('list')
+  } catch {
+    toastr.error(toVfsErrorToast(VFS_ERROR_CODES.SAVE_FAILED, '新建文件失败'))
+  }
+}
+
 function handleEntityAction(action: VfsEntityAction): void {
   if (!isActionTriggerable(selectedEntity.value, action)) return
   const entity = selectedEntity.value
@@ -589,6 +616,8 @@ async function handleEditorSaveRequested(): Promise<void> {
             @selected="onSelected"
             @opened="onOpened"
             @up-requested="onUpRequested"
+            @create-directory-requested="onCreateDirectoryRequested"
+            @create-file-requested="onCreateFileRequested"
           >
             <template #actions>
               <VfsActionMenu :entity="selectedEntity" @action-selected="handleEntityAction" />
@@ -632,6 +661,8 @@ async function handleEditorSaveRequested(): Promise<void> {
           @selected="onSelected"
           @opened="onOpened"
           @up-requested="onUpRequested"
+          @create-directory-requested="onCreateDirectoryRequested"
+          @create-file-requested="onCreateFileRequested"
         >
           <template #actions>
             <VfsActionMenu :entity="selectedEntity" @action-selected="handleEntityAction" />
