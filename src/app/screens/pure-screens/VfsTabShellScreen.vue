@@ -36,7 +36,7 @@ function trySwitchTab(nextTab: VfsTab): void {
         v-for="tab in resolvedTabs()"
         :key="tab"
         type="button"
-        :class="{ active: activeTab === tab }"
+        :class="['menu_button', 'vfs-tab', { active: activeTab === tab }]"
         @click="trySwitchTab(tab)"
       >
         {{ TAB_LABELS[tab] }}
@@ -52,6 +52,13 @@ function trySwitchTab(nextTab: VfsTab): void {
 .vfs-tabs {
   display: flex;
   gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+.vfs-tab {
+  writing-mode: horizontal-tb;
+  white-space: nowrap;
+  flex: 0 0 auto;
 }
 .active {
   font-weight: 700;

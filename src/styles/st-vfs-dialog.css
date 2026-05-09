@@ -1,0 +1,53 @@
+/*
+  Scoped `<dialog>` styling for VFS popup.
+  WHY: SillyTavern themes/plugins may reset native dialog styles; we keep it usable (non-white, clickable)
+  without leaking styles beyond `#st-vfs-popup`.
+*/
+
+#st-vfs-popup.st-vfs-popup {
+  /* Keep popup above common overlays; also fixes "popup opened but unclickable" issues. */
+  z-index: 10000;
+  pointer-events: auto;
+
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  color: var(--SmartThemeBodyColor, rgba(255, 255, 255, 0.92));
+  background: var(--SmartThemeBlurTintColor, rgba(20, 20, 20, 0.92));
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55);
+}
+
+#st-vfs-popup.st-vfs-popup::backdrop {
+  background: rgba(0, 0, 0, 0.55);
+}
+
+/* Ensure the mounted Vue app is always interactive */
+#st-vfs-popup #st-vfs-popup-app {
+  pointer-events: auto;
+  padding: 12px;
+}
+
+/* Prevent "vertical text" layout caused by extreme `writing-mode` or narrow buttons */
+#st-vfs-popup button,
+#st-vfs-popup .menu_button,
+#st-vfs-popup summary {
+  writing-mode: horizontal-tb;
+  white-space: nowrap;
+}
+
+/* Make <details>/<summary> menu toggles reliably clickable under CSS resets */
+#st-vfs-popup .vfs-action-menu__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.2);
+}
+
+#st-vfs-popup summary.vfs-action-menu__toggle::-webkit-details-marker {
+  display: none;
+}

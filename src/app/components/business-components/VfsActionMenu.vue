@@ -57,9 +57,14 @@ function triggerAction(action: VfsEntityAction): void {
 </template>
 
 <style scoped>
+.vfs-action-menu {
+  position: relative;
+}
+
 .vfs-action-menu__toggle {
   cursor: pointer;
   user-select: none;
+  list-style: none;
 }
 
 .vfs-action-menu[data-disabled='true'] .vfs-action-menu__toggle {
@@ -74,5 +79,9 @@ function triggerAction(action: VfsEntityAction): void {
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 8px;
   background: rgba(0, 0, 0, 0.25);
+  position: absolute;
+  right: 0;
+  min-width: 180px;
+  z-index: 2;
 }
 </style>

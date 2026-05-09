@@ -22,6 +22,7 @@
  */
 import { createApp } from 'vue'
 import App from './App.vue'
+import '@/styles/st-vfs-dialog.css'
 import { initVfsPersistenceStore, registerVfsChatReloadHook, vfsPersistenceStore } from '@/app/stores/vfs-store-singleton'
 import { createMessageController } from '@/app/controllers/message-controller'
 import { createMessagePipeline } from '@/app/services/message/message-pipeline'

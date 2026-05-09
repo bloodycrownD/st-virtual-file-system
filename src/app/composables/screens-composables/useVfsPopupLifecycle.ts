@@ -8,6 +8,7 @@ import {
 
 const POPUP_ID = 'st-vfs-popup'
 const POPUP_APP_ID = 'st-vfs-popup-app'
+const POPUP_CLASS = 'st-vfs-popup'
 type VfsPopupScope = 'chat' | 'template'
 interface VfsPopupOpenOptions {
   scope?: VfsPopupScope
@@ -55,6 +56,8 @@ export function useVfsPopupLifecycle() {
     }
     popup = document.createElement('dialog')
     popup.id = POPUP_ID
+    popup.classList.add(POPUP_CLASS)
+    popup.setAttribute('role', 'dialog')
     popup.style.width = '80vw'
     popup.style.maxWidth = '960px'
     if (options?.title) {

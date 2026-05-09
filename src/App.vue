@@ -95,5 +95,13 @@ const openTemplateManager = () => {
 
 .vfs-actions {
   margin-top: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.vfs-actions .menu_button {
+  writing-mode: horizontal-tb;
+  white-space: nowrap;
 }
 </style>
