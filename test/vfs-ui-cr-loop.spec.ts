@@ -712,7 +712,7 @@ describe('vfs ui cr loop fixes', () => {
   it.each([
     { label: 'chat', scope: undefined },
     { label: 'template', scope: 'template' as const },
-  ])('keeps row menu toggle stable after repeated clicks in $label scope', async ({ scope }) => {
+  ])('does not force-toggle row menu closed on repeated toggle clicks in $label scope', async ({ scope }) => {
     const wrapper = mountTracked(VfsMainScreen, scope ? { props: { scope } } : undefined)
     const rowMenu = wrapper.findAllComponents(VfsActionMenu).find((menu) => menu.props('mode') === 'entity-actions')
     if (!rowMenu) throw new Error('entity row VfsActionMenu not found')
@@ -721,8 +721,7 @@ describe('vfs ui cr loop fixes', () => {
 
     for (let i = 0; i < 10; i += 1) {
       await toggle.trigger('click')
-      const shouldBeOpen = i % 2 === 0
-      expect(details.attributes('open') !== undefined).toBe(shouldBeOpen)
+      expect(details.attributes('open')).toBeDefined()
     }
   })
 
@@ -751,6 +750,57 @@ describe('vfs ui cr loop fixes', () => {
     const listScrollAfter = (list.element as HTMLElement).scrollTop
     expect(selectedPathAfter).toBe(selectedPathBefore)
     expect(listScrollAfter).toBe(listScrollBefore)
+  })
+
+  it.each([
+    { label: 'chat', scope: undefined },
+    { label: 'template', scope: 'template' as const },
+  ])('reopens row menu after outside dismiss without getting stuck in $label scope', async ({ scope }) => {
+    const wrapper = mountTracked(VfsMainScreen, scope ? { props: { scope } } : undefined)
+    const rowMenu = wrapper.findAllComponents(VfsActionMenu).find((menu) => menu.props('mode') === 'entity-actions')
+    if (!rowMenu) throw new Error('entity row VfsActionMenu not found')
+    const details = rowMenu.get('details.vfs-action-menu')
+    const toggle = rowMenu.get('summary.vfs-action-menu__toggle')
+
+    for (let i = 0; i < 10; i += 1) {
+      await toggle.trigger('click')
+      expect(details.attributes('open')).toBeDefined()
+      document.body.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await wrapper.vm.$nextTick()
+      expect(details.attributes('open')).toBeUndefined()
+    }
+  })
+
+  it('dismisses header menu on outside click', async () => {
+    const wrapper = mountTracked(VfsMainScreen)
+    const menu = getHeaderActionMenu(wrapper)
+    const details = menu.get('details.vfs-action-menu')
+    await menu.get('summary.vfs-action-menu__toggle').trigger('click')
+    expect(details.attributes('open')).toBeDefined()
+
+    document.body.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    await wrapper.vm.$nextTick()
+    expect(details.attributes('open')).toBeUndefined()
+  })
+
+  it('enforces mutual exclusion between header and row menus', async () => {
+    const wrapper = mountTracked(VfsMainScreen)
+    const headerMenu = getHeaderActionMenu(wrapper)
+    const headerDetails = headerMenu.get('details.vfs-action-menu')
+    const rowMenu = wrapper.findAllComponents(VfsActionMenu).find((menu) => menu.props('mode') === 'entity-actions')
+    if (!rowMenu) throw new Error('entity row VfsActionMenu not found')
+    const rowDetails = rowMenu.get('details.vfs-action-menu')
+
+    await rowMenu.get('summary.vfs-action-menu__toggle').trigger('click')
+    expect(rowDetails.attributes('open')).toBeDefined()
+
+    await headerMenu.get('summary.vfs-action-menu__toggle').trigger('click')
+    expect(headerDetails.attributes('open')).toBeDefined()
+    expect(rowDetails.attributes('open')).toBeUndefined()
+
+    await rowMenu.get('summary.vfs-action-menu__toggle').trigger('click')
+    expect(rowDetails.attributes('open')).toBeDefined()
+    expect(headerDetails.attributes('open')).toBeUndefined()
   })
 
   it('blocks path-like names in create modal submit path', async () => {
