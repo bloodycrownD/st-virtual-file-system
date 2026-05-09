@@ -423,6 +423,11 @@ function handleCreateConfirm(name: string): void {
     toastr.error('名称不能包含路径分隔符')
     return
   }
+  // WHY: "." and ".." are relative path segments; create flow accepts literal names only.
+  if (name === '.' || name === '..') {
+    toastr.error('名称不能为 . 或 ..')
+    return
+  }
   const targetPath = normalizePath(`${currentDirectoryPath.value}/${name}`)
   try {
     if (createKind.value === 'directory') {

@@ -613,6 +613,32 @@ describe('vfs ui cr loop fixes', () => {
     expect(JSON.stringify(vfsPersistenceStore.getState().chat.chatVfsSnapshot)).toBe(beforeSnapshot)
   })
 
+it('blocks relative segment "." in create modal submit path', async () => {
+  const wrapper = mountTracked(VfsMainScreen)
+  const beforeSnapshot = JSON.stringify(vfsPersistenceStore.getState().chat.chatVfsSnapshot)
+  await wrapper.findComponent(VfsActionMenu).vm.$emit('global-action-selected', 'create-file')
+  await wrapper.vm.$nextTick()
+
+  await wrapper.findComponent(VfsCreateEntityModal).vm.$emit('confirm', '.')
+  await wrapper.vm.$nextTick()
+
+  expect(toastrErrorMock).toHaveBeenCalledWith('名称不能为 . 或 ..')
+  expect(JSON.stringify(vfsPersistenceStore.getState().chat.chatVfsSnapshot)).toBe(beforeSnapshot)
+})
+
+it('blocks relative segment ".." in create modal submit path', async () => {
+  const wrapper = mountTracked(VfsMainScreen)
+  const beforeSnapshot = JSON.stringify(vfsPersistenceStore.getState().chat.chatVfsSnapshot)
+  await wrapper.findComponent(VfsActionMenu).vm.$emit('global-action-selected', 'create-directory')
+  await wrapper.vm.$nextTick()
+
+  await wrapper.findComponent(VfsCreateEntityModal).vm.$emit('confirm', '..')
+  await wrapper.vm.$nextTick()
+
+  expect(toastrErrorMock).toHaveBeenCalledWith('名称不能为 . 或 ..')
+  expect(JSON.stringify(vfsPersistenceStore.getState().chat.chatVfsSnapshot)).toBe(beforeSnapshot)
+})
+
   it('maps create exceptions to user-visible reasons using real error details', async () => {
     const wrapper = mountTracked(VfsMainScreen)
     await wrapper.findComponent(VfsActionMenu).vm.$emit('global-action-selected', 'create-directory')
