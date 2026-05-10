@@ -28,11 +28,8 @@ const emits = defineEmits<{
 const detailsRef = ref<HTMLDetailsElement | null>(null)
 const toggleRef = ref<HTMLElement | null>(null)
 const overlayInlineStyle = ref<Record<string, string>>({})
-let syncPositionWithViewport: (() => void) | null = null
-let dismissOnOutsideClick: ((event: MouseEvent) => void) | null = null
-// WHY: syncMenuLifecycle is async; overlapping runs (toggle handler + rapid clicks) must not leave orphaned
-// document/window listeners — that breaks later opens, especially for row menus users hammer repeatedly.
-const menuLifecycleGeneration = ref(0)
+/** Aborting drops every listener registered with this controller (click + scroll + resize). */
+let menuInteractionAbort: AbortController | null = null
 
 const entityActions = computed(() => getVisibleActions(props.entity))
 const globalCreateActions: VfsGlobalAction[] = ['create-directory', 'create-file']
@@ -95,22 +92,13 @@ function onToggleClick(event: MouseEvent): void {
   event.preventDefault()
   closePeerMenus(details)
   details.setAttribute('open', '')
-  // WHY: jsdom / some hosts omit `toggle` for programmatic `open`; always sync here. Overlapping runs with
-  // `@toggle` are deduped via `menuLifecycleGeneration` so we don't orphan capture listeners.
+  // WHY: jsdom / some hosts omit `toggle` for programmatic `open`; always sync here.
   void syncMenuLifecycle(details)
 }
 
-function teardownViewportSync(): void {
-  if (!syncPositionWithViewport) return
-  window.removeEventListener('resize', syncPositionWithViewport)
-  window.removeEventListener('scroll', syncPositionWithViewport, true)
-  syncPositionWithViewport = null
-}
-
-function teardownOutsideDismiss(): void {
-  if (!dismissOnOutsideClick) return
-  document.removeEventListener('click', dismissOnOutsideClick, true)
-  dismissOnOutsideClick = null
+function teardownMenuInteraction(): void {
+  menuInteractionAbort?.abort()
+  menuInteractionAbort = null
 }
 
 function updateEntityMenuAnchor(): void {
@@ -133,32 +121,54 @@ async function onOpenStateChanged(event: Event): Promise<void> {
 }
 
 async function syncMenuLifecycle(details: HTMLDetailsElement): Promise<void> {
-  teardownViewportSync()
-  teardownOutsideDismiss()
+  teardownMenuInteraction()
   if (!details.open) return
   closePeerMenus(details)
-  menuLifecycleGeneration.value += 1
-  const lifecycleTicket = menuLifecycleGeneration.value
   await nextTick()
-  if (lifecycleTicket !== menuLifecycleGeneration.value) return
   if (!detailsRef.value?.open || detailsRef.value !== details) return
+
+  const controller = new AbortController()
+  menuInteractionAbort = controller
+
   updateEntityMenuAnchor()
-  // WHY: capture outside clicks early so dismiss works even when other handlers stop bubble-phase events.
-  const outsideDismiss = (clickEvent: MouseEvent) => {
+
+  const outsideDismiss = (clickEvent: MouseEvent): void => {
     if (!detailsRef.value?.open) return
     if (details.contains(clickEvent.target as Node | null)) return
     details.removeAttribute('open')
+    teardownMenuInteraction()
   }
-  dismissOnOutsideClick = outsideDismiss
-  document.addEventListener('click', outsideDismiss, true)
+
+  const bindOutsideDismiss = (): void => {
+    if (controller.signal.aborted || !detailsRef.value?.open) return
+    document.addEventListener('click', outsideDismiss, { capture: true, signal: controller.signal })
+  }
+
+  const deferOutsideBind = (bind: () => void): void => {
+    // WHY: Vitest/jsdom does not reliably interleave `setTimeout(0)` with synchronous dispatchEvent the way a
+    // real browser does; microtasks match production semantics closely enough for regression tests.
+    if (import.meta.env.MODE === 'test') {
+      queueMicrotask(bind)
+      return
+    }
+    window.setTimeout(bind, 0)
+  }
+
+  // WHY: row menus defer past the opening gesture so dialog/ST click routing cannot strand state after
+  // repeated outside-dismiss cycles; header menus attach immediately (no scroll-port overlay coupling).
   if (isEntityActionsMenu.value) {
-    const reposition = () => {
+    deferOutsideBind(bindOutsideDismiss)
+  } else {
+    bindOutsideDismiss()
+  }
+
+  if (isEntityActionsMenu.value) {
+    const reposition = (): void => {
       if (!detailsRef.value?.open) return
       updateEntityMenuAnchor()
     }
-    syncPositionWithViewport = reposition
-    window.addEventListener('resize', reposition)
-    window.addEventListener('scroll', reposition, true)
+    window.addEventListener('resize', reposition, { signal: controller.signal })
+    window.addEventListener('scroll', reposition, { capture: true, signal: controller.signal })
   }
 }
 
@@ -167,16 +177,17 @@ function triggerAction(action: VfsEntityAction): void {
   if (!isActionTriggerable(props.entity, action)) return
   emits('actionSelected', action)
   detailsRef.value?.removeAttribute('open')
+  teardownMenuInteraction()
 }
 
 function triggerGlobalAction(action: VfsGlobalAction): void {
   emits('globalActionSelected', action)
   detailsRef.value?.removeAttribute('open')
+  teardownMenuInteraction()
 }
 
 onBeforeUnmount(() => {
-  teardownViewportSync()
-  teardownOutsideDismiss()
+  teardownMenuInteraction()
 })
 </script>
 

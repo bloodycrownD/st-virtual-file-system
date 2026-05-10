@@ -1,4 +1,5 @@
-import { mount } from '@vue/test-utils'
+import { flushPromises, mount } from '@vue/test-utils'
+import { nextTick } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import VfsActionMenu from '@/app/components/business-components/VfsActionMenu.vue'
 import VfsCommitTab from '@/app/components/business-components/VfsCommitTab.vue'
@@ -22,6 +23,11 @@ const fetchLogsMock = vi.fn(async () => ({ items: [], total: 0 }))
 let toastrErrorMock: ReturnType<typeof vi.fn>
 
 const mountedWrappers: Array<{ unmount: () => void }> = []
+/** Flush Vue + deferred outside-dismiss binding (`queueMicrotask` when `import.meta.env.MODE === 'test'`). */
+async function settleActionMenuOutsideBinding(): Promise<void> {
+  await flushPromises()
+  await nextTick()
+}
 function mountTracked<T>(...args: Parameters<typeof mount<T>>) {
   const wrapper = mount<T>(...args)
   mountedWrappers.push(wrapper)
@@ -737,6 +743,7 @@ describe('vfs ui cr loop fixes', () => {
     const details = rowMenu.get('details.vfs-action-menu')
     await rowMenu.get('summary.vfs-action-menu__toggle').trigger('click')
     expect(details.attributes('open')).toBeDefined()
+    await settleActionMenuOutsideBinding()
 
     document.body.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     await wrapper.vm.$nextTick()
@@ -765,10 +772,32 @@ describe('vfs ui cr loop fixes', () => {
     for (let i = 0; i < 20; i += 1) {
       await toggle.trigger('click')
       expect(details.attributes('open')).toBeDefined()
+      await settleActionMenuOutsideBinding()
       document.body.dispatchEvent(new MouseEvent('click', { bubbles: true }))
       await wrapper.vm.$nextTick()
       expect(details.attributes('open')).toBeUndefined()
     }
+  })
+
+  it('row menu stays openable after two outside-dismiss cycles (third open)', async () => {
+    const wrapper = mountTracked(VfsMainScreen)
+    const rowMenu = wrapper.findAllComponents(VfsActionMenu).find((menu) => menu.props('mode') === 'entity-actions')
+    if (!rowMenu) throw new Error('entity row VfsActionMenu not found')
+    const details = rowMenu.get('details.vfs-action-menu')
+    const toggle = rowMenu.get('summary.vfs-action-menu__toggle')
+
+    for (let cycle = 0; cycle < 2; cycle += 1) {
+      await toggle.trigger('click')
+      expect(details.attributes('open')).toBeDefined()
+      await settleActionMenuOutsideBinding()
+      document.body.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await wrapper.vm.$nextTick()
+      expect(details.attributes('open')).toBeUndefined()
+    }
+
+    await toggle.trigger('click')
+    await settleActionMenuOutsideBinding()
+    expect(details.attributes('open')).toBeDefined()
   })
 
   it('dismisses header menu on outside click', async () => {
@@ -777,6 +806,7 @@ describe('vfs ui cr loop fixes', () => {
     const details = menu.get('details.vfs-action-menu')
     await menu.get('summary.vfs-action-menu__toggle').trigger('click')
     expect(details.attributes('open')).toBeDefined()
+    await settleActionMenuOutsideBinding()
 
     document.body.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     await wrapper.vm.$nextTick()
