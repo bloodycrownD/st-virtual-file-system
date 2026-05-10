@@ -117,12 +117,19 @@ async function rollbackBatchToSelected(): Promise<void> {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: nowrap;
   gap: 12px;
   margin-bottom: 8px;
+  overflow-x: auto;
+  min-width: 0;
 }
 .vfs-commit-tab-hint {
   margin: 0;
   opacity: 0.85;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .vfs-commit-list {
   list-style: none;

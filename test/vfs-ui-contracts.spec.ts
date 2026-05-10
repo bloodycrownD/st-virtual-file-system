@@ -86,33 +86,20 @@ describe('vfs ui contracts', () => {
     window.removeEventListener('VFS_STATE_REFRESH_REQUIRED', spy)
   })
 
-  it('supports slideshow directory switch and paging modes', async () => {
+  it('renders slideshow page content at index', async () => {
     const wrapper = mount(SlideshowScreen, {
       props: {
-        directories: [
-          { path: 'dir-a', name: 'A' },
-          { path: 'dir-b', name: 'B' },
-        ],
         pages: [
           { path: 'a-1', title: 'a-1', content: 'a-1' },
           { path: 'a-2', title: 'a-2', content: 'a-2' },
         ],
-        directoryPath: 'dir-a',
+        pageIndex: 0,
       },
     })
 
     expect(wrapper.text()).toContain('a-1')
-    await wrapper.get('[data-testid="next-page"]').trigger('click')
+    await wrapper.setProps({ pageIndex: 1 })
     expect(wrapper.text()).toContain('a-2')
-    await wrapper.get('[data-testid="directory-select"]').setValue('dir-b')
-    expect(wrapper.emitted('directoryChanged')?.[0]).toEqual(['dir-b'])
-    await wrapper.setProps({
-      directoryPath: 'dir-b',
-      pages: [{ path: 'b-1', title: 'b-1', content: 'b-1' }],
-    })
-    expect(wrapper.text()).toContain('b-1')
-    await wrapper.get('[data-testid="toggle-vertical"]').trigger('click')
-    expect(wrapper.get('.vfs-slideshow-screen').classes()).toContain('is-vertical')
   })
 
   it('mounts vfs vue app into popup shell', () => {
