@@ -11,7 +11,7 @@ const TAB_LABELS: Record<VfsTab, string> = {
 }
 const props = defineProps<{
   tabs?: VfsTab[]
-  beforeTabChange?: (nextTab: VfsTab) => boolean
+  beforeTabChange?: (nextTab: VfsTab) => boolean | Promise<boolean>
 }>()
 const emits = defineEmits<{
   tabChanged: [tab: VfsTab]
@@ -22,12 +22,25 @@ const resolvedTabs = () => {
 }
 const showTabsHeader = computed(() => resolvedTabs().length > 1)
 
-function trySwitchTab(nextTab: VfsTab): void {
+async function trySwitchTab(nextTab: VfsTab): Promise<void> {
   if (nextTab === activeTab.value) return
-  if (props.beforeTabChange && !props.beforeTabChange(nextTab)) return
+  if (props.beforeTabChange) {
+    const result = props.beforeTabChange(nextTab)
+    const ok = result instanceof Promise ? await result : result
+    if (!ok) return
+  }
   activeTab.value = nextTab
   emits('tabChanged', nextTab)
 }
+
+/** Skip `beforeTabChange` after an explicit user decision (e.g. unsaved dialog). */
+function forceSwitchTab(nextTab: VfsTab): void {
+  if (nextTab === activeTab.value) return
+  activeTab.value = nextTab
+  emits('tabChanged', nextTab)
+}
+
+defineExpose({ forceSwitchTab })
 </script>
 
 <template>
@@ -40,7 +53,7 @@ function trySwitchTab(nextTab: VfsTab): void {
         :class="['menu_button', 'vfs-tab', { active: activeTab === tab }]"
         :title="TAB_LABELS[tab]"
         :aria-label="TAB_LABELS[tab]"
-        @click="trySwitchTab(tab)"
+        @click="void trySwitchTab(tab)"
       >
         <span>{{ TAB_LABELS[tab] }}</span>
       </button>

@@ -49,11 +49,34 @@ function requestSave(): void {
 <template>
   <section class="vfs-editor-screen">
     <header class="vfs-editor-toolbar">
-      <button type="button" @click="previewMode = !previewMode">
-        {{ previewMode ? 'Source' : 'Preview' }}
+      <button
+        type="button"
+        class="menu_button vfs-editor-toolbar__icon-button"
+        :title="previewMode ? '查看源码' : '预览渲染'"
+        :aria-label="previewMode ? '查看源码' : '预览渲染'"
+        @click="previewMode = !previewMode"
+      >
+        <i
+          :class="previewMode ? 'fa-solid fa-code' : 'fa-solid fa-eye'"
+          aria-hidden="true"
+        />
       </button>
-      <button data-testid="editor-save-submit" type="button" @click="requestSave">
-        {{ props.saveInProgress ? 'Saving...' : 'Save' }}
+      <button
+        data-testid="editor-save-submit"
+        type="button"
+        class="menu_button vfs-editor-toolbar__icon-button"
+        :title="props.saveInProgress ? '保存中' : '保存'"
+        :aria-label="props.saveInProgress ? '保存中' : '保存'"
+        :disabled="props.saveInProgress"
+        :aria-busy="props.saveInProgress ? 'true' : undefined"
+        @click="requestSave"
+      >
+        <i
+          v-if="props.saveInProgress"
+          class="fa-solid fa-spinner fa-spin"
+          aria-hidden="true"
+        />
+        <i v-else class="fa-solid fa-floppy-disk" aria-hidden="true" />
       </button>
     </header>
     <textarea v-if="!previewMode" v-model="model" class="vfs-editor"></textarea>
@@ -93,3 +116,22 @@ function requestSave(): void {
     </aside>
   </section>
 </template>
+
+<style scoped>
+.vfs-editor-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+.vfs-editor-toolbar__icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.25rem;
+  min-height: 2.25rem;
+  padding: 6px 10px;
+}
+</style>

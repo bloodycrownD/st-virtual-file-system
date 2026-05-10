@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import VfsActionMenu from '@/app/components/business-components/VfsActionMenu.vue'
+import VfsUnsavedEditorDialog from '@/app/components/business-components/VfsUnsavedEditorDialog.vue'
 import {
   createVfsCommitHistoryStore,
   type VfsCommitActionType,
@@ -18,6 +19,7 @@ import VfsLogPanel from '@/app/components/business-components/VfsLogPanel.vue'
 import {
   useVfsMessageHooks,
   VFS_LOG_REFRESH_AUTO,
+  VFS_POPUP_BEFORE_CLOSE,
   VFS_STATE_REFRESH_REQUIRED,
 } from '@/app/composables/components-composables/useVfsMessageHooks'
 import VfsHistoryScreen from '@/app/screens/business-screens/VfsHistoryScreen.vue'
@@ -29,7 +31,6 @@ import { useVfsCommitActions } from '@/app/composables/components-composables/us
 import { createVfsHistoryStateMachine } from '@/app/composables/screens-composables/useVfsHistoryStateMachine'
 import { useVfsRollbackAction } from '@/app/composables/components-composables/useVfsRollbackActions'
 import { VFS_ERROR_CODES } from '@/app/constants/vfsErrorCodes'
-import { VFS_POPUP_BEFORE_CLOSE } from '@/app/composables/components-composables/useVfsMessageHooks'
 import { vfsPersistenceStore } from '@/app/stores/vfs-store-singleton'
 import type { VfsSnapshot } from '@/domain/vfs/types'
 import type { VfsBrowserEntity } from '@/app/components/business-components/VfsFileManagerPanel.vue'
@@ -42,6 +43,11 @@ import { createEmptyVfsSnapshot, serializeVfsSnapshot } from '@/infra/persistenc
 
 type VfsScreenScope = 'chat' | 'template'
 type VfsScreenTab = 'files' | 'history' | 'logs'
+type PendingEditorLeave =
+  | { kind: 'mode'; next: 'list' | 'reader' | 'editor' | 'slideshow' }
+  | { kind: 'tab'; next: VfsScreenTab }
+  | { kind: 'popup-close' }
+type VfsTabShellExposed = { forceSwitchTab: (tab: VfsScreenTab) => void }
 const props = withDefaults(
   defineProps<{
     scope?: VfsScreenScope
@@ -73,6 +79,9 @@ const slideshowDirectoryPath = ref<string>(ROOT_PATH)
 const createModalOpen = ref(false)
 const createKind = ref<'file' | 'directory'>('directory')
 const codec = new DeflateContentCodec()
+const tabShellRef = ref<VfsTabShellExposed | null>(null)
+const unsavedDialogOpen = ref(false)
+const pendingEditorLeave = ref<PendingEditorLeave | null>(null)
 
 const readerHtml = computed(() => editorContent.value)
 const editorHistoryRecords = computed<VfsCommitHistoryRecord[]>(() => history.records.value)
@@ -268,13 +277,56 @@ function withWriteScopeGuard(scope: string, action: 'save' | 'rollback', task: (
   })
 }
 
-function handlePopupBeforeClose(event: Event): void {
-  if (mode.value !== 'editor' || !isDirty.value) return
-  if (window.confirm('Unsaved changes will be discarded. Continue?')) {
-    discardEditorDraft()
+function closeHostVfsPopupIfPresent(): void {
+  document.querySelector<HTMLDialogElement>('#st-vfs-popup')?.close?.()
+}
+
+function applyPendingEditorLeave(): void {
+  const pending = pendingEditorLeave.value
+  pendingEditorLeave.value = null
+  if (!pending) return
+  if (pending.kind === 'mode') {
+    mode.value = pending.next
     return
   }
+  if (pending.kind === 'tab') {
+    tabShellRef.value?.forceSwitchTab(pending.next)
+    return
+  }
+  closeHostVfsPopupIfPresent()
+}
+
+function openUnsavedEditorLeave(intent: PendingEditorLeave): void {
+  if (unsavedDialogOpen.value) {
+    pendingEditorLeave.value = intent
+    return
+  }
+  pendingEditorLeave.value = intent
+  unsavedDialogOpen.value = true
+}
+
+function handlePopupBeforeClose(event: Event): void {
+  if (mode.value !== 'editor' || !isDirty.value) return
   event.preventDefault()
+  openUnsavedEditorLeave({ kind: 'popup-close' })
+}
+
+async function onUnsavedEditorDialogSave(): Promise<void> {
+  await handleEditorSaveRequested()
+  if (isDirty.value) return
+  unsavedDialogOpen.value = false
+  applyPendingEditorLeave()
+}
+
+function onUnsavedEditorDialogDiscard(): void {
+  discardEditorDraft()
+  unsavedDialogOpen.value = false
+  applyPendingEditorLeave()
+}
+
+function onUnsavedEditorDialogCancel(): void {
+  unsavedDialogOpen.value = false
+  pendingEditorLeave.value = null
 }
 
 function onLogRefreshAutoRequested(): void {
@@ -319,9 +371,9 @@ function overwriteCurrentChatWithTemplate(): void {
 }
 
 onMounted(() => {
+  window.addEventListener(VFS_POPUP_BEFORE_CLOSE, handlePopupBeforeClose)
   if (!isTemplateScope.value) {
     window.addEventListener(VFS_STATE_REFRESH_REQUIRED, refreshAllViews)
-    window.addEventListener(VFS_POPUP_BEFORE_CLOSE, handlePopupBeforeClose)
     window.addEventListener(VFS_LOG_REFRESH_AUTO, onLogRefreshAutoRequested)
   }
   window.addEventListener('resize', updateLayout)
@@ -330,9 +382,9 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  window.removeEventListener(VFS_POPUP_BEFORE_CLOSE, handlePopupBeforeClose)
   if (!isTemplateScope.value) {
     window.removeEventListener(VFS_STATE_REFRESH_REQUIRED, refreshAllViews)
-    window.removeEventListener(VFS_POPUP_BEFORE_CLOSE, handlePopupBeforeClose)
     window.removeEventListener(VFS_LOG_REFRESH_AUTO, onLogRefreshAutoRequested)
   }
   window.removeEventListener('resize', updateLayout)
@@ -354,11 +406,7 @@ function requestModeChange(nextMode: 'list' | 'reader' | 'editor' | 'slideshow')
     mode.value = nextMode
     return
   }
-  // WHY: force-exit intentionally discards draft per product rule.
-  if (window.confirm('Unsaved changes will be discarded. Continue?')) {
-    discardEditorDraft()
-    mode.value = nextMode
-  }
+  openUnsavedEditorLeave({ kind: 'mode', next: nextMode })
 }
 
 const directoryEntries = computed(() => listDirectoryEntries(currentSnapshot.value, currentDirectoryPath.value))
@@ -391,7 +439,7 @@ const slideshowPages = computed(() => {
 })
 // WHY: list stage is intentionally single-pane across desktop/mobile to maximize file-manager workspace.
 const isListStage = computed(() => mode.value === 'list')
-// WHY: reader/editor/slideshow keep the split layout so navigation and content remain visible together.
+// WHY: reader/editor/slideshow use one full-width preview stack (no desktop sidebar); return to list for the file tree.
 const isPreviewStage = computed(() => mode.value !== 'list')
 
 function onOpened(path: string): void {
@@ -583,9 +631,8 @@ function handleRowEntityActionRequested(payload: { entity: VfsManagerEntity; act
 
 function guardTabChange(nextTab: 'files' | 'history' | 'logs'): boolean {
   if (nextTab === 'files' || mode.value !== 'editor' || !isDirty.value) return true
-  if (!window.confirm('Unsaved changes will be discarded. Continue?')) return false
-  discardEditorDraft()
-  return true
+  openUnsavedEditorLeave({ kind: 'tab', next: nextTab })
+  return false
 }
 
 async function handleEditorManualRollback(payload: { sourceVersionId: string }): Promise<void> {
@@ -647,6 +694,7 @@ async function handleEditorSaveRequested(): Promise<void> {
 
 <template>
   <VfsTabShellScreen
+    ref="tabShellRef"
     :tabs="resolvedTabs"
     :before-tab-change="guardTabChange"
     @tab-changed="handleTabChanged"
@@ -681,28 +729,20 @@ async function handleEditorSaveRequested(): Promise<void> {
         </VfsFileManagerPanel>
       </div>
 
-      <div v-else-if="layoutMode === 'desktop' && isPreviewStage" class="vfs-desktop-grid" data-testid="vfs-desktop-grid">
-        <aside class="vfs-sidebar">
-          <VfsFileManagerPanel
-            :key="`fm-${viewRefreshToken}`"
-            :mode="mode"
-            :current-path="currentDirectoryPath"
-            :entries="directoryEntries"
-            @opened="onOpened"
-            @up-requested="onUpRequested"
-            @entity-action-requested="handleRowEntityActionRequested"
-          >
-            <template #actions>
-              <VfsActionMenu
-                :entity="null"
-                mode="global-create"
-                @global-action-selected="handleGlobalAction"
-              />
-            </template>
-          </VfsFileManagerPanel>
-        </aside>
-
-        <main class="vfs-content">
+      <div v-else-if="isPreviewStage" class="vfs-preview-stack" data-testid="vfs-preview-stack">
+        <section class="vfs-preview-body">
+          <header class="vfs-preview-top-bar">
+            <button
+              type="button"
+              class="menu_button vfs-preview-back-button"
+              data-testid="vfs-preview-back"
+              aria-label="返回文件列表"
+              title="返回文件列表"
+              @click="requestModeChange('list')"
+            >
+              <i class="fa-solid fa-arrow-left" aria-hidden="true" />
+            </button>
+          </header>
           <ReaderScreen v-if="mode === 'reader'" :key="`reader-${viewRefreshToken}`" :html="readerHtml" />
           <EditorScreen
             v-else-if="mode === 'editor'"
@@ -723,32 +763,6 @@ async function handleEditorSaveRequested(): Promise<void> {
             :directory-path="slideshowDirectoryPath"
             @directory-changed="slideshowDirectoryPath = $event"
           />
-        </main>
-      </div>
-
-      <div v-else class="vfs-mobile-stack">
-        <section class="vfs-mobile-content">
-          <button type="button" data-testid="vfs-mobile-back" @click="requestModeChange('list')">Back</button>
-          <ReaderScreen v-if="mode === 'reader'" :key="`reader-${viewRefreshToken}`" :html="readerHtml" />
-          <EditorScreen
-            v-else-if="mode === 'editor'"
-            :key="`editor-${viewRefreshToken}`"
-            v-model="editorContent"
-            :history-records="editorHistoryRecords"
-            :save-in-progress="saveInProgress"
-            :rollback-in-progress="rollbackInProgress"
-            :show-history-controls="!isTemplateScope"
-            @update:model-value="isDirty = true"
-            @save-requested="handleEditorSaveRequested"
-            @manual-rollback-requested="handleEditorManualRollback"
-          />
-          <SlideshowScreen
-            v-else
-            :directories="slideshowDirectoryOptions"
-            :pages="slideshowPages"
-            :directory-path="slideshowDirectoryPath"
-            @directory-changed="slideshowDirectoryPath = $event"
-          />
         </section>
       </div>
     </div>
@@ -761,6 +775,12 @@ async function handleEditorSaveRequested(): Promise<void> {
       @confirm="handleCreateConfirm"
       @cancel="closeCreateModal"
     />
+    <VfsUnsavedEditorDialog
+      :open="unsavedDialogOpen"
+      @save="onUnsavedEditorDialogSave"
+      @discard="onUnsavedEditorDialogDiscard"
+      @cancel="onUnsavedEditorDialogCancel"
+    />
   </VfsTabShellScreen>
 </template>
 
@@ -769,6 +789,7 @@ async function handleEditorSaveRequested(): Promise<void> {
   display: flex;
   flex-direction: column;
   min-height: 0;
+  position: relative;
 }
 
 .vfs-list-only-layout {
@@ -779,41 +800,35 @@ async function handleEditorSaveRequested(): Promise<void> {
   flex-direction: column;
 }
 
-.vfs-desktop-grid {
-  display: grid;
-  grid-template-columns: minmax(280px, 360px) 1fr;
-  gap: 12px;
-  align-items: stretch;
+.vfs-preview-stack {
   flex: 1 1 auto;
   min-height: 0;
-}
-
-.vfs-sidebar {
-  border-right: 1px solid rgba(255, 255, 255, 0.12);
-  padding-right: 12px;
-  min-height: 0;
   display: flex;
   flex-direction: column;
 }
 
-.vfs-content {
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-}
-
-.vfs-mobile-content {
+.vfs-preview-body {
   display: flex;
   flex-direction: column;
   gap: 8px;
   min-height: 0;
+  flex: 1 1 auto;
 }
 
-.vfs-mobile-stack {
-  flex: 1 1 auto;
-  min-height: 0;
+.vfs-preview-top-bar {
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+.vfs-preview-back-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.25rem;
+  min-height: 2.25rem;
+  padding: 6px 10px;
 }
 
 .vfs-chat-actions {
