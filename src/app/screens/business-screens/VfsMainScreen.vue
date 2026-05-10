@@ -67,7 +67,8 @@ const rollbackRequestsInFlight = ref(0)
 const saveInProgress = ref(false)
 const rollbackInProgress = ref(false)
 const currentDirectoryPath = ref<string>(ROOT_PATH)
-const selectedPath = ref<string | null>(null)
+/** Active document / preview target — not list selection (list rows no longer emit selected). */
+const activeContextPath = ref<string | null>(null)
 const slideshowDirectoryPath = ref<string>(ROOT_PATH)
 const createModalOpen = ref(false)
 const createKind = ref<'file' | 'directory'>('directory')
@@ -217,12 +218,12 @@ function refreshAuthoritativeState(): void {
   })()
   currentDirectoryPath.value = normalizedDir
 
-  if (selectedPath.value) {
-    const node = getNodeByPath(currentSnapshot.value, selectedPath.value)
-    if (!node) selectedPath.value = null
+  if (activeContextPath.value) {
+    const node = getNodeByPath(currentSnapshot.value, activeContextPath.value)
+    if (!node) activeContextPath.value = null
   }
 
-  const node = selectedPath.value ? getNodeByPath(currentSnapshot.value, selectedPath.value) : null
+  const node = activeContextPath.value ? getNodeByPath(currentSnapshot.value, activeContextPath.value) : null
   if (!node || node.type !== 'file') return
   const source = readFileContentFromSnapshot(currentSnapshot.value, node.path)
   editorContent.value = source
@@ -362,8 +363,8 @@ function requestModeChange(nextMode: 'list' | 'reader' | 'editor' | 'slideshow')
 
 const directoryEntries = computed(() => listDirectoryEntries(currentSnapshot.value, currentDirectoryPath.value))
 const selectedEntity = computed<VfsManagerEntity | null>(() => {
-  if (!selectedPath.value) return null
-  const node = getNodeByPath(currentSnapshot.value, selectedPath.value)
+  if (!activeContextPath.value) return null
+  const node = getNodeByPath(currentSnapshot.value, activeContextPath.value)
   if (!node || (node.type !== 'file' && node.type !== 'directory')) return null
   return {
     id: node.id,
@@ -393,20 +394,16 @@ const isListStage = computed(() => mode.value === 'list')
 // WHY: reader/editor/slideshow keep the split layout so navigation and content remain visible together.
 const isPreviewStage = computed(() => mode.value !== 'list')
 
-function onSelected(path: string): void {
-  selectedPath.value = path
-}
-
 function onOpened(path: string): void {
   currentDirectoryPath.value = path
-  selectedPath.value = null
+  activeContextPath.value = null
   requestModeChange('list')
 }
 
 function onUpRequested(): void {
   if (currentDirectoryPath.value === ROOT_PATH) return
   currentDirectoryPath.value = dirname(currentDirectoryPath.value)
-  selectedPath.value = null
+  activeContextPath.value = null
   requestModeChange('list')
 }
 
@@ -430,7 +427,7 @@ function refreshCurrentDirectoryAfterCreate(targetPath: string): void {
     }
   })()
   currentDirectoryPath.value = normalizedDir
-  selectedPath.value = getNodeByPath(currentSnapshot.value, targetPath) ? targetPath : null
+  activeContextPath.value = getNodeByPath(currentSnapshot.value, targetPath) ? targetPath : null
 }
 
 function handleCreateConfirm(name: string): void {
@@ -522,7 +519,7 @@ function handleEntityAction(action: VfsEntityAction, entityOverride?: VfsManager
       try {
         applySnapshotMutation((core) => core.delete(entity.path, { recursive: true }))
         removeWorkTreePaths(entity.path)
-        selectedPath.value = null
+        activeContextPath.value = null
         requestModeChange('list')
       } catch (e) {
         toastr.error(toVfsErrorToast(VFS_ERROR_CODES.DELETE_FAILED, '删除失败'))
@@ -538,7 +535,7 @@ function handleEntityAction(action: VfsEntityAction, entityOverride?: VfsManager
         const parent = dirname(oldPath)
         const nextPath = normalizePath(`${parent}/${nextName}`)
         replaceWorkTreePaths(oldPath, nextPath)
-        selectedPath.value = nextPath
+        activeContextPath.value = nextPath
         requestModeChange('list')
       } catch {
         toastr.error(toVfsErrorToast(VFS_ERROR_CODES.RENAME_FAILED, '重命名失败'))
@@ -580,7 +577,7 @@ function handleEntityAction(action: VfsEntityAction, entityOverride?: VfsManager
 }
 
 function handleRowEntityActionRequested(payload: { entity: VfsManagerEntity; action: VfsEntityAction }): void {
-  selectedPath.value = payload.entity.path
+  activeContextPath.value = payload.entity.path
   handleEntityAction(payload.action, payload.entity)
 }
 
@@ -670,8 +667,6 @@ async function handleEditorSaveRequested(): Promise<void> {
           :mode="mode"
           :current-path="currentDirectoryPath"
           :entries="directoryEntries"
-          :selected-path="selectedPath"
-          @selected="onSelected"
           @opened="onOpened"
           @up-requested="onUpRequested"
           @entity-action-requested="handleRowEntityActionRequested"
@@ -693,8 +688,6 @@ async function handleEditorSaveRequested(): Promise<void> {
             :mode="mode"
             :current-path="currentDirectoryPath"
             :entries="directoryEntries"
-            :selected-path="selectedPath"
-            @selected="onSelected"
             @opened="onOpened"
             @up-requested="onUpRequested"
             @entity-action-requested="handleRowEntityActionRequested"

@@ -56,13 +56,15 @@ function getHeaderActionMenu(wrapper: ReturnType<typeof mount>) {
   return menu
 }
 
-async function triggerEntityAction(wrapper: ReturnType<typeof mount>, action: string) {
-  const selectedRow = wrapper.find('li.vfs-fm-row[data-selected="true"]')
-  if (!selectedRow.exists()) {
-    throw new Error('selected file manager row not found')
+async function triggerEntityAction(wrapper: ReturnType<typeof mount>, action: string, rowTextIncludes: string) {
+  const list = wrapper.get('[data-testid="vfs-file-manager-list"]')
+  const rows = list.findAll('li.vfs-fm-row')
+  const targetRow = rows.find((row) => row.text().includes(rowTextIncludes))
+  if (!targetRow) {
+    throw new Error(`file manager row containing "${rowTextIncludes}" not found`)
   }
-  await selectedRow.get('summary.vfs-action-menu__toggle').trigger('click')
-  await selectedRow.get(`[data-action="${action}"]`).trigger('click')
+  await targetRow.get('summary.vfs-action-menu__toggle').trigger('click')
+  await targetRow.get(`[data-action="${action}"]`).trigger('click')
 }
 
 async function selectDocsFile(wrapper: ReturnType<typeof mount>) {
@@ -72,16 +74,9 @@ async function selectDocsFile(wrapper: ReturnType<typeof mount>) {
   if (!docsDir) {
     throw new Error('docs directory not found')
   }
+  // WHY: list rows no longer toggle selection on click; navigate directories via double-click only.
   await docsDir.trigger('dblclick')
   await wrapper.vm.$nextTick()
-
-  const innerList = wrapper.get('[data-testid="vfs-file-manager-list"]')
-  const innerCandidates = innerList.findAll('button.vfs-fm-item')
-  const fileButton = innerCandidates.find((btn) => btn.text().includes('docs.md'))
-  if (!fileButton) {
-    throw new Error('docs.md not found')
-  }
-  await fileButton.trigger('click')
 }
 
 function decodeFileFromSnapshot(snapshot: VfsSnapshot, path: string): string {
@@ -91,13 +86,12 @@ function decodeFileFromSnapshot(snapshot: VfsSnapshot, path: string): string {
 }
 
 async function selectTemplateFile(wrapper: ReturnType<typeof mount>) {
+  await wrapper.vm.$nextTick()
   const list = wrapper.get('[data-testid="vfs-file-manager-list"]')
-  const candidates = list.findAll('button.vfs-fm-item')
-  const fileButton = candidates.find((btn) => btn.text().includes('template.md'))
-  if (!fileButton) {
-    throw new Error('template.md not found')
+  const row = list.findAll('li.vfs-fm-row').find((candidate) => candidate.text().includes('template.md'))
+  if (!row) {
+    throw new Error('template.md row not found')
   }
-  await fileButton.trigger('click')
 }
 
 vi.mock('@/app/composables/screens-composables/useVfsHistoryStateMachine', () => ({
@@ -269,7 +263,7 @@ describe('vfs ui cr loop fixes', () => {
     })
 
     await selectTemplateFile(wrapper)
-    await triggerEntityAction(wrapper, 'edit')
+    await triggerEntityAction(wrapper, 'edit', 'template.md')
     expect(wrapper.find('textarea.vfs-editor').exists()).toBe(true)
     expect(wrapper.text()).not.toContain('History')
     expect(wrapper.find('[data-testid="editor-history-rollback-list"]').exists()).toBe(false)
@@ -453,9 +447,9 @@ describe('vfs ui cr loop fixes', () => {
     const wrapper = mountTracked(VfsMainScreen)
 
     await selectDocsFile(wrapper)
-    await triggerEntityAction(wrapper, 'edit')
+    await triggerEntityAction(wrapper, 'edit', 'docs.md')
     await wrapper.get('textarea.vfs-editor').setValue('unsaved draft')
-    await triggerEntityAction(wrapper, 'view')
+    await triggerEntityAction(wrapper, 'view', 'docs.md')
 
     expect(confirmSpy).toHaveBeenCalled()
     expect(wrapper.find('textarea.vfs-editor').exists()).toBe(true)
@@ -466,14 +460,14 @@ describe('vfs ui cr loop fixes', () => {
     const wrapper = mountTracked(VfsMainScreen)
 
     await selectDocsFile(wrapper)
-    await triggerEntityAction(wrapper, 'edit')
+    await triggerEntityAction(wrapper, 'edit', 'docs.md')
     await wrapper.get('textarea.vfs-editor').setValue('discard me')
     await wrapper.get('[data-action="view"]').trigger('click')
 
     expect(confirmSpy).toHaveBeenCalled()
     expect(wrapper.find('textarea.vfs-editor').exists()).toBe(false)
 
-    await triggerEntityAction(wrapper, 'edit')
+    await triggerEntityAction(wrapper, 'edit', 'docs.md')
     expect((wrapper.get('textarea.vfs-editor').element as HTMLTextAreaElement).value).toBe('')
   })
 
@@ -482,7 +476,7 @@ describe('vfs ui cr loop fixes', () => {
     const wrapper = mountTracked(VfsMainScreen)
 
     await selectDocsFile(wrapper)
-    await triggerEntityAction(wrapper, 'edit')
+    await triggerEntityAction(wrapper, 'edit', 'docs.md')
     await wrapper.get('textarea.vfs-editor').setValue('dirty content')
     await wrapper.get('.vfs-tabs button:nth-of-type(2)').trigger('click')
 
@@ -494,7 +488,7 @@ describe('vfs ui cr loop fixes', () => {
   it('wires editor save action to commit flow and appends commit record on success', async () => {
     const wrapper = mountTracked(VfsMainScreen)
     await selectDocsFile(wrapper)
-    await triggerEntityAction(wrapper, 'edit')
+    await triggerEntityAction(wrapper, 'edit', 'docs.md')
     await wrapper.get('textarea.vfs-editor').setValue('new content')
     await wrapper.get('[data-testid="editor-save-submit"]').trigger('click')
     await Promise.resolve()
@@ -509,7 +503,7 @@ describe('vfs ui cr loop fixes', () => {
     expect(wrapper.text()).toContain('save')
     expect(wrapper.text()).toContain('/docs/docs.md')
 
-    await triggerEntityAction(wrapper, 'view')
+    await triggerEntityAction(wrapper, 'view', 'docs.md')
     expect(wrapper.find('textarea.vfs-editor').exists()).toBe(false)
     expect(wrapper.find('.vfs-reader').exists()).toBe(true)
   })
@@ -522,7 +516,7 @@ describe('vfs ui cr loop fixes', () => {
     })
 
     await selectTemplateFile(wrapper)
-    await triggerEntityAction(wrapper, 'edit')
+    await triggerEntityAction(wrapper, 'edit', 'template.md')
     await wrapper.get('textarea.vfs-editor').setValue('template updated')
     await wrapper.get('[data-testid="editor-save-submit"]').trigger('click')
     await Promise.resolve()
@@ -545,7 +539,7 @@ describe('vfs ui cr loop fixes', () => {
 
     const wrapper = mountTracked(VfsMainScreen)
     await selectDocsFile(wrapper)
-    await triggerEntityAction(wrapper, 'edit')
+    await triggerEntityAction(wrapper, 'edit', 'docs.md')
     await wrapper.get('textarea.vfs-editor').setValue('pending save')
     await wrapper.get('[data-testid="editor-save-submit"]').trigger('click')
     const radio = wrapper.find('[data-testid="editor-history-rollback-list"] input[type="radio"]')
@@ -566,7 +560,7 @@ describe('vfs ui cr loop fixes', () => {
     const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false)
     const wrapper = mountTracked(VfsMainScreen)
     await selectDocsFile(wrapper)
-    await triggerEntityAction(wrapper, 'edit')
+    await triggerEntityAction(wrapper, 'edit', 'docs.md')
     await wrapper.get('textarea.vfs-editor').setValue('unsaved by popup close')
     const beforeCloseEvent = new CustomEvent('VFS_POPUP_BEFORE_CLOSE', { cancelable: true })
     const allowed = window.dispatchEvent(beforeCloseEvent)
@@ -605,7 +599,7 @@ describe('vfs ui cr loop fixes', () => {
     expect(wrapper.find('[data-testid="vfs-desktop-grid"]').exists()).toBe(false)
 
     await selectDocsFile(wrapper)
-    await triggerEntityAction(wrapper, 'edit')
+    await triggerEntityAction(wrapper, 'edit', 'docs.md')
     expect(wrapper.find('textarea.vfs-editor').exists()).toBe(true)
     // Preview modes still use the desktop split grid path.
     expect(wrapper.get('[data-testid="vfs-desktop-grid"]').exists()).toBe(true)
@@ -631,13 +625,11 @@ describe('vfs ui cr loop fixes', () => {
     expect(menu.text()).not.toContain('编辑')
   })
 
-  it('auto-selects row when row menu toggle is clicked', async () => {
+  it('applies row menu entity actions without relying on list selection state', async () => {
     const wrapper = mountTracked(VfsMainScreen)
-    const list = wrapper.get('[data-testid="vfs-file-manager-list"]')
-    const docsRow = list.findAll('li.vfs-fm-row').find((row) => row.text().includes('docs'))
-    if (!docsRow) throw new Error('docs row not found')
-    await docsRow.get('summary.vfs-action-menu__toggle').trigger('click')
-    expect(docsRow.attributes('data-selected')).toBe('true')
+    await selectDocsFile(wrapper)
+    await triggerEntityAction(wrapper, 'edit', 'docs.md')
+    expect(wrapper.find('textarea.vfs-editor').exists()).toBe(true)
   })
 
   it('anchors row action menu as fixed overlay-right-bottom without parent layout shift', async () => {
@@ -662,7 +654,6 @@ describe('vfs ui cr loop fixes', () => {
       props: {
         mode: 'list',
         currentPath: '/',
-        selectedPath: null,
         entries: [
           { path: '/a.md', name: 'a.md', kind: 'file' },
           { path: '/b.md', name: 'b.md', kind: 'file' },
@@ -710,16 +701,22 @@ describe('vfs ui cr loop fixes', () => {
   })
 
   it.each([
-    { label: 'chat', scope: undefined },
-    { label: 'template', scope: 'template' as const },
-  ])('does not force-toggle row menu closed on repeated toggle clicks in $label scope', async ({ scope }) => {
+    { label: 'chat-mobile', scope: undefined, width: 375 },
+    { label: 'chat-desktop', scope: undefined, width: 1366 },
+    { label: 'template-mobile', scope: 'template' as const, width: 375 },
+    { label: 'template-desktop', scope: 'template' as const, width: 1366 },
+  ])('does not force-toggle row menu closed on repeated toggle clicks ($label)', async ({ scope, width }) => {
+    window.innerWidth = width
     const wrapper = mountTracked(VfsMainScreen, scope ? { props: { scope } } : undefined)
+    window.dispatchEvent(new Event('resize'))
+    await wrapper.vm.$nextTick()
+
     const rowMenu = wrapper.findAllComponents(VfsActionMenu).find((menu) => menu.props('mode') === 'entity-actions')
     if (!rowMenu) throw new Error('entity row VfsActionMenu not found')
     const details = rowMenu.get('details.vfs-action-menu')
     const toggle = rowMenu.get('summary.vfs-action-menu__toggle')
 
-    for (let i = 0; i < 10; i += 1) {
+    for (let i = 0; i < 20; i += 1) {
       await toggle.trigger('click')
       expect(details.attributes('open')).toBeDefined()
     }
@@ -740,29 +737,32 @@ describe('vfs ui cr loop fixes', () => {
     const details = rowMenu.get('details.vfs-action-menu')
     await rowMenu.get('summary.vfs-action-menu__toggle').trigger('click')
     expect(details.attributes('open')).toBeDefined()
-    const selectedPathBefore = wrapper.get('li.vfs-fm-row[data-selected="true"]').attributes('data-path')
 
     document.body.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     await wrapper.vm.$nextTick()
     expect(details.attributes('open')).toBeUndefined()
 
-    const selectedPathAfter = wrapper.get('li.vfs-fm-row[data-selected="true"]').attributes('data-path')
     const listScrollAfter = (list.element as HTMLElement).scrollTop
-    expect(selectedPathAfter).toBe(selectedPathBefore)
     expect(listScrollAfter).toBe(listScrollBefore)
   })
 
   it.each([
-    { label: 'chat', scope: undefined },
-    { label: 'template', scope: 'template' as const },
-  ])('reopens row menu after outside dismiss without getting stuck in $label scope', async ({ scope }) => {
+    { label: 'chat-mobile', scope: undefined, width: 375 },
+    { label: 'chat-desktop', scope: undefined, width: 1366 },
+    { label: 'template-mobile', scope: 'template' as const, width: 375 },
+    { label: 'template-desktop', scope: 'template' as const, width: 1366 },
+  ])('AC-1: row menu open → outside dismiss → reopen stays stable ($label)', async ({ scope, width }) => {
+    window.innerWidth = width
     const wrapper = mountTracked(VfsMainScreen, scope ? { props: { scope } } : undefined)
+    window.dispatchEvent(new Event('resize'))
+    await wrapper.vm.$nextTick()
+
     const rowMenu = wrapper.findAllComponents(VfsActionMenu).find((menu) => menu.props('mode') === 'entity-actions')
     if (!rowMenu) throw new Error('entity row VfsActionMenu not found')
     const details = rowMenu.get('details.vfs-action-menu')
     const toggle = rowMenu.get('summary.vfs-action-menu__toggle')
 
-    for (let i = 0; i < 10; i += 1) {
+    for (let i = 0; i < 20; i += 1) {
       await toggle.trigger('click')
       expect(details.attributes('open')).toBeDefined()
       document.body.dispatchEvent(new MouseEvent('click', { bubbles: true }))

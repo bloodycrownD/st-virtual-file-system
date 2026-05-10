@@ -1,3 +1,7 @@
+<!--
+  Lists directory entries and delegates per-row actions via `entity-action-requested`.
+  Does not implement list selection/highlight; preview/editor targets live in `VfsMainScreen`.
+-->
 <script setup lang="ts">
 import VfsActionMenu from '@/app/components/business-components/VfsActionMenu.vue'
 import type { VfsEntityAction, VfsManagerEntity } from '@/app/composables/components-composables/useVfsFileManagerModel'
@@ -11,15 +15,13 @@ export interface VfsBrowserEntity {
   kind: VfsBrowserEntityKind
 }
 
-const props = defineProps<{
+defineProps<{
   mode: VfsFileManagerMode
   currentPath: string
   entries: VfsBrowserEntity[]
-  selectedPath: string | null
 }>()
 
 const emits = defineEmits<{
-  selected: [path: string]
   opened: [path: string]
   upRequested: []
   entityActionRequested: [payload: { entity: VfsManagerEntity; action: VfsEntityAction }]
@@ -30,14 +32,6 @@ const HEADER_ICON = {
   fileManager: 'fa-solid fa-folder-tree',
   up: 'fa-solid fa-arrow-up',
 } as const
-
-function isSelected(path: string): boolean {
-  return props.selectedPath === path
-}
-
-function select(path: string): void {
-  emits('selected', path)
-}
 
 function open(entry: VfsBrowserEntity): void {
   if (entry.kind !== 'directory') return
@@ -80,8 +74,9 @@ function toManagerEntity(entry: VfsBrowserEntity): VfsManagerEntity {
     </header>
 
     <ul class="vfs-fm-list" data-testid="vfs-file-manager-list">
-      <li v-for="entry in entries" :key="entry.path" class="vfs-fm-row" :data-selected="isSelected(entry.path)">
-        <button type="button" class="vfs-fm-item" @click="select(entry.path)" @dblclick="open(entry)">
+      <li v-for="entry in entries" :key="entry.path" class="vfs-fm-row" :data-path="entry.path">
+        <!-- Intent: directory navigation remains on double-click; row body does not imply list selection. -->
+        <button type="button" class="vfs-fm-item" @dblclick="open(entry)">
           <span class="vfs-fm-kind">{{ entry.kind === 'directory' ? '📁' : '📄' }}</span>
           <span class="vfs-fm-name">{{ entry.name }}</span>
         </button>
@@ -89,7 +84,6 @@ function toManagerEntity(entry: VfsBrowserEntity): VfsManagerEntity {
           <VfsActionMenu
             :entity="toManagerEntity(entry)"
             mode="entity-actions"
-            @toggle-clicked="select(entry.path)"
             @action-selected="(action) => emits('entityActionRequested', { entity: toManagerEntity(entry), action })"
           />
         </div>
@@ -200,11 +194,6 @@ function toManagerEntity(entry: VfsBrowserEntity): VfsManagerEntity {
   align-items: center;
   justify-content: center;
   flex: 0 0 auto;
-}
-
-.vfs-fm-row[data-selected='true'] .vfs-fm-item {
-  border-color: rgba(110, 168, 254, 0.8);
-  background: rgba(110, 168, 254, 0.15);
 }
 
 .vfs-fm-kind {
