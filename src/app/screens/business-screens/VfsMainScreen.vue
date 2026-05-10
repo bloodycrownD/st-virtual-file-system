@@ -983,23 +983,6 @@ async function handleEditorSaveRequested(): Promise<void> {
                 <i class="fa-solid fa-eye" aria-hidden="true" />
               </button>
               <button
-                data-testid="editor-save-submit"
-                type="button"
-                class="menu_button vfs-preview-chrome-button"
-                :title="saveInProgress ? '保存中' : '保存'"
-                :aria-label="saveInProgress ? '保存中' : '保存'"
-                :disabled="saveInProgress"
-                :aria-busy="saveInProgress ? 'true' : undefined"
-                @click="void handleEditorSaveRequested()"
-              >
-                <i
-                  v-if="saveInProgress"
-                  class="fa-solid fa-spinner fa-spin"
-                  aria-hidden="true"
-                />
-                <i v-else class="fa-solid fa-floppy-disk" aria-hidden="true" />
-              </button>
-              <button
                 type="button"
                 class="menu_button vfs-preview-chrome-button"
                 data-testid="slideshow-prev-page"
@@ -1033,8 +1016,9 @@ async function handleEditorSaveRequested(): Promise<void> {
               :save-in-progress="saveInProgress"
               :rollback-in-progress="rollbackInProgress"
               :show-history-controls="!isTemplateScope"
-              :embed-toolbar="false"
+              :embed-toolbar="true"
               @update:model-value="isDirty = true"
+              @save-requested="void handleEditorSaveRequested()"
               @manual-rollback-requested="handleEditorManualRollback"
             />
           </div>

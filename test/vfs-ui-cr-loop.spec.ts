@@ -659,14 +659,14 @@ describe('vfs ui cr loop fixes', () => {
     expect(toastrSuccessMock).not.toHaveBeenCalled()
   })
 
-  it('merges editor chrome into preview top bar (no second toolbar row)', async () => {
+  it('keeps unified top bar strict and relocates save into editor toolbar', async () => {
     const wrapper = mountTracked(VfsMainScreen)
     await selectDocsFile(wrapper)
     await triggerEntityAction(wrapper, 'open', 'docs.md')
     expect(wrapper.get('[data-testid="vfs-preview-back"]').exists()).toBe(true)
-    expect(wrapper.get('[data-testid="editor-save-submit"]').exists()).toBe(true)
     expect(wrapper.get('[data-testid="editor-preview-toggle"]').exists()).toBe(true)
-    expect(wrapper.find('.vfs-editor-toolbar').exists()).toBe(false)
+    expect(wrapper.find('.vfs-preview-top-bar [data-testid="editor-save-submit"]').exists()).toBe(false)
+    expect(wrapper.find('.vfs-editor-toolbar [data-testid="editor-save-submit"]').exists()).toBe(true)
   })
 
   it.each([
@@ -898,6 +898,8 @@ describe('vfs ui cr loop fixes', () => {
     expect(wrapper.get('[data-testid="editor-preview-toggle"]').attributes('title')).toBe('预览')
     expect(wrapper.get('[data-testid="slideshow-prev-page"]').attributes('title')).toBe('Prev')
     expect(wrapper.get('[data-testid="slideshow-next-page"]').attributes('title')).toBe('Next')
+    // AC2: unified viewer top bar must contain only back/edit/preview/prev/next.
+    expect(wrapper.find('.vfs-preview-top-bar [data-testid="editor-save-submit"]').exists()).toBe(false)
   })
 
   it('navigates Prev/Next only within current directory files', async () => {
@@ -932,6 +934,20 @@ describe('vfs ui cr loop fixes', () => {
     expect(wrapper.get('[data-testid="vfs-list-only-layout"]').exists()).toBe(true)
     expect(wrapper.text()).toContain('/')
     expect(wrapper.text()).toContain('docs')
+  })
+
+  it('restores file-open origin context when back from unified viewer', async () => {
+    const wrapper = mountTracked(VfsMainScreen)
+    await selectDocsFile(wrapper)
+    await triggerEntityAction(wrapper, 'open', 'other.md')
+    expect(wrapper.get('[data-testid="vfs-preview-stack"]').exists()).toBe(true)
+
+    await wrapper.get('[data-testid="vfs-preview-back"]').trigger('click')
+    await nextTick()
+
+    expect(wrapper.get('[data-testid="vfs-list-only-layout"]').exists()).toBe(true)
+    expect(wrapper.text()).toContain('/docs')
+    expect(wrapper.text()).toContain('other.md')
   })
 
   it('applies row menu entity actions without relying on list selection state', async () => {
