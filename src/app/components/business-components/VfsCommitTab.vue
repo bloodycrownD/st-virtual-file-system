@@ -76,7 +76,17 @@ async function rollbackBatchToSelected(): Promise<void> {
   <section class="vfs-commit-tab">
     <header class="vfs-commit-tab-header">
       <p class="vfs-commit-tab-hint">选择提交记录后执行批量回滚</p>
-      <button type="button" :disabled="isRollingBack || orderedSelectedIds.length === 0" @click="rollbackBatchToSelected">
+      <button
+        type="button"
+        class="menu_button vfs-commit-rollback-button"
+        :class="{
+          'is-success': feedback === 'succeeded',
+          'is-failed': feedback === 'failed',
+          'is-busy': isRollingBack,
+        }"
+        :disabled="isRollingBack || orderedSelectedIds.length === 0"
+        @click="rollbackBatchToSelected"
+      >
         {{
           isRollingBack
             ? '批量回滚进行中...'
@@ -113,6 +123,11 @@ async function rollbackBatchToSelected(): Promise<void> {
 </template>
 
 <style scoped>
+.vfs-commit-tab {
+  display: grid;
+  gap: 10px;
+}
+
 .vfs-commit-tab-header {
   display: flex;
   align-items: center;
@@ -122,6 +137,27 @@ async function rollbackBatchToSelected(): Promise<void> {
   margin-bottom: 8px;
   overflow-x: auto;
   min-width: 0;
+}
+
+.vfs-commit-rollback-button {
+  white-space: nowrap;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.vfs-commit-rollback-button:hover:enabled {
+  border-color: rgba(255, 255, 255, 0.35);
+}
+
+.vfs-commit-rollback-button.is-success {
+  border-color: rgba(95, 211, 138, 0.45);
+}
+
+.vfs-commit-rollback-button.is-failed {
+  border-color: rgba(255, 112, 112, 0.55);
+}
+
+.vfs-commit-rollback-button.is-busy {
+  cursor: progress;
 }
 .vfs-commit-tab-hint {
   margin: 0;
@@ -142,6 +178,10 @@ async function rollbackBatchToSelected(): Promise<void> {
   display: flex;
   align-items: flex-start;
   gap: 10px;
+  padding: 8px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
 }
 .vfs-commit-meta {
   display: flex;
@@ -151,9 +191,14 @@ async function rollbackBatchToSelected(): Promise<void> {
 .vfs-commit-sub {
   opacity: 0.75;
   font-size: 12px;
+  word-break: break-word;
 }
 .vfs-commit-empty {
   margin: 0;
   opacity: 0.75;
+  padding: 12px;
+  border: 1px dashed rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.03);
 }
 </style>
