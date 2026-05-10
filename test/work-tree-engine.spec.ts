@@ -163,5 +163,30 @@ describe('renderVirtualWorkTree', () => {
     const out = renderVirtualWorkTree(snapshot, workTree)
     expect(out).toBe('')
   })
+
+  it('orders emitted files by active directory rule sort field and direction', () => {
+    const root = createDir('root', '/', '', ['a', 'b'])
+    const first = createFile('a', '/a.md', 'a.md', 'A', 1)
+    const second = createFile('b', '/b.md', 'b.md', 'B', 9)
+    const snapshot = createSnapshot([root, first, second])
+
+    const workTree: WorkTreeConfig = {
+      defaultRule: {
+        sortField: 'mtime',
+        sortDirection: 'desc',
+        headCount: 2,
+        tailCount: 0,
+        fill: 'omit',
+      },
+      directoryOverrides: {},
+      directoryRulesEnabled: {
+        '/': true,
+      },
+      selectedFiles: [],
+    }
+
+    const out = renderVirtualWorkTree(snapshot, workTree)
+    expect(out.indexOf('path="/b.md"')).toBeLessThan(out.indexOf('path="/a.md"'))
+  })
 })
 

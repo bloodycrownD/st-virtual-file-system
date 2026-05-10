@@ -14,6 +14,8 @@ export interface VfsBrowserEntity {
   name: string
   kind: VfsBrowserEntityKind
   enabled?: boolean
+  ctime?: number
+  mtime?: number
 }
 
 defineProps<{

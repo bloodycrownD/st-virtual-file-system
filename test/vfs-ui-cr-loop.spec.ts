@@ -132,6 +132,15 @@ function decodeFileFromSnapshot(snapshot: VfsSnapshot, path: string): string {
   return new DeflateContentCodec().decode(node.content)
 }
 
+function getVisibleFileNames(wrapper: ReturnType<typeof mount>): string[] {
+  const rows = wrapper.get('[data-testid="vfs-file-manager-list"]').findAll('li.vfs-fm-row')
+  return rows
+    .map((row) => row.find('.vfs-fm-name'))
+    .filter((nameEl) => nameEl.exists())
+    .map((nameEl) => nameEl.text().trim())
+    .filter((name) => name.endsWith('.md'))
+}
+
 async function selectTemplateFile(wrapper: ReturnType<typeof mount>) {
   await wrapper.vm.$nextTick()
   const list = wrapper.get('[data-testid="vfs-file-manager-list"]')
@@ -179,6 +188,7 @@ describe('vfs ui cr loop fixes', () => {
       success: toastrSuccessMock,
     }
     const now = Date.now()
+    const older = now - 10_000
     const templateSnapshot = {
       schemaVersion: 1,
       rootId: 't-root',
@@ -242,8 +252,8 @@ describe('vfs ui cr loop fixes', () => {
             parentId: 'node-2',
             size: 3,
             content: { encoding: 'plain', data: '# a', originalSize: 3 },
-            mtime: now,
-            ctime: now,
+            mtime: older,
+            ctime: older,
             updatedBy: 'user',
           },
           'node-4': {
@@ -897,9 +907,33 @@ describe('vfs ui cr loop fixes', () => {
     expect(sortField.attributes('role')).toBe('combobox')
     expect(sortDirection.attributes('role')).toBe('combobox')
     expect(fill.attributes('role')).toBe('combobox')
+    await sortField.trigger('click')
+    await nextTick()
+    expect(wrapper.get('[data-testid="vfs-action-input-sortField-listbox"]').text()).toContain('文件名称')
+    await sortField.trigger('click')
+    await nextTick()
     expect(wrapper.find('[data-testid="vfs-action-input-sortField-listbox"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="vfs-action-input-headCount-range"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="vfs-action-input-tailCount-range"]').exists()).toBe(true)
+  })
+
+  it('re-sorts current directory list immediately after strategy confirm', async () => {
+    const wrapper = mountTracked(VfsMainScreen)
+    await selectDocsFile(wrapper)
+    expect(getVisibleFileNames(wrapper)).toEqual(['docs.md', 'other.md'])
+
+    await triggerHeaderAction(wrapper, 'apply-strategy')
+    await nextTick()
+    await wrapper.findComponent(VfsActionInputDialog).vm.$emit('confirm', {
+      sortField: 'name',
+      sortDirection: 'desc',
+      headCount: '0',
+      tailCount: '0',
+      fill: 'omit',
+    })
+    await nextTick()
+
+    expect(getVisibleFileNames(wrapper)).toEqual(['other.md', 'docs.md'])
   })
 
   it('supports listbox keyboard flow and commit via Enter', async () => {

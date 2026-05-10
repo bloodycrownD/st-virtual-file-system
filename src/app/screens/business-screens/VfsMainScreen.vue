@@ -184,9 +184,26 @@ function getNodeByPath(snapshot: VfsSnapshot, path: string) {
   return Object.values(snapshot.nodes).find((candidate) => candidate.path === p) ?? null
 }
 
-function listDirectoryEntries(snapshot: VfsSnapshot, directoryPath: string): VfsBrowserEntity[] {
+function resolveDirectoryListRule(config: WorkTreeConfig, directoryPath: string): DirectoryRule {
+  // WHY: list sorting should follow directory strategy only when that directory's rule is explicitly enabled.
+  if (config.directoryRulesEnabled[directoryPath] !== true) {
+    return { ...config.defaultRule, sortField: 'name', sortDirection: 'asc' }
+  }
+  return config.directoryOverrides[directoryPath] ?? config.defaultRule
+}
+
+function listDirectoryEntries(snapshot: VfsSnapshot, directoryPath: string, config: WorkTreeConfig): VfsBrowserEntity[] {
   const dirNode = getNodeByPath(snapshot, directoryPath)
   if (!dirNode || dirNode.type !== 'directory') return []
+  const rule = resolveDirectoryListRule(config, dirNode.path)
+  const direction = rule.sortDirection === 'desc' ? -1 : 1
+
+  const getSortValue = (entry: VfsBrowserEntity): string | number => {
+    if (rule.sortField === 'name') return entry.name
+    if (rule.sortField === 'ctime') return entry.ctime ?? 0
+    return entry.mtime ?? 0
+  }
+
   return dirNode.children
     .map((id) => snapshot.nodes[id])
     .filter(Boolean)
@@ -194,10 +211,18 @@ function listDirectoryEntries(snapshot: VfsSnapshot, directoryPath: string): Vfs
       path: node.path,
       name: node.name,
       kind: (node.type === 'file' ? 'file' : 'directory') as 'file' | 'directory',
+      ctime: node.type === 'file' ? node.ctime : undefined,
+      mtime: node.mtime,
     }))
     .sort((a, b) => {
       if (a.kind !== b.kind) return a.kind === 'directory' ? -1 : 1
-      return a.name.localeCompare(b.name)
+      const va = getSortValue(a)
+      const vb = getSortValue(b)
+      let cmp = 0
+      if (typeof va === 'number' && typeof vb === 'number') cmp = va === vb ? 0 : va < vb ? -1 : 1
+      else cmp = String(va).localeCompare(String(vb))
+      if (cmp === 0) cmp = a.path.localeCompare(b.path)
+      return cmp * direction
     })
 }
 
@@ -470,7 +495,7 @@ function requestModeChange(nextMode: 'list' | 'reader' | 'editor' | 'slideshow')
 }
 
 const directoryEntries = computed(() =>
-  listDirectoryEntries(currentSnapshot.value, currentDirectoryPath.value).map((entry) => ({
+  listDirectoryEntries(currentSnapshot.value, currentDirectoryPath.value, currentWorkTree.value).map((entry) => ({
     ...entry,
     enabled: isEntityEnabled(entry),
   })),
@@ -512,7 +537,7 @@ const isListStage = computed(() => mode.value === 'list')
 const isPreviewStage = computed(() => mode.value !== 'list')
 
 function buildDirectoryFilePaths(directoryPath: string): string[] {
-  return listDirectoryEntries(currentSnapshot.value, directoryPath)
+  return listDirectoryEntries(currentSnapshot.value, directoryPath, currentWorkTree.value)
     .filter((entry) => entry.kind === 'file')
     .map((entry) => entry.path)
 }
@@ -705,7 +730,7 @@ function openDisplayStrategyDialogForCurrentDirectory(): void {
         value: rule.sortField,
         type: 'select',
         options: [
-          { label: '名称', value: 'name' },
+          { label: '文件名称', value: 'name' },
           { label: '创建时间', value: 'ctime' },
           { label: '更新时间', value: 'mtime' },
         ],
