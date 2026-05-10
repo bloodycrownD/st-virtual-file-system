@@ -11,7 +11,7 @@ export type VfsEntityAction = 'open' | 'toggle-status' | 'delete' | 'rename' | '
 export type VfsGlobalAction = 'create-file' | 'create-directory'
 
 const FILE_ACTIONS: VfsEntityAction[] = ['open', 'toggle-status', 'delete', 'rename']
-const DIRECTORY_ACTIONS: VfsEntityAction[] = ['open', 'toggle-status', 'delete', 'rename', 'apply-strategy', 'open-slideshow']
+const DIRECTORY_ACTIONS: VfsEntityAction[] = ['open', 'toggle-status', 'delete', 'rename', 'open-slideshow']
 
 export function getVisibleActions(entity: VfsManagerEntity | null): VfsEntityAction[] {
   if (!entity) return []

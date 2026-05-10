@@ -852,6 +852,88 @@ describe('vfs ui cr loop fixes', () => {
     expect(menu.text()).not.toContain('编辑')
   })
 
+  it('shows display-strategy only in non-root header and removes it from row menu', async () => {
+    const wrapper = mountTracked(VfsMainScreen)
+    expect(wrapper.find('[data-testid="vfs-header-display-strategy"]').exists()).toBe(false)
+
+    await selectDocsFile(wrapper)
+    const headerButton = wrapper.find('[data-testid="vfs-header-display-strategy"]')
+    expect(headerButton.exists()).toBe(true)
+
+    const row = wrapper.findAll('li.vfs-fm-row').find((candidate) => candidate.text().includes('docs.md'))
+    if (!row) throw new Error('docs.md row not found')
+    await row.get('summary.vfs-action-menu__toggle').trigger('click')
+    await flushActionMenuDom()
+    const panel = requireEntityActionMenuPanel()
+    expect(panel.querySelector('[data-action="apply-strategy"]')).toBeNull()
+  })
+
+  it('renders strategy dialog controls with spec field types', async () => {
+    const wrapper = mountTracked(VfsMainScreen)
+    await selectDocsFile(wrapper)
+    await wrapper.get('[data-testid="vfs-header-display-strategy"]').trigger('click')
+    await nextTick()
+
+    expect(wrapper.get('[data-testid="vfs-action-input-sortField"]').element.tagName).toBe('SELECT')
+    expect(wrapper.get('[data-testid="vfs-action-input-sortDirection"]').element.tagName).toBe('SELECT')
+    expect(wrapper.get('[data-testid="vfs-action-input-fill"]').element.tagName).toBe('SELECT')
+    expect(wrapper.find('[data-testid="vfs-action-input-headCount-range"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="vfs-action-input-tailCount-range"]').exists()).toBe(true)
+  })
+
+  it('clamps strategy numeric values and persists to chat scope only', async () => {
+    const wrapper = mountTracked(VfsMainScreen)
+    await selectDocsFile(wrapper)
+    await wrapper.get('[data-testid="vfs-header-display-strategy"]').trigger('click')
+    await nextTick()
+
+    await wrapper.findComponent(VfsActionInputDialog).vm.$emit('confirm', {
+      sortField: 'mtime',
+      sortDirection: 'desc',
+      headCount: '2000',
+      tailCount: '-12',
+      fill: 'frontmatter',
+    })
+    await nextTick()
+
+    const state = vfsPersistenceStore.getState()
+    expect(state.chat.workTree?.directoryOverrides['/docs']).toEqual({
+      sortField: 'mtime',
+      sortDirection: 'desc',
+      headCount: 1000,
+      tailCount: 0,
+      fill: 'frontmatter',
+    })
+    expect(state.chat.workTree?.directoryRulesEnabled['/docs']).toBe(true)
+    expect(state.extension.workTreeTemplate).toBeNull()
+  })
+
+  it('keeps strategy persistence isolated between chat and template scopes', async () => {
+    const templateWrapper = mountTracked(VfsMainScreen, { props: { scope: 'template' } })
+    await templateWrapper.findComponent(VfsFileManagerPanel).vm.$emit('opened', '/docs')
+    await nextTick()
+    await templateWrapper.get('[data-testid="vfs-header-display-strategy"]').trigger('click')
+    await nextTick()
+    await templateWrapper.findComponent(VfsActionInputDialog).vm.$emit('confirm', {
+      sortField: 'ctime',
+      sortDirection: 'asc',
+      headCount: '8',
+      tailCount: '5',
+      fill: 'filename',
+    })
+    await nextTick()
+
+    const state = vfsPersistenceStore.getState()
+    expect(state.extension.workTreeTemplate?.directoryOverrides['/docs']).toEqual({
+      sortField: 'ctime',
+      sortDirection: 'asc',
+      headCount: 8,
+      tailCount: 5,
+      fill: 'filename',
+    })
+    expect(state.chat.workTree?.directoryOverrides['/docs']).toBeUndefined()
+  })
+
   it('opens directory by single click and file by double-click into preview editor', async () => {
     const wrapper = mountTracked(VfsMainScreen)
     const list = wrapper.get('[data-testid="vfs-file-manager-list"]')

@@ -101,7 +101,17 @@ const confirmDialogState = ref<null | { title: string; message: string; action: 
 const inputDialogState = ref<
   null | {
     title: string
-    fields: Array<{ key: string; label: string; value: string; placeholder?: string }>
+    fields: Array<{
+      key: string
+      label: string
+      value: string
+      type?: 'text' | 'select' | 'range-number'
+      options?: Array<{ label: string; value: string }>
+      min?: number
+      max?: number
+      step?: number
+      placeholder?: string
+    }>
     action: 'rename' | 'apply-strategy'
   }
 >(null)
@@ -111,6 +121,7 @@ const inputDialogError = ref('')
 const readerHtml = computed(() => editorContent.value)
 const editorHistoryRecords = computed<VfsCommitHistoryRecord[]>(() => history.records.value)
 const isTemplateScope = computed(() => props.scope === 'template')
+const isNonRootDirectory = computed(() => currentDirectoryPath.value !== ROOT_PATH)
 const resolvedTabs = computed<VfsScreenTab[]>(() => {
   if (isTemplateScope.value) return ['files']
   return props.tabs
@@ -141,8 +152,31 @@ function ensureWorkTreeConfig(existing: WorkTreeConfig | null): WorkTreeConfig {
   }
 }
 
+function readScopedWorkTreeFromStore(): WorkTreeConfig {
+  const state = vfsPersistenceStore.getState()
+  if (isTemplateScope.value) {
+    return ensureWorkTreeConfig(state.extension.workTreeTemplate)
+  }
+  return ensureWorkTreeConfig(state.chat.workTree)
+}
+
+function updateScopedWorkTree(mutator: (config: WorkTreeConfig) => WorkTreeConfig): void {
+  if (isTemplateScope.value) {
+    vfsPersistenceStore.updateExtension((draft) => ({
+      ...draft,
+      // WHY: template scope should persist strategy defaults in extension bucket only; never leak into chat metadata.
+      workTreeTemplate: mutator(ensureWorkTreeConfig(draft.workTreeTemplate)),
+    }))
+    return
+  }
+  vfsPersistenceStore.updateChat((draft) => ({
+    ...draft,
+    workTree: mutator(ensureWorkTreeConfig(draft.workTree)),
+  }))
+}
+
 function syncReactiveWorkTree(): void {
-  currentWorkTree.value = ensureWorkTreeConfig(vfsPersistenceStore.getState().chat.workTree)
+  currentWorkTree.value = readScopedWorkTreeFromStore()
 }
 
 function getNodeByPath(snapshot: VfsSnapshot, path: string) {
@@ -200,8 +234,7 @@ function applySnapshotMutation(mutator: (core: VfsCore) => void): void {
 
 function replaceWorkTreePaths(oldPath: string, newPath: string): void {
   // WHY: rename/delete must not leave dangling path references inside macro configuration.
-  vfsPersistenceStore.updateChat((draft) => {
-    const config = ensureWorkTreeConfig(draft.workTree)
+  updateScopedWorkTree((config) => {
     const selectedFiles = config.selectedFiles.map((p) => (p === oldPath ? newPath : p))
     const directoryRulesEnabled: Record<string, boolean> = {}
     for (const [k, v] of Object.entries(config.directoryRulesEnabled)) {
@@ -212,27 +245,23 @@ function replaceWorkTreePaths(oldPath: string, newPath: string): void {
       directoryOverrides[k === oldPath ? newPath : k] = v
     }
     return {
-      ...draft,
-      workTree: {
-        ...config,
-        selectedFiles,
-        directoryRulesEnabled,
-        directoryOverrides,
-      },
+      ...config,
+      selectedFiles,
+      directoryRulesEnabled,
+      directoryOverrides,
     }
   })
   syncReactiveWorkTree()
 }
 
 function removeWorkTreePaths(removedPath: string): void {
-  vfsPersistenceStore.updateChat((draft) => {
-    const config = ensureWorkTreeConfig(draft.workTree)
+  updateScopedWorkTree((config) => {
     const selectedFiles = config.selectedFiles.filter((p) => p !== removedPath)
     const directoryRulesEnabled = { ...config.directoryRulesEnabled }
     delete directoryRulesEnabled[removedPath]
     const directoryOverrides = { ...config.directoryOverrides }
     delete directoryOverrides[removedPath]
-    return { ...draft, workTree: { ...config, selectedFiles, directoryRulesEnabled, directoryOverrides } }
+    return { ...config, selectedFiles, directoryRulesEnabled, directoryOverrides }
   })
   syncReactiveWorkTree()
 }
@@ -650,6 +679,60 @@ function handleGlobalAction(action: VfsGlobalAction): void {
   }
 }
 
+function openDisplayStrategyDialogForCurrentDirectory(): void {
+  if (!isNonRootDirectory.value) return
+  const currentDirectory = currentDirectoryPath.value
+  const config = readScopedWorkTreeFromStore()
+  const rule = config.directoryOverrides[currentDirectory] ?? config.defaultRule
+  pendingEntityActionContext.value = {
+    id: currentDirectory,
+    name: currentDirectory.split('/').at(-1) || '/',
+    kind: 'directory',
+    path: currentDirectory,
+  }
+  inputDialogError.value = ''
+  inputDialogState.value = {
+    action: 'apply-strategy',
+    title: '展示策略',
+    fields: [
+      {
+        key: 'sortField',
+        label: '排序方式',
+        value: rule.sortField,
+        type: 'select',
+        options: [
+          { label: '名称', value: 'name' },
+          { label: '创建时间', value: 'ctime' },
+          { label: '更新时间', value: 'mtime' },
+        ],
+      },
+      {
+        key: 'sortDirection',
+        label: '排序方向',
+        value: rule.sortDirection,
+        type: 'select',
+        options: [
+          { label: '升序', value: 'asc' },
+          { label: '降序', value: 'desc' },
+        ],
+      },
+      { key: 'headCount', label: '头部读取', value: String(rule.headCount), type: 'range-number', min: 0, max: 1000, step: 1 },
+      { key: 'tailCount', label: '尾部读取', value: String(rule.tailCount), type: 'range-number', min: 0, max: 1000, step: 1 },
+      {
+        key: 'fill',
+        label: '填充策略',
+        value: rule.fill,
+        type: 'select',
+        options: [
+          { label: '文件名', value: 'filename' },
+          { label: 'FrontMatter读取', value: 'frontmatter' },
+          { label: '不展示', value: 'omit' },
+        ],
+      },
+    ],
+  }
+}
+
 function closeActionDialogs(): void {
   confirmDialogState.value = null
   inputDialogState.value = null
@@ -684,18 +767,17 @@ function handleEntityAction(action: VfsEntityAction, entityOverride?: VfsManager
     }
     case 'toggle-status': {
       const path = entity.path
-      vfsPersistenceStore.updateChat((draft) => {
-        const config = ensureWorkTreeConfig(draft.workTree)
+      updateScopedWorkTree((config) => {
         if (entity.kind === 'file') {
           const selected = new Set(config.selectedFiles)
           if (selected.has(path)) selected.delete(path)
           else selected.add(path)
-          return { ...draft, workTree: { ...config, selectedFiles: [...selected] } }
+          return { ...config, selectedFiles: [...selected] }
         }
         const enabled = config.directoryRulesEnabled[path] === true
         return {
-          ...draft,
-          workTree: { ...config, directoryRulesEnabled: { ...config.directoryRulesEnabled, [path]: !enabled } },
+          ...config,
+          directoryRulesEnabled: { ...config.directoryRulesEnabled, [path]: !enabled },
         }
       })
       syncReactiveWorkTree()
@@ -723,17 +805,8 @@ function handleEntityAction(action: VfsEntityAction, entityOverride?: VfsManager
     }
     case 'apply-strategy': {
       if (entity.kind !== 'directory') return
-      pendingEntityActionContext.value = entity
-      inputDialogError.value = ''
-      inputDialogState.value = {
-        action: 'apply-strategy',
-        title: '应用展示策略',
-        fields: [
-          { key: 'headCount', label: 'Head count (0..1000)', value: '0' },
-          { key: 'tailCount', label: 'Tail count (0..1000)', value: '0' },
-          { key: 'fill', label: 'Fill strategy', value: 'omit', placeholder: 'filename | frontmatter | omit' },
-        ],
-      }
+      currentDirectoryPath.value = entity.path
+      openDisplayStrategyDialogForCurrentDirectory()
       return
     }
     default:
@@ -816,23 +889,24 @@ function onInputDialogConfirm(payload: Record<string, string>): void {
   }
   const headCount = Number(payload.headCount ?? '0')
   const tailCount = Number(payload.tailCount ?? '0')
-  const fill = (payload.fill ?? 'omit').trim()
+  const sortField = payload.sortField === 'ctime' || payload.sortField === 'mtime' ? payload.sortField : 'name'
+  const sortDirection = payload.sortDirection === 'desc' ? 'desc' : 'asc'
+  const fill = payload.fill === 'filename' || payload.fill === 'frontmatter' || payload.fill === 'omit' ? payload.fill : 'omit'
   try {
-    vfsPersistenceStore.updateChat((draft) => {
-      const config = ensureWorkTreeConfig(draft.workTree)
+    updateScopedWorkTree((config) => {
       const nextRule: DirectoryRule = {
         ...config.defaultRule,
+        sortField,
+        sortDirection,
+        // WHY: dialog accepts free-form number input; enforce schema bounds only at commit time per spec.
         headCount: Number.isFinite(headCount) ? Math.max(0, Math.min(1000, Math.floor(headCount))) : 0,
         tailCount: Number.isFinite(tailCount) ? Math.max(0, Math.min(1000, Math.floor(tailCount))) : 0,
-        fill: fill === 'filename' || fill === 'frontmatter' || fill === 'omit' ? fill : 'omit',
+        fill,
       }
       return {
-        ...draft,
-        workTree: {
-          ...config,
-          directoryOverrides: { ...config.directoryOverrides, [entity.path]: nextRule },
-          directoryRulesEnabled: { ...config.directoryRulesEnabled, [entity.path]: true },
-        },
+        ...config,
+        directoryOverrides: { ...config.directoryOverrides, [entity.path]: nextRule },
+        directoryRulesEnabled: { ...config.directoryRulesEnabled, [entity.path]: true },
       }
     })
     syncReactiveWorkTree()
@@ -943,6 +1017,15 @@ async function handleEditorSaveRequested(): Promise<void> {
           @entity-action-requested="handleRowEntityActionRequested"
         >
           <template #actions>
+            <button
+              v-if="isNonRootDirectory"
+              type="button"
+              class="menu_button"
+              data-testid="vfs-header-display-strategy"
+              @click="openDisplayStrategyDialogForCurrentDirectory"
+            >
+              展示策略
+            </button>
             <VfsActionMenu
               :entity="null"
               mode="global-create"
