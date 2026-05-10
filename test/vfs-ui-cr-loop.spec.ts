@@ -10,7 +10,7 @@ import VfsMainScreen from '@/app/screens/business-screens/VfsMainScreen.vue'
 import EditorScreen from '@/app/screens/pure-screens/EditorScreen.vue'
 import VfsHistoryPanel from '@/app/components/business-components/VfsHistoryPanel.vue'
 import { createVfsCommitHistoryStore } from '@/app/composables/components-composables/useVfsCommitHistory'
-import { VFS_LOG_REFRESH_AUTO } from '@/app/composables/components-composables/useVfsMessageHooks'
+import { VFS_LOG_REFRESH_AUTO, VFS_POPUP_BEFORE_CLOSE } from '@/app/composables/components-composables/useVfsMessageHooks'
 import { vfsPersistenceStore } from '@/app/stores/vfs-store-singleton'
 import { DeflateContentCodec } from '@/infra/serialization/deflate-codec'
 import type { VfsSnapshot } from '@/domain/vfs/types'
@@ -468,45 +468,55 @@ describe('vfs ui cr loop fixes', () => {
     expect(wrapper.text()).not.toContain('文件管理器')
   })
 
-  it('prompts before action-driven mode switch and keeps editor when cancelled', async () => {
-    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false)
+  it('prompts before returning to list from dirty editor when cancelled', async () => {
+    const confirmSpy = vi.spyOn(window, 'confirm')
     const wrapper = mountTracked(VfsMainScreen)
 
     await selectDocsFile(wrapper)
     await triggerEntityAction(wrapper, 'edit', 'docs.md')
     await wrapper.get('textarea.vfs-editor').setValue('unsaved draft')
-    await triggerEntityAction(wrapper, 'view', 'docs.md')
+    confirmSpy.mockClear()
+    await wrapper.get('[data-testid="vfs-preview-back"]').trigger('click')
 
-    expect(confirmSpy).toHaveBeenCalled()
+    expect(wrapper.get('[data-testid="vfs-unsaved-editor-dialog"]').exists()).toBe(true)
+    expect(confirmSpy).not.toHaveBeenCalled()
+    await wrapper.get('[data-testid="vfs-unsaved-cancel"]').trigger('click')
     expect(wrapper.find('textarea.vfs-editor').exists()).toBe(true)
   })
 
-  it('prompts before action-driven mode switch and discards draft on force leave', async () => {
-    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true)
+  it('discards draft when leaving dirty editor via unsaved dialog', async () => {
+    const confirmSpy = vi.spyOn(window, 'confirm')
     const wrapper = mountTracked(VfsMainScreen)
 
     await selectDocsFile(wrapper)
     await triggerEntityAction(wrapper, 'edit', 'docs.md')
     await wrapper.get('textarea.vfs-editor').setValue('discard me')
-    await triggerEntityAction(wrapper, 'view', 'docs.md')
+    confirmSpy.mockClear()
+    await wrapper.get('[data-testid="vfs-preview-back"]').trigger('click')
 
-    expect(confirmSpy).toHaveBeenCalled()
+    expect(wrapper.get('[data-testid="vfs-unsaved-editor-dialog"]').exists()).toBe(true)
+    expect(confirmSpy).not.toHaveBeenCalled()
+    await wrapper.get('[data-testid="vfs-unsaved-discard"]').trigger('click')
     expect(wrapper.find('textarea.vfs-editor').exists()).toBe(false)
 
+    await selectDocsFile(wrapper)
     await triggerEntityAction(wrapper, 'edit', 'docs.md')
     expect((wrapper.get('textarea.vfs-editor').element as HTMLTextAreaElement).value).toBe('')
   })
 
   it('prompts before tab switch and stays on files when cancelled', async () => {
-    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false)
+    const confirmSpy = vi.spyOn(window, 'confirm')
     const wrapper = mountTracked(VfsMainScreen)
 
     await selectDocsFile(wrapper)
     await triggerEntityAction(wrapper, 'edit', 'docs.md')
     await wrapper.get('textarea.vfs-editor').setValue('dirty content')
+    confirmSpy.mockClear()
     await wrapper.get('.vfs-tabs button:nth-of-type(2)').trigger('click')
 
-    expect(confirmSpy).toHaveBeenCalled()
+    expect(wrapper.get('[data-testid="vfs-unsaved-editor-dialog"]').exists()).toBe(true)
+    expect(confirmSpy).not.toHaveBeenCalled()
+    await wrapper.get('[data-testid="vfs-unsaved-cancel"]').trigger('click')
     expect(wrapper.find('textarea.vfs-editor').exists()).toBe(true)
     expect(wrapper.get('[data-testid="vfs-main-layout"]').exists()).toBe(true)
   })
@@ -526,9 +536,10 @@ describe('vfs ui cr loop fixes', () => {
     expect(useVfsCommitActionsMock).toHaveBeenCalledWith('/docs/docs.md')
     expect(dispatchSpy).toHaveBeenCalledWith({ type: 'SAVE_REQUEST' })
     expect(dispatchSpy).toHaveBeenCalledWith({ type: 'SAVE_SUCCESS' })
-    expect(wrapper.text()).toContain('save')
     expect(wrapper.text()).toContain('/docs/docs.md')
 
+    await wrapper.get('[data-testid="vfs-preview-back"]').trigger('click')
+    await selectDocsFile(wrapper)
     await triggerEntityAction(wrapper, 'view', 'docs.md')
     expect(wrapper.find('textarea.vfs-editor').exists()).toBe(false)
     expect(wrapper.find('.vfs-reader').exists()).toBe(true)
@@ -582,17 +593,42 @@ describe('vfs ui cr loop fixes', () => {
     await wrapper.vm.$nextTick()
   })
 
+  it('registers popup before-close guard in template scope', async () => {
+    const wrapper = mountTracked(VfsMainScreen, { props: { scope: 'template' } })
+    await wrapper.vm.$nextTick()
+    await triggerEntityAction(wrapper, 'edit', 'template.md')
+    await wrapper.get('textarea.vfs-editor').setValue('dirty template')
+    await flushPromises()
+    await nextTick()
+
+    const beforeCloseEvent = new CustomEvent(VFS_POPUP_BEFORE_CLOSE, { cancelable: true })
+    const allowed = window.dispatchEvent(beforeCloseEvent)
+    await flushPromises()
+    await nextTick()
+
+    expect(allowed).toBe(false)
+    expect(wrapper.get('[data-testid="vfs-unsaved-editor-dialog"]').exists()).toBe(true)
+  })
+
   it('applies dirty guard to popup-close exit event and cancels close when requested', async () => {
-    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false)
+    const confirmSpy = vi.spyOn(window, 'confirm')
     const wrapper = mountTracked(VfsMainScreen)
     await selectDocsFile(wrapper)
     await triggerEntityAction(wrapper, 'edit', 'docs.md')
     await wrapper.get('textarea.vfs-editor').setValue('unsaved by popup close')
-    const beforeCloseEvent = new CustomEvent('VFS_POPUP_BEFORE_CLOSE', { cancelable: true })
+    await flushPromises()
+    await nextTick()
+    confirmSpy.mockClear()
+    const beforeCloseEvent = new CustomEvent(VFS_POPUP_BEFORE_CLOSE, { cancelable: true })
     const allowed = window.dispatchEvent(beforeCloseEvent)
+    await flushPromises()
+    await nextTick()
 
-    expect(confirmSpy).toHaveBeenCalled()
+    expect(confirmSpy).not.toHaveBeenCalled()
     expect(allowed).toBe(false)
+    expect(wrapper.get('[data-testid="vfs-unsaved-editor-dialog"]').exists()).toBe(true)
+    await wrapper.get('[data-testid="vfs-unsaved-cancel"]').trigger('click')
+    expect(wrapper.find('[data-testid="vfs-unsaved-editor-dialog"]').exists()).toBe(false)
   })
 
   it('disables rollback controls while rollback request is in progress', async () => {
@@ -617,7 +653,7 @@ describe('vfs ui cr loop fixes', () => {
     expect(wrapper.get('button').attributes('disabled')).toBeUndefined()
   })
 
-  it('uses list-only layout on desktop and switches to preview grid when needed', async () => {
+  it('uses list-only layout on desktop and full-width preview stack when editing', async () => {
     window.innerWidth = 1366
     const wrapper = mountTracked(VfsMainScreen)
     // In list mode we intentionally render a single full-width file manager pane.
@@ -627,9 +663,9 @@ describe('vfs ui cr loop fixes', () => {
     await selectDocsFile(wrapper)
     await triggerEntityAction(wrapper, 'edit', 'docs.md')
     expect(wrapper.find('textarea.vfs-editor').exists()).toBe(true)
-    // Preview modes still use the desktop split grid path.
-    expect(wrapper.get('[data-testid="vfs-desktop-grid"]').exists()).toBe(true)
-    expect(getHeaderActionMenu(wrapper).exists()).toBe(true)
+    expect(wrapper.get('[data-testid="vfs-preview-stack"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="vfs-desktop-grid"]').exists()).toBe(false)
+    expect(wrapper.get('[data-testid="vfs-preview-back"]').exists()).toBe(true)
   })
 
   it('uses More dropdown semantics for Tab1 actions', async () => {
