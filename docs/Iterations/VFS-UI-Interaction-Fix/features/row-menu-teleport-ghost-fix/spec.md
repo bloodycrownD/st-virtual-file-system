@@ -9,7 +9,8 @@
 ## 与先前范围的关系
 
 - **继承**：`row-menu-portal-stable-overlay` 的 Teleport + fixed 锚定、立即 capture dismiss、`AbortController` teardown、单开互斥等 **不得回归**。
-- **本变更**：仅解决 **关闭/未打开态下 Teleport 面板仍可见** 的缺陷；不改变动作集合、header 行为、列表选中语义。
+- **本变更**：仅解决 **关闭/未打开态下 Teleport 面板仍可见** 的缺陷。  
+  **基线说明**：实现假定分支上 **已存在** portal/teleport 行菜单与相关结构；此处 **代码增量** 仅为挂载/可见性守卫（如 `v-if` / `isOpen`）。**不改变** 相对该基线的动作集合、header 行为、列表选中语义（不在这迭代里另起一套产品变更）。
 
 ## 影响模块
 
