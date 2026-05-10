@@ -16,6 +16,7 @@ vi.mock('@/app/composables/components-composables/useVfsRollbackActions', () => 
 describe('VFS history/logs UI optimization baseline', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    ;(globalThis as { toastr: { error: (message: string) => void } }).toastr = { error: vi.fn() }
   })
 
   it('keeps refresh token driven log refresh semantics', async () => {
@@ -73,5 +74,35 @@ describe('VFS history/logs UI optimization baseline', () => {
     const logWrapper = mount(VfsLogPanel, { props: { refreshToken: 0 } })
     expect(logWrapper.find('.vfs-log-panel-status').exists()).toBe(true)
     expect(logWrapper.find('.vfs-log-panel-pager').exists()).toBe(true)
+  })
+
+  it('renders distinct log content states for refreshing, failed, and no-data', async () => {
+    let resolveFetch: ((value: { items: never[]; total: number }) => void) | undefined
+    mockFetchLogs.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveFetch = resolve
+        }),
+    )
+
+    const { default: VfsLogPanel } = await import('@/app/components/business-components/VfsLogPanel.vue')
+    const wrapper = mount(VfsLogPanel, { props: { refreshToken: 0 } })
+
+    await wrapper.setProps({ refreshToken: 1 })
+    await nextTick()
+    await Promise.resolve()
+    expect(wrapper.find('.vfs-log-content-refreshing').exists()).toBe(true)
+
+    resolveFetch?.({ items: [], total: 0 })
+    await Promise.resolve()
+    await nextTick()
+    expect(wrapper.find('.vfs-log-content-no-data').exists()).toBe(true)
+
+    mockFetchLogs.mockRejectedValueOnce(new Error('fetch failed'))
+    await wrapper.find('.vfs-log-refresh-button').trigger('click')
+    await nextTick()
+    await Promise.resolve()
+    await nextTick()
+    expect(wrapper.find('.vfs-log-content-failed').exists()).toBe(true)
   })
 })

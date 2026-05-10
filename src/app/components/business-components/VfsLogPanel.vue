@@ -91,10 +91,19 @@ watch(
       </div>
       <span class="vfs-log-page-text">Page {{ pagination.currentPage }} / {{ pagination.totalPages }}</span>
     </header>
-    <ul v-if="logs.length" class="vfs-log-list">
-      <li v-for="item in logs" :key="item.id" class="vfs-log-item">{{ item.message }}</li>
-    </ul>
-    <p v-else class="vfs-log-empty">No logs yet. Refresh to load server logs.</p>
+    <div class="vfs-log-content-area">
+      <p v-if="status === 'refreshing'" class="vfs-log-content-state vfs-log-content-refreshing">Refreshing logs...</p>
+      <p v-else-if="status === 'failed'" class="vfs-log-content-state vfs-log-content-failed">
+        Failed to refresh logs. Try again.
+      </p>
+      <ul v-else-if="logs.length" class="vfs-log-list">
+        <li v-for="item in logs" :key="item.id" class="vfs-log-item">{{ item.message }}</li>
+      </ul>
+      <p v-else-if="status === 'succeeded'" class="vfs-log-content-state vfs-log-content-no-data">
+        No logs found for this page.
+      </p>
+      <p v-else class="vfs-log-content-state vfs-log-empty">No logs yet. Refresh to load server logs.</p>
+    </div>
     <footer class="vfs-log-panel-pager">
       <button
         type="button"
@@ -174,6 +183,33 @@ watch(
   background: rgba(255, 255, 255, 0.03);
 }
 
+.vfs-log-content-area {
+  min-height: 56px;
+}
+
+.vfs-log-content-state {
+  margin: 0;
+  padding: 12px;
+  border-radius: 10px;
+}
+
+.vfs-log-content-refreshing {
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.04);
+  opacity: 0.88;
+}
+
+.vfs-log-content-failed {
+  border: 1px solid rgba(255, 128, 128, 0.42);
+  background: rgba(255, 64, 64, 0.11);
+}
+
+.vfs-log-content-no-data {
+  border: 1px dashed rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.02);
+  opacity: 0.84;
+}
+
 .vfs-log-item {
   margin: 0;
   line-height: 1.45;
@@ -182,10 +218,7 @@ watch(
 }
 
 .vfs-log-empty {
-  margin: 0;
-  padding: 12px;
   border: 1px dashed rgba(255, 255, 255, 0.2);
-  border-radius: 10px;
   opacity: 0.82;
 }
 
