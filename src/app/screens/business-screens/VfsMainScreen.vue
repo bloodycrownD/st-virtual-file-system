@@ -1076,7 +1076,7 @@ async function handleEditorSaveRequested(): Promise<void> {
               aria-label="覆盖"
               @click="overwriteCurrentChatWithTemplate"
             >
-              <i class="fa-solid fa-arrows-rotate" aria-hidden="true" />
+              <i class="fa-solid fa-download" aria-hidden="true" />
             </button>
             <VfsActionMenu
               :entity="null"

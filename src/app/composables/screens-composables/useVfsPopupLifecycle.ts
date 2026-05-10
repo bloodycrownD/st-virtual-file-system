@@ -178,7 +178,8 @@ export function useVfsPopupLifecycle() {
     try {
       popupApp = createApp(VfsMainScreen, {
         scope: options?.scope ?? 'chat',
-        tabs: options?.scope === 'template' ? ['files'] : ['files', 'history', 'logs'],
+        // Intent: template scope remains files-only; chat scope exposes full tab set including WorkTree.
+        tabs: options?.scope === 'template' ? ['files'] : ['files', 'history', 'logs', 'worktree'],
       })
       popupApp.mount(appRoot)
     } catch (e) {
