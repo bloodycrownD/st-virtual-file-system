@@ -24,7 +24,6 @@ const currentPage = computed(() => props.pages[Math.max(0, Math.min(props.pageIn
       </template>
       <template v-else>
         <section v-if="currentPage" class="vfs-slide-one">
-          <h3 class="vfs-slide-title">{{ currentPage.title }}</h3>
           <ReaderScreen :html="currentPage.content" />
         </section>
       </template>
@@ -36,12 +35,6 @@ const currentPage = computed(() => props.pages[Math.max(0, Math.min(props.pageIn
 .vfs-slide-content {
   display: grid;
   gap: 16px;
-}
-
-.vfs-slide-title {
-  margin: 0 0 8px;
-  opacity: 0.92;
-  text-align: center;
 }
 
 .vfs-slide-empty {

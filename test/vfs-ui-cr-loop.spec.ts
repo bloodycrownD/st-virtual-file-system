@@ -39,7 +39,7 @@ async function flushActionMenuDom(): Promise<void> {
 
 async function ensureEditorSourceMode(wrapper: ReturnType<typeof mount>): Promise<void> {
   if (wrapper.find('textarea.vfs-editor').exists()) return
-  await wrapper.get('[data-testid="viewer-edit-mode"]').trigger('click')
+  await wrapper.get('[data-testid="editor-preview-toggle"]').trigger('click')
   await nextTick()
 }
 
@@ -610,7 +610,7 @@ describe('vfs ui cr loop fixes', () => {
     await selectDocsFile(wrapper)
     await triggerEntityAction(wrapper, 'open', 'docs.md')
     expect(wrapper.find('.vfs-editor-screen').exists()).toBe(true)
-    expect(wrapper.get('[data-testid="editor-preview-toggle"]').attributes('title')).toBe('预览')
+    expect(wrapper.get('[data-testid="editor-preview-toggle"]').attributes('title')).toBe('查看源码')
     expect(wrapper.find('textarea.vfs-editor').exists()).toBe(false)
   })
 
@@ -659,14 +659,14 @@ describe('vfs ui cr loop fixes', () => {
     expect(toastrSuccessMock).not.toHaveBeenCalled()
   })
 
-  it('keeps unified top bar strict and relocates save into editor toolbar', async () => {
+  it('keeps unified top bar controls on one row without embedded editor toolbar', async () => {
     const wrapper = mountTracked(VfsMainScreen)
     await selectDocsFile(wrapper)
     await triggerEntityAction(wrapper, 'open', 'docs.md')
     expect(wrapper.get('[data-testid="vfs-preview-back"]').exists()).toBe(true)
     expect(wrapper.get('[data-testid="editor-preview-toggle"]').exists()).toBe(true)
-    expect(wrapper.find('.vfs-preview-top-bar [data-testid="editor-save-submit"]').exists()).toBe(false)
-    expect(wrapper.find('.vfs-editor-toolbar [data-testid="editor-save-submit"]').exists()).toBe(true)
+    expect(wrapper.find('.vfs-preview-top-bar [data-testid="editor-save-submit"]').exists()).toBe(true)
+    expect(wrapper.find('.vfs-editor-toolbar').exists()).toBe(false)
   })
 
   it.each([
@@ -869,7 +869,7 @@ describe('vfs ui cr loop fixes', () => {
     await nextTick()
 
     expect(wrapper.find('.vfs-editor-screen').exists()).toBe(true)
-    expect(wrapper.get('[data-testid="editor-preview-toggle"]').attributes('title')).toBe('预览')
+    expect(wrapper.get('[data-testid="editor-preview-toggle"]').attributes('title')).toBe('查看源码')
   })
 
   it('loads correct file content when opening different files (no shared editor buffer)', async () => {
@@ -894,12 +894,10 @@ describe('vfs ui cr loop fixes', () => {
     await triggerEntityAction(wrapper, 'open', 'docs.md')
 
     expect(wrapper.get('[data-testid="vfs-preview-back"]').attributes('title')).toBe('返回')
-    expect(wrapper.get('[data-testid="viewer-edit-mode"]').attributes('title')).toBe('编辑')
-    expect(wrapper.get('[data-testid="editor-preview-toggle"]').attributes('title')).toBe('预览')
+    expect(wrapper.get('[data-testid="editor-preview-toggle"]').attributes('title')).toBe('查看源码')
     expect(wrapper.get('[data-testid="slideshow-prev-page"]').attributes('title')).toBe('Prev')
     expect(wrapper.get('[data-testid="slideshow-next-page"]').attributes('title')).toBe('Next')
-    // AC2: unified viewer top bar must contain only back/edit/preview/prev/next.
-    expect(wrapper.find('.vfs-preview-top-bar [data-testid="editor-save-submit"]').exists()).toBe(false)
+    expect(wrapper.find('.vfs-preview-top-bar [data-testid="editor-save-submit"]').exists()).toBe(true)
   })
 
   it('navigates Prev/Next only within current directory files', async () => {

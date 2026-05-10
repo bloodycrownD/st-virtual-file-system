@@ -469,6 +469,12 @@ const slideshowPages = computed(() => {
     }
   })
 })
+const currentViewerFileTitle = computed(() => {
+  const path = activeContextPath.value
+  if (!path) return ''
+  const node = getNodeByPath(currentSnapshot.value, path)
+  return node?.name ?? path.split('/').at(-1) ?? path
+})
 const canGoPrevSlideshowPage = computed(() => viewerIndex.value > 0)
 const canGoNextSlideshowPage = computed(() => viewerIndex.value < viewerFilePaths.value.length - 1)
 // WHY: list stage is intentionally single-pane across desktop/mobile to maximize file-manager workspace.
@@ -959,28 +965,42 @@ async function handleEditorSaveRequested(): Promise<void> {
             >
               <i class="fa-solid fa-arrow-left" aria-hidden="true" />
             </button>
+            <p
+              v-if="currentViewerFileTitle"
+              class="vfs-preview-file-title"
+              :title="currentViewerFileTitle"
+              data-testid="viewer-file-title"
+            >
+              {{ currentViewerFileTitle }}
+            </p>
             <div class="vfs-preview-chrome-actions">
               <button
                 type="button"
                 class="menu_button vfs-preview-chrome-button"
-                data-testid="viewer-edit-mode"
-                title="编辑"
-                aria-label="编辑"
+                data-testid="editor-preview-toggle"
+                :title="editorPreviewMode ? '查看源码' : '预览渲染'"
+                :aria-label="editorPreviewMode ? '查看源码' : '预览渲染'"
                 :disabled="!activeContextPath"
-                @click="editorPreviewMode = false"
+                @click="editorPreviewMode = !editorPreviewMode"
               >
-                <i class="fa-solid fa-pen-to-square" aria-hidden="true" />
+                <i :class="editorPreviewMode ? 'fa-solid fa-code' : 'fa-solid fa-eye'" aria-hidden="true" />
               </button>
               <button
+                data-testid="editor-save-submit"
                 type="button"
                 class="menu_button vfs-preview-chrome-button"
-                data-testid="editor-preview-toggle"
-                title="预览"
-                aria-label="预览"
-                :disabled="!activeContextPath"
-                @click="editorPreviewMode = true"
+                :title="saveInProgress ? '保存中' : '保存'"
+                :aria-label="saveInProgress ? '保存中' : '保存'"
+                :disabled="saveInProgress"
+                :aria-busy="saveInProgress ? 'true' : undefined"
+                @click="void handleEditorSaveRequested()"
               >
-                <i class="fa-solid fa-eye" aria-hidden="true" />
+                <i
+                  v-if="saveInProgress"
+                  class="fa-solid fa-spinner fa-spin"
+                  aria-hidden="true"
+                />
+                <i v-else class="fa-solid fa-floppy-disk" aria-hidden="true" />
               </button>
               <button
                 type="button"
@@ -1016,9 +1036,8 @@ async function handleEditorSaveRequested(): Promise<void> {
               :save-in-progress="saveInProgress"
               :rollback-in-progress="rollbackInProgress"
               :show-history-controls="!isTemplateScope"
-              :embed-toolbar="true"
+              :embed-toolbar="false"
               @update:model-value="isDirty = true"
-              @save-requested="void handleEditorSaveRequested()"
               @manual-rollback-requested="handleEditorManualRollback"
             />
           </div>
@@ -1101,6 +1120,7 @@ async function handleEditorSaveRequested(): Promise<void> {
   align-items: center;
   gap: 8px;
   flex: 0 0 auto;
+  position: relative;
 }
 
 .vfs-preview-chrome-actions {
@@ -1142,6 +1162,20 @@ async function handleEditorSaveRequested(): Promise<void> {
   min-width: 2.25rem;
   min-height: 2.25rem;
   padding: 6px 10px;
+}
+
+.vfs-preview-file-title {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  margin: 0;
+  max-width: min(60%, 480px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: center;
+  pointer-events: none;
+  opacity: 0.92;
 }
 
 .vfs-chat-actions {

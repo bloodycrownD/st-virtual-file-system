@@ -98,10 +98,22 @@
 }
 
 #st-vfs-popup .st-vfs-popup__close {
-  min-width: 32px;
-  height: 28px;
-  line-height: 28px;
+  min-width: 36px;
+  height: 36px;
+  line-height: 36px;
   padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  font-size: 28px;
+  font-weight: 500;
+  color: inherit;
+}
+
+#st-vfs-popup .st-vfs-popup__close:hover {
+  background: transparent;
+  border: 0;
+  opacity: 0.85;
 }
 
 #st-vfs-popup .st-vfs-popup__test {
