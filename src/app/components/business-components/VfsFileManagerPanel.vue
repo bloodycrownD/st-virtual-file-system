@@ -183,6 +183,9 @@ function handleRowDoubleClick(entry: VfsBrowserEntity): void {
   padding: 0;
   list-style: none;
   display: grid;
+  /* WHY: once the popup height chain is stable, the list gets extra vertical space; prevent CSS grid from
+     stretching auto rows to fill the container (which makes each row look like a huge card). */
+  align-content: start;
   gap: 6px;
   flex: 1 1 auto;
   min-height: 0;

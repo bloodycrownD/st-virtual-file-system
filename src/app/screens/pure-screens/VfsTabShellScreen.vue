@@ -65,11 +65,28 @@ defineExpose({ forceSwitchTab })
 </template>
 
 <style scoped>
+.vfs-tab-shell {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+}
+
 .vfs-tabs {
   display: flex;
   gap: 8px;
   overflow-x: auto;
   padding-bottom: 4px;
+  flex: 0 0 auto;
+}
+
+.vfs-tab-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
 }
 .vfs-tab {
   writing-mode: horizontal-tb;
