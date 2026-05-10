@@ -461,7 +461,6 @@ const slideshowPages = computed(() => {
     content: readFileContentFromSnapshot(snapshot, entry.path),
   }))
 })
-const currentSlideshowPageTitle = computed(() => slideshowPages.value[slideshowPageIndex.value]?.title ?? '')
 const canGoPrevSlideshowPage = computed(() => slideshowPageIndex.value > 0)
 const canGoNextSlideshowPage = computed(() => slideshowPageIndex.value < slideshowPages.value.length - 1)
 // WHY: list stage is intentionally single-pane across desktop/mobile to maximize file-manager workspace.
@@ -951,13 +950,6 @@ async function handleEditorSaveRequested(): Promise<void> {
               >
                 <i class="fa-solid fa-chevron-right" aria-hidden="true" />
               </button>
-              <p
-                class="vfs-preview-title"
-                data-testid="slideshow-page-title"
-                :title="currentSlideshowPageTitle || '当前目录暂无可读页面'"
-              >
-                {{ currentSlideshowPageTitle || '当前目录暂无可读页面' }}
-              </p>
             </div>
           </header>
           <ReaderScreen v-if="mode === 'reader'" :key="`reader-${viewRefreshToken}`" :html="readerHtml" />
@@ -1095,16 +1087,6 @@ async function handleEditorSaveRequested(): Promise<void> {
   min-width: 2.25rem;
   min-height: 2.25rem;
   padding: 6px 10px;
-}
-
-.vfs-preview-title {
-  margin: 0 0 0 4px;
-  min-width: 0;
-  max-width: min(45vw, 420px);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  opacity: 0.9;
 }
 
 .vfs-chat-actions {
