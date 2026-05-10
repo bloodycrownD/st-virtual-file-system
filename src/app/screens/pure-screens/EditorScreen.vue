@@ -159,6 +159,12 @@ function requestSave(): void {
   box-sizing: border-box;
   overflow: auto;
   resize: none;
+  /* WHY: preview shell already provides the visual frame; keep editor source area visually single-framed. */
+  border: 0 !important;
+  border-radius: 0;
+  outline: none;
+  box-shadow: none !important;
+  background: transparent !important;
 }
 
 .vfs-editor-preview-pane {

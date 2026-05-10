@@ -1076,8 +1076,6 @@ describe('vfs ui cr loop fixes', () => {
     const wrapper = mountTracked(VfsMainScreen)
     await selectDocsFile(wrapper)
     await triggerEntityAction(wrapper, 'open', 'docs.md')
-    await wrapper.get('[data-testid="editor-preview-toggle"]').trigger('click')
-    await nextTick()
 
     const title = wrapper.get('[data-testid="viewer-file-title"]')
     expect(title.text()).toContain('docs.md')
@@ -1105,8 +1103,6 @@ describe('vfs ui cr loop fixes', () => {
     const wrapper = mountTracked(VfsMainScreen)
     await selectDocsFile(wrapper)
     await triggerEntityAction(wrapper, 'open', 'docs.md')
-    await wrapper.get('[data-testid="editor-preview-toggle"]').trigger('click')
-    await nextTick()
 
     const frame = wrapper.get('[data-testid="vfs-preview-content-frame"]')
     const meta = wrapper.get('[data-testid="vfs-preview-meta"]')
@@ -1123,8 +1119,6 @@ describe('vfs ui cr loop fixes', () => {
     const wrapper = mountTracked(VfsMainScreen)
     await selectDocsFile(wrapper)
     await triggerEntityAction(wrapper, 'open', 'docs.md')
-    await wrapper.get('[data-testid="editor-preview-toggle"]').trigger('click')
-    await nextTick()
 
     const frame = wrapper.get('[data-testid="vfs-preview-content-frame"]')
     const meta = wrapper.get('[data-testid="vfs-preview-meta"]')
@@ -1143,8 +1137,6 @@ describe('vfs ui cr loop fixes', () => {
     const wrapper = mountTracked(VfsMainScreen)
     await selectDocsFile(wrapper)
     await triggerEntityAction(wrapper, 'open', 'docs.md')
-    await wrapper.get('[data-testid="editor-preview-toggle"]').trigger('click')
-    await nextTick()
 
     const metadata = wrapper.get('[data-testid="vfs-preview-meta"]')
     const createdText = metadata.findAll('span')[0]?.text() ?? ''
@@ -1170,6 +1162,7 @@ describe('vfs ui cr loop fixes', () => {
     await nextTick()
     expect(wrapper.get('[data-vfs-preview-surface="shared"]').exists()).toBe(true)
     expect(wrapper.find('textarea.vfs-editor').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="vfs-preview-meta"]').exists()).toBe(false)
 
     const slideshowWrapper = mountTracked(VfsMainScreen)
     await triggerEntityAction(slideshowWrapper, 'open-slideshow', 'docs')

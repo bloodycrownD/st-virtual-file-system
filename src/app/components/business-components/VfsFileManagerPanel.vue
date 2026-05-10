@@ -32,7 +32,6 @@ const emits = defineEmits<{
 
 // Intent: centralize toolbar icon mapping so semantics/styles stay consistent across the header.
 const HEADER_ICON = {
-  fileManager: 'fa-solid fa-folder-tree',
   up: 'fa-solid fa-arrow-up',
 } as const
 
@@ -62,9 +61,6 @@ function handleRowDoubleClick(entry: VfsBrowserEntity): void {
     <header class="vfs-fm-header">
       <!-- Intent: keep navigation semantics grouped on the left; actions are rendered separately on the right. -->
       <div class="vfs-fm-nav-group">
-        <span class="vfs-fm-icon-button vfs-fm-tag" role="img" title="文件管理" aria-label="文件管理">
-          <i :class="HEADER_ICON.fileManager" aria-hidden="true"></i>
-        </span>
         <button
           type="button"
           class="vfs-fm-icon-button vfs-fm-up"
@@ -166,10 +162,6 @@ function handleRowDoubleClick(entry: VfsBrowserEntity): void {
 .vfs-fm-icon-button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-}
-
-.vfs-fm-tag {
-  pointer-events: none;
 }
 
 .vfs-fm-path-text {

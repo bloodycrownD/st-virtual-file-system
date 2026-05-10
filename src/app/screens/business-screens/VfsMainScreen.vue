@@ -544,6 +544,12 @@ function formatShortDateTime(timestamp?: number): string {
 }
 const currentViewerCreatedAtText = computed(() => formatShortDateTime(currentViewerFileNode.value?.ctime))
 const currentViewerUpdatedAtText = computed(() => formatShortDateTime(currentViewerFileNode.value?.mtime))
+const shouldShowPreviewMetadata = computed(() => {
+  if (!currentViewerFileNode.value) return false
+  // WHY: source-edit mode should stay focused on editing only; metadata belongs to rendered preview experience.
+  if (mode.value === 'editor') return editorPreviewMode.value
+  return mode.value === 'reader' || mode.value === 'slideshow'
+})
 const shouldUseFlowPreviewMeta = computed(() => layoutMode.value === 'mobile' || viewportHeight.value < 680)
 const canGoPrevSlideshowPage = computed(() => viewerIndex.value > 0)
 const canGoNextSlideshowPage = computed(() => viewerIndex.value < viewerFilePaths.value.length - 1)
@@ -1149,7 +1155,11 @@ async function handleEditorSaveRequested(): Promise<void> {
           <section
             :class="[
               'vfs-preview-content-frame',
-              shouldUseFlowPreviewMeta ? 'vfs-preview-content-frame--meta-flow' : 'vfs-preview-content-frame--meta-anchored',
+              shouldShowPreviewMetadata
+                ? shouldUseFlowPreviewMeta
+                  ? 'vfs-preview-content-frame--meta-flow'
+                  : 'vfs-preview-content-frame--meta-anchored'
+                : null,
             ]"
             data-testid="vfs-preview-content-frame"
             data-vfs-preview-surface="shared"
@@ -1175,7 +1185,7 @@ async function handleEditorSaveRequested(): Promise<void> {
               :page-index="viewerIndex"
             />
             <footer
-              v-if="currentViewerFileNode"
+              v-if="shouldShowPreviewMetadata"
               :class="['vfs-preview-meta', shouldUseFlowPreviewMeta ? 'vfs-preview-meta--flow' : 'vfs-preview-meta--anchored']"
               data-testid="vfs-preview-meta"
               :title="`创建: ${currentViewerCreatedAtText} | 更新: ${currentViewerUpdatedAtText}`"
