@@ -656,6 +656,32 @@ describe('vfs ui cr loop fixes', () => {
     expect(wrapper.find('.vfs-editor-toolbar').exists()).toBe(false)
   })
 
+  it.each([
+    { label: 'chat-desktop', scope: undefined, width: 1366 },
+    { label: 'chat-mobile', scope: undefined, width: 375 },
+    { label: 'template-desktop', scope: 'template' as const, width: 1366 },
+    { label: 'template-mobile', scope: 'template' as const, width: 375 },
+  ])('keeps editor fill-height chain stable in %s', async ({ scope, width }) => {
+    window.innerWidth = width
+    const wrapper = mountTracked(VfsMainScreen, scope ? { props: { scope } } : undefined)
+    window.dispatchEvent(new Event('resize'))
+    await wrapper.vm.$nextTick()
+
+    if (scope === 'template') await triggerEntityAction(wrapper, 'open', 'template.md')
+    else {
+      await selectDocsFile(wrapper)
+      await triggerEntityAction(wrapper, 'open', 'docs.md')
+    }
+    await ensureEditorSourceMode(wrapper)
+
+    // WHY: editor mode relies on flex/min-height chain instead of inline pixel heights.
+    expect(wrapper.find('.vfs-editor-stage').exists()).toBe(true)
+    expect(wrapper.find('.vfs-editor-screen').exists()).toBe(true)
+    const textarea = wrapper.get('textarea.vfs-editor').element as HTMLTextAreaElement
+    expect(textarea.style.height).toBe('')
+    expect(window.getComputedStyle(textarea).resize).toBe('none')
+  })
+
   it('sets editor textarea resize to none for flex fill layout', async () => {
     const wrapper = mountTracked(VfsMainScreen)
     await selectDocsFile(wrapper)

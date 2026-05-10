@@ -127,6 +127,8 @@ function requestSave(): void {
   display: flex;
   flex-direction: column;
   flex: 1 1 auto;
+  height: 100%;
+  max-height: 100%;
   min-height: 0;
   min-width: 0;
 }
@@ -150,6 +152,8 @@ function requestSave(): void {
 
 .vfs-editor {
   flex: 1 1 auto;
+  height: 100%;
+  max-height: 100%;
   min-height: 0;
   width: 100%;
   box-sizing: border-box;

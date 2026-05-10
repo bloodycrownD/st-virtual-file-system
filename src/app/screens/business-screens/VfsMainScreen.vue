@@ -901,19 +901,20 @@ async function handleEditorSaveRequested(): Promise<void> {
             </div>
           </header>
           <ReaderScreen v-if="mode === 'reader'" :key="`reader-${viewRefreshToken}`" :html="readerHtml" />
-          <EditorScreen
-            v-else-if="mode === 'editor'"
-            :key="`editor-${viewRefreshToken}`"
-            v-model="editorContent"
-            v-model:preview-mode="editorPreviewMode"
-            :history-records="editorHistoryRecords"
-            :save-in-progress="saveInProgress"
-            :rollback-in-progress="rollbackInProgress"
-            :show-history-controls="!isTemplateScope"
-            :embed-toolbar="false"
-            @update:model-value="isDirty = true"
-            @manual-rollback-requested="handleEditorManualRollback"
-          />
+          <div v-else-if="mode === 'editor'" class="vfs-editor-stage">
+            <EditorScreen
+              :key="`editor-${viewRefreshToken}`"
+              v-model="editorContent"
+              v-model:preview-mode="editorPreviewMode"
+              :history-records="editorHistoryRecords"
+              :save-in-progress="saveInProgress"
+              :rollback-in-progress="rollbackInProgress"
+              :show-history-controls="!isTemplateScope"
+              :embed-toolbar="false"
+              @update:model-value="isDirty = true"
+              @manual-rollback-requested="handleEditorManualRollback"
+            />
+          </div>
           <SlideshowScreen
             v-else-if="mode === 'slideshow'"
             :directories="slideshowDirectoryOptions"
@@ -1013,6 +1014,15 @@ async function handleEditorSaveRequested(): Promise<void> {
 }
 
 .vfs-preview-body > :not(.vfs-preview-top-bar) {
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+}
+
+.vfs-editor-stage {
+  /* WHY: stabilize editor flex growth across component boundaries in both desktop/mobile preview layouts. */
+  display: flex;
+  flex-direction: column;
   flex: 1 1 auto;
   min-height: 0;
   min-width: 0;
