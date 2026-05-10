@@ -73,6 +73,7 @@ const savedContent = ref('')
 const isDirty = ref(false)
 const viewRefreshToken = ref(0)
 const layoutMode = ref<'mobile' | 'desktop'>(window.innerWidth >= 1024 ? 'desktop' : 'mobile')
+const viewportHeight = ref(window.innerHeight)
 const activeTab = ref<VfsScreenTab>('files')
 const history = createVfsCommitHistoryStore()
 const historyMachine = createVfsHistoryStateMachine()
@@ -140,6 +141,7 @@ let disposeMessageHooks: (() => void) | null = null
 
 const updateLayout = () => {
   layoutMode.value = window.innerWidth >= 1024 ? 'desktop' : 'mobile'
+  viewportHeight.value = window.innerHeight
 }
 
 function ensureWorkTreeConfig(existing: WorkTreeConfig | null): WorkTreeConfig {
@@ -542,6 +544,7 @@ function formatShortDateTime(timestamp?: number): string {
 }
 const currentViewerCreatedAtText = computed(() => formatShortDateTime(currentViewerFileNode.value?.ctime))
 const currentViewerUpdatedAtText = computed(() => formatShortDateTime(currentViewerFileNode.value?.mtime))
+const shouldUseFlowPreviewMeta = computed(() => layoutMode.value === 'mobile' || viewportHeight.value < 680)
 const canGoPrevSlideshowPage = computed(() => viewerIndex.value > 0)
 const canGoNextSlideshowPage = computed(() => viewerIndex.value < viewerFilePaths.value.length - 1)
 // WHY: list stage is intentionally single-pane across desktop/mobile to maximize file-manager workspace.
@@ -1144,7 +1147,10 @@ async function handleEditorSaveRequested(): Promise<void> {
             </div>
           </header>
           <section
-            class="vfs-preview-content-frame vfs-preview-content-frame--meta-anchored"
+            :class="[
+              'vfs-preview-content-frame',
+              shouldUseFlowPreviewMeta ? 'vfs-preview-content-frame--meta-flow' : 'vfs-preview-content-frame--meta-anchored',
+            ]"
             data-testid="vfs-preview-content-frame"
             data-vfs-preview-surface="shared"
           >
@@ -1170,7 +1176,7 @@ async function handleEditorSaveRequested(): Promise<void> {
             />
             <footer
               v-if="currentViewerFileNode"
-              class="vfs-preview-meta"
+              :class="['vfs-preview-meta', shouldUseFlowPreviewMeta ? 'vfs-preview-meta--flow' : 'vfs-preview-meta--anchored']"
               data-testid="vfs-preview-meta"
               :title="`创建: ${currentViewerCreatedAtText} | 更新: ${currentViewerUpdatedAtText}`"
             >
@@ -1286,11 +1292,14 @@ async function handleEditorSaveRequested(): Promise<void> {
   min-height: 0;
   min-width: 0;
   padding: 10px 12px;
-  padding-bottom: 34px;
   border: 1px solid rgba(255, 255, 255, 0.16);
   border-radius: 12px;
   background: rgba(0, 0, 0, 0.14);
   position: relative;
+}
+
+.vfs-preview-content-frame--meta-anchored {
+  padding-bottom: 34px;
 }
 
 .vfs-editor-stage {
@@ -1329,9 +1338,6 @@ async function handleEditorSaveRequested(): Promise<void> {
 }
 
 .vfs-preview-meta {
-  position: absolute;
-  right: 12px;
-  bottom: 8px;
   display: inline-flex;
   align-items: center;
   gap: 10px;
@@ -1339,6 +1345,17 @@ async function handleEditorSaveRequested(): Promise<void> {
   line-height: 1.3;
   opacity: 0.72;
   white-space: nowrap;
+}
+
+.vfs-preview-meta--anchored {
+  position: absolute;
+  right: 12px;
+  bottom: 8px;
+}
+
+.vfs-preview-meta--flow {
+  margin-top: 8px;
+  margin-left: auto;
 }
 
 .vfs-chat-actions {

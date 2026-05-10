@@ -1116,6 +1116,25 @@ describe('vfs ui cr loop fixes', () => {
     expect(meta.element.parentElement).toBe(frame.element)
   })
 
+  it('falls back metadata placement when preview space is narrow and short', async () => {
+    window.innerWidth = 900
+    window.innerHeight = 620
+    window.dispatchEvent(new Event('resize'))
+    const wrapper = mountTracked(VfsMainScreen)
+    await selectDocsFile(wrapper)
+    await triggerEntityAction(wrapper, 'open', 'docs.md')
+    await wrapper.get('[data-testid="editor-preview-toggle"]').trigger('click')
+    await nextTick()
+
+    const frame = wrapper.get('[data-testid="vfs-preview-content-frame"]')
+    const meta = wrapper.get('[data-testid="vfs-preview-meta"]')
+    expect(frame.classes()).toContain('vfs-preview-content-frame')
+    expect(frame.classes()).not.toContain('vfs-preview-content-frame--meta-anchored')
+    expect(frame.classes()).toContain('vfs-preview-content-frame--meta-flow')
+    expect(meta.classes()).toContain('vfs-preview-meta')
+    expect(meta.classes()).toContain('vfs-preview-meta--flow')
+  })
+
   it('renders localized datetime values (not labels only) in preview metadata', async () => {
     const now = Date.now()
     const older = now - 10_000
