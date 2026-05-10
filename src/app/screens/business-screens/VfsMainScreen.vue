@@ -1146,6 +1146,7 @@ async function handleEditorSaveRequested(): Promise<void> {
           <section
             class="vfs-preview-content-frame vfs-preview-content-frame--meta-anchored"
             data-testid="vfs-preview-content-frame"
+            data-vfs-preview-surface="shared"
           >
             <ReaderScreen v-if="mode === 'reader'" :key="`reader-${viewRefreshToken}`" :html="readerHtml" />
             <div v-else-if="mode === 'editor'" class="vfs-editor-stage">

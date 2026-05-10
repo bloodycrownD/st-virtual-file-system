@@ -1116,6 +1116,49 @@ describe('vfs ui cr loop fixes', () => {
     expect(meta.element.parentElement).toBe(frame.element)
   })
 
+  it('renders localized datetime values (not labels only) in preview metadata', async () => {
+    const now = Date.now()
+    const older = now - 10_000
+    const expectedCreated = new Intl.DateTimeFormat(undefined, { dateStyle: 'short', timeStyle: 'short' }).format(older)
+    const expectedUpdated = new Intl.DateTimeFormat(undefined, { dateStyle: 'short', timeStyle: 'short' }).format(older)
+    const wrapper = mountTracked(VfsMainScreen)
+    await selectDocsFile(wrapper)
+    await triggerEntityAction(wrapper, 'open', 'docs.md')
+    await wrapper.get('[data-testid="editor-preview-toggle"]').trigger('click')
+    await nextTick()
+
+    const metadata = wrapper.get('[data-testid="vfs-preview-meta"]')
+    const createdText = metadata.findAll('span')[0]?.text() ?? ''
+    const updatedText = metadata.findAll('span')[1]?.text() ?? ''
+
+    expect(createdText).toContain(expectedCreated)
+    expect(updatedText).toContain(expectedUpdated)
+    expect(createdText.replace('创建:', '').trim()).not.toBe('—')
+    expect(updatedText.replace('更新:', '').trim()).not.toBe('—')
+  })
+
+  it('uses one shared preview surface across reader/editor/slideshow panels', async () => {
+    const wrapper = mountTracked(VfsMainScreen)
+    await selectDocsFile(wrapper)
+    await triggerEntityAction(wrapper, 'open', 'docs.md')
+    await nextTick()
+
+    expect(wrapper.get('[data-vfs-preview-surface="shared"]').exists()).toBe(true)
+    expect(wrapper.find('.vfs-editor-stage').exists()).toBe(true)
+    expect(wrapper.find('.vfs-reader').exists()).toBe(true)
+
+    await wrapper.get('[data-testid="editor-preview-toggle"]').trigger('click')
+    await nextTick()
+    expect(wrapper.get('[data-vfs-preview-surface="shared"]').exists()).toBe(true)
+    expect(wrapper.find('textarea.vfs-editor').exists()).toBe(true)
+
+    const slideshowWrapper = mountTracked(VfsMainScreen)
+    await triggerEntityAction(slideshowWrapper, 'open-slideshow', 'docs')
+    await nextTick()
+    expect(slideshowWrapper.get('[data-vfs-preview-surface="shared"]').exists()).toBe(true)
+    expect(slideshowWrapper.find('.vfs-editor-stage').exists()).toBe(true)
+  })
+
   it('navigates Prev/Next only within current directory files', async () => {
     const wrapper = mountTracked(VfsMainScreen)
     await selectDocsFile(wrapper)
