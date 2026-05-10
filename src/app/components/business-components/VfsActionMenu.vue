@@ -132,8 +132,10 @@ function teardownMenuInteraction(): void {
 function updateFixedPanelPosition(): void {
   if (!isEntityActions.value || !detailsRef.value?.open) return
   const toggle = toggleRef.value
-  const panel = panelRef.value
-  if (!toggle || !panel) return
+  // WHY: coords come from the trigger only. `panelRef` may be null on the first frame after Teleport
+  // commits; gating on it left `panelFixedStyle` empty so scoped `position:absolute` + `top/right:unset`
+  // pinned the panel to the top-left of `#st-vfs-action-menu-teleport`.
+  if (!toggle) return
   const r = toggle.getBoundingClientRect()
   panelFixedStyle.value = {
     position: 'fixed',
@@ -187,7 +189,11 @@ function syncMenuLifecycle(details: HTMLDetailsElement): void {
     }
     window.addEventListener('resize', reposition, { signal })
     attachScrollContainerReposition(reposition, signal)
-    void nextTick(() => reposition())
+    reposition()
+    void nextTick(() => {
+      reposition()
+      requestAnimationFrame(() => reposition())
+    })
   }
 }
 
@@ -322,7 +328,9 @@ onBeforeUnmount(() => {
 }
 
 .vfs-action-menu__list--entity-fixed {
-  /* Top/left/transform/z-index come from `panelFixedStyle` (viewport anchored). */
+  /* Viewport-anchored overlay: override base `position:absolute` so an empty `panelFixedStyle` cannot
+     fall back to the teleport host's (0,0) absolute box. Top/left/transform/z-index from inline style. */
+  position: fixed;
   top: unset;
   right: unset;
 }
