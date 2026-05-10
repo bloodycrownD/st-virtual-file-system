@@ -82,7 +82,7 @@ const ACTION_LABELS: Record<VfsEntityAction, string> = {
   delete: '删除',
   rename: '重命名',
   'apply-strategy': '展示策略',
-  'open-slideshow': '幻灯片/阅读模式',
+  'open-slideshow': '幻灯片',
 }
 const GLOBAL_ACTION_LABELS: Record<VfsGlobalAction, string> = {
   'create-directory': '新建目录',

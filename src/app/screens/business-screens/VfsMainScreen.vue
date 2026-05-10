@@ -78,6 +78,7 @@ const currentDirectoryPath = ref<string>(ROOT_PATH)
 /** Active document / preview target — not list selection (list rows no longer emit selected). */
 const activeContextPath = ref<string | null>(null)
 const slideshowDirectoryPath = ref<string>(ROOT_PATH)
+const slideshowPageIndex = ref(0)
 // WHY: store `getState()` reads are non-reactive; mirror workTree into a ref so row status icons rerender.
 const currentWorkTree = ref<WorkTreeConfig>(ensureWorkTreeConfig(vfsPersistenceStore.getState().chat.workTree))
 const createModalOpen = ref(false)
@@ -449,10 +450,6 @@ const selectedEntity = computed<VfsManagerEntity | null>(() => {
   }
 })
 
-const slideshowDirectoryOptions = computed(() =>
-  directoryEntries.value.filter((entry) => entry.kind === 'directory').map((entry) => ({ path: entry.path, name: entry.name })),
-)
-
 const slideshowPages = computed(() => {
   const snapshot = currentSnapshot.value
   const dirPath = slideshowDirectoryPath.value
@@ -464,10 +461,36 @@ const slideshowPages = computed(() => {
     content: readFileContentFromSnapshot(snapshot, entry.path),
   }))
 })
+const currentSlideshowPageTitle = computed(() => slideshowPages.value[slideshowPageIndex.value]?.title ?? '')
+const canGoPrevSlideshowPage = computed(() => slideshowPageIndex.value > 0)
+const canGoNextSlideshowPage = computed(() => slideshowPageIndex.value < slideshowPages.value.length - 1)
 // WHY: list stage is intentionally single-pane across desktop/mobile to maximize file-manager workspace.
 const isListStage = computed(() => mode.value === 'list')
 // WHY: reader/editor/slideshow use one full-width preview stack (no desktop sidebar); return to list for the file tree.
 const isPreviewStage = computed(() => mode.value !== 'list')
+
+watch(slideshowDirectoryPath, () => {
+  // Intent: changing slideshow directory defines a new reading context; always restart from first page.
+  slideshowPageIndex.value = 0
+})
+
+watch(
+  () => slideshowPages.value.length,
+  () => {
+    // Intent: file-set mutations inside the same directory should not leave an out-of-range slideshow cursor.
+    slideshowPageIndex.value = 0
+  },
+)
+
+function goToPrevSlideshowPage(): void {
+  if (!canGoPrevSlideshowPage.value) return
+  slideshowPageIndex.value -= 1
+}
+
+function goToNextSlideshowPage(): void {
+  if (!canGoNextSlideshowPage.value) return
+  slideshowPageIndex.value += 1
+}
 
 function onOpened(path: string): void {
   currentDirectoryPath.value = path
@@ -905,6 +928,37 @@ async function handleEditorSaveRequested(): Promise<void> {
                 <i v-else class="fa-solid fa-floppy-disk" aria-hidden="true" />
               </button>
             </div>
+            <div v-else-if="mode === 'slideshow'" class="vfs-preview-chrome-actions">
+              <button
+                type="button"
+                class="menu_button vfs-preview-chrome-button"
+                data-testid="slideshow-prev-page"
+                title="上一页"
+                aria-label="上一页"
+                :disabled="!canGoPrevSlideshowPage"
+                @click="goToPrevSlideshowPage"
+              >
+                <i class="fa-solid fa-chevron-left" aria-hidden="true" />
+              </button>
+              <button
+                type="button"
+                class="menu_button vfs-preview-chrome-button"
+                data-testid="slideshow-next-page"
+                title="下一页"
+                aria-label="下一页"
+                :disabled="!canGoNextSlideshowPage"
+                @click="goToNextSlideshowPage"
+              >
+                <i class="fa-solid fa-chevron-right" aria-hidden="true" />
+              </button>
+              <p
+                class="vfs-preview-title"
+                data-testid="slideshow-page-title"
+                :title="currentSlideshowPageTitle || '当前目录暂无可读页面'"
+              >
+                {{ currentSlideshowPageTitle || '当前目录暂无可读页面' }}
+              </p>
+            </div>
           </header>
           <ReaderScreen v-if="mode === 'reader'" :key="`reader-${viewRefreshToken}`" :html="readerHtml" />
           <div v-else-if="mode === 'editor'" class="vfs-editor-stage">
@@ -923,10 +977,8 @@ async function handleEditorSaveRequested(): Promise<void> {
           </div>
           <SlideshowScreen
             v-else-if="mode === 'slideshow'"
-            :directories="slideshowDirectoryOptions"
             :pages="slideshowPages"
-            :directory-path="slideshowDirectoryPath"
-            @directory-changed="slideshowDirectoryPath = $event"
+            :page-index="slideshowPageIndex"
           />
         </section>
       </div>
@@ -1009,6 +1061,7 @@ async function handleEditorSaveRequested(): Promise<void> {
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  min-width: 0;
 }
 
 .vfs-preview-chrome-button {
@@ -1042,6 +1095,16 @@ async function handleEditorSaveRequested(): Promise<void> {
   min-width: 2.25rem;
   min-height: 2.25rem;
   padding: 6px 10px;
+}
+
+.vfs-preview-title {
+  margin: 0 0 0 4px;
+  min-width: 0;
+  max-width: min(45vw, 420px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  opacity: 0.9;
 }
 
 .vfs-chat-actions {
