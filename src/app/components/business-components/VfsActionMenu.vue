@@ -26,9 +26,7 @@ const emits = defineEmits<{
 }>()
 
 const detailsRef = ref<HTMLDetailsElement | null>(null)
-const toggleRef = ref<HTMLElement | null>(null)
-const overlayInlineStyle = ref<Record<string, string>>({})
-/** Aborting drops every listener registered with this controller (click + scroll + resize). */
+/** AbortController removes the capture-phase outside-dismiss listener when the menu closes or unmounts. */
 let menuInteractionAbort: AbortController | null = null
 
 const entityActions = computed(() => getVisibleActions(props.entity))
@@ -36,7 +34,6 @@ const globalCreateActions: VfsGlobalAction[] = ['create-directory', 'create-file
 
 const globalActions = computed(() => (props.mode === 'entity-actions' ? [] : globalCreateActions))
 const actions = computed(() => (props.mode === 'global-create' ? [] : entityActions.value))
-const isEntityActionsMenu = computed(() => props.mode === 'entity-actions')
 
 // WHY: "more actions" must stay usable even without selection so users can trigger create actions globally.
 const isDisabled = computed(() => globalActions.value.length === 0 && actions.value.length === 0)
@@ -101,19 +98,6 @@ function teardownMenuInteraction(): void {
   menuInteractionAbort = null
 }
 
-function updateEntityMenuAnchor(): void {
-  if (!isEntityActionsMenu.value) return
-  const toggle = toggleRef.value
-  if (!toggle) return
-  const rect = toggle.getBoundingClientRect()
-  overlayInlineStyle.value = {
-    // Intent: keep row menu anchored to the clicked button and detached from parent scroll containers.
-    '--vfs-menu-anchor-top': `${rect.bottom + 8}px`,
-    '--vfs-menu-anchor-right': `${rect.right}px`,
-    position: 'fixed',
-  }
-}
-
 async function onOpenStateChanged(event: Event): Promise<void> {
   const details = event.currentTarget as HTMLDetailsElement | null
   if (!details) return
@@ -130,8 +114,6 @@ async function syncMenuLifecycle(details: HTMLDetailsElement): Promise<void> {
   const controller = new AbortController()
   menuInteractionAbort = controller
 
-  updateEntityMenuAnchor()
-
   const outsideDismiss = (clickEvent: MouseEvent): void => {
     if (!detailsRef.value?.open) return
     if (details.contains(clickEvent.target as Node | null)) return
@@ -139,37 +121,8 @@ async function syncMenuLifecycle(details: HTMLDetailsElement): Promise<void> {
     teardownMenuInteraction()
   }
 
-  const bindOutsideDismiss = (): void => {
-    if (controller.signal.aborted || !detailsRef.value?.open) return
-    document.addEventListener('click', outsideDismiss, { capture: true, signal: controller.signal })
-  }
-
-  const deferOutsideBind = (bind: () => void): void => {
-    // WHY: Vitest/jsdom does not reliably interleave `setTimeout(0)` with synchronous dispatchEvent the way a
-    // real browser does; microtasks match production semantics closely enough for regression tests.
-    if (import.meta.env.MODE === 'test') {
-      queueMicrotask(bind)
-      return
-    }
-    window.setTimeout(bind, 0)
-  }
-
-  // WHY: row menus defer past the opening gesture so dialog/ST click routing cannot strand state after
-  // repeated outside-dismiss cycles; header menus attach immediately (no scroll-port overlay coupling).
-  if (isEntityActionsMenu.value) {
-    deferOutsideBind(bindOutsideDismiss)
-  } else {
-    bindOutsideDismiss()
-  }
-
-  if (isEntityActionsMenu.value) {
-    const reposition = (): void => {
-      if (!detailsRef.value?.open) return
-      updateEntityMenuAnchor()
-    }
-    window.addEventListener('resize', reposition, { signal: controller.signal })
-    window.addEventListener('scroll', reposition, { capture: true, signal: controller.signal })
-  }
+  // WHY: register immediately on open (same path as header); deferrals strand teardown vs outside clicks in jsdom and real hosts.
+  document.addEventListener('click', outsideDismiss, { capture: true, signal: controller.signal })
 }
 
 function triggerAction(action: VfsEntityAction): void {
@@ -199,7 +152,6 @@ onBeforeUnmount(() => {
     @toggle="onOpenStateChanged"
   >
     <summary
-      ref="toggleRef"
       class="vfs-action-menu__toggle"
       data-testid="vfs-action-menu-toggle"
       :aria-disabled="isDisabled"
@@ -209,12 +161,7 @@ onBeforeUnmount(() => {
     >
       <i :class="ACTION_MENU_ICON" aria-hidden="true"></i>
     </summary>
-    <ul
-      class="vfs-action-menu__list"
-      :class="{ 'vfs-action-menu__list--entity-overlay': isEntityActionsMenu }"
-      :style="isEntityActionsMenu ? overlayInlineStyle : undefined"
-      role="menu"
-    >
+    <ul class="vfs-action-menu__list" role="menu">
       <li v-for="action in globalActions" :key="action" role="none">
         <button
           type="button"
@@ -290,14 +237,6 @@ onBeforeUnmount(() => {
   max-height: min(50vh, 360px);
   overflow: auto;
   box-shadow: 0 10px 24px rgba(0, 0, 0, 0.45);
-}
-
-.vfs-action-menu__list--entity-overlay {
-  /* Intent: row menu must stay overlay-right-bottom, never auto-flip with container constraints. */
-  top: var(--vfs-menu-anchor-top);
-  left: var(--vfs-menu-anchor-right);
-  right: auto;
-  transform: translateX(-100%);
 }
 
 .vfs-action-menu__separator {
