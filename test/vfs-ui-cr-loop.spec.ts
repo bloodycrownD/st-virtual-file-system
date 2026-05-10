@@ -1101,6 +1101,21 @@ describe('vfs ui cr loop fixes', () => {
     expect(reader.classes()).toContain('vfs-reader')
   })
 
+  it('anchors preview metadata to content frame bottom-right', async () => {
+    const wrapper = mountTracked(VfsMainScreen)
+    await selectDocsFile(wrapper)
+    await triggerEntityAction(wrapper, 'open', 'docs.md')
+    await wrapper.get('[data-testid="editor-preview-toggle"]').trigger('click')
+    await nextTick()
+
+    const frame = wrapper.get('[data-testid="vfs-preview-content-frame"]')
+    const meta = wrapper.get('[data-testid="vfs-preview-meta"]')
+    expect(frame.classes()).toContain('vfs-preview-content-frame')
+    expect(frame.classes()).toContain('vfs-preview-content-frame--meta-anchored')
+    expect(meta.classes()).toContain('vfs-preview-meta')
+    expect(meta.element.parentElement).toBe(frame.element)
+  })
+
   it('navigates Prev/Next only within current directory files', async () => {
     const wrapper = mountTracked(VfsMainScreen)
     await selectDocsFile(wrapper)

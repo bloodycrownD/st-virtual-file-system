@@ -1143,7 +1143,10 @@ async function handleEditorSaveRequested(): Promise<void> {
               </button>
             </div>
           </header>
-          <section class="vfs-preview-content-frame" data-testid="vfs-preview-content-frame">
+          <section
+            class="vfs-preview-content-frame vfs-preview-content-frame--meta-anchored"
+            data-testid="vfs-preview-content-frame"
+          >
             <ReaderScreen v-if="mode === 'reader'" :key="`reader-${viewRefreshToken}`" :html="readerHtml" />
             <div v-else-if="mode === 'editor'" class="vfs-editor-stage">
               <EditorScreen
@@ -1282,9 +1285,11 @@ async function handleEditorSaveRequested(): Promise<void> {
   min-height: 0;
   min-width: 0;
   padding: 10px 12px;
+  padding-bottom: 34px;
   border: 1px solid rgba(255, 255, 255, 0.16);
   border-radius: 12px;
   background: rgba(0, 0, 0, 0.14);
+  position: relative;
 }
 
 .vfs-editor-stage {
@@ -1323,8 +1328,9 @@ async function handleEditorSaveRequested(): Promise<void> {
 }
 
 .vfs-preview-meta {
-  margin-top: 8px;
-  align-self: flex-end;
+  position: absolute;
+  right: 12px;
+  bottom: 8px;
   display: inline-flex;
   align-items: center;
   gap: 10px;
