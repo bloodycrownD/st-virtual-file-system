@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import VfsActionMenu from '@/app/components/business-components/VfsActionMenu.vue'
 import VfsUnsavedEditorDialog from '@/app/components/business-components/VfsUnsavedEditorDialog.vue'
 import {
@@ -82,6 +82,8 @@ const codec = new DeflateContentCodec()
 const tabShellRef = ref<VfsTabShellExposed | null>(null)
 const unsavedDialogOpen = ref(false)
 const pendingEditorLeave = ref<PendingEditorLeave | null>(null)
+/** Preview vs source toggle for editor mode; lifted here so back + preview + save share one top bar. */
+const editorPreviewMode = ref(false)
 
 const readerHtml = computed(() => editorContent.value)
 const editorHistoryRecords = computed<VfsCommitHistoryRecord[]>(() => history.records.value)
@@ -370,6 +372,12 @@ function overwriteCurrentChatWithTemplate(): void {
   }
 }
 
+watch(mode, (next, prev) => {
+  if (prev === 'editor' && next !== 'editor') {
+    editorPreviewMode.value = false
+  }
+})
+
 onMounted(() => {
   window.addEventListener(VFS_POPUP_BEFORE_CLOSE, handlePopupBeforeClose)
   if (!isTemplateScope.value) {
@@ -657,17 +665,20 @@ async function handleEditorSaveRequested(): Promise<void> {
         errorCode: VFS_ERROR_CODES.SAVE_FAILED,
         message: 'Save failed',
       })
+      toastr.error(toVfsErrorToast(VFS_ERROR_CODES.SAVE_FAILED, '没有可保存的文件'))
       return
     }
     try {
       // WHY: save writes editor content into the active scope snapshot (template/chat) before side effects.
       applySnapshotMutation((core) => core.writeFile(targetPath, editorContent.value))
-    } catch {
+    } catch (error) {
+      const mapped = mapVfsMutationError(error, VFS_ERROR_CODES.SAVE_FAILED)
       historyMachine.dispatch({
         type: 'SAVE_FAILED',
-        errorCode: VFS_ERROR_CODES.SAVE_FAILED,
-        message: 'Save failed',
+        errorCode: mapped.code,
+        message: mapped.message,
       })
+      toastr.error(toVfsErrorToast(mapped.code, mapped.message))
       return
     }
     if (!isTemplateScope.value) {
@@ -688,6 +699,7 @@ async function handleEditorSaveRequested(): Promise<void> {
     savedContent.value = editorContent.value
     isDirty.value = false
     refreshAllViews()
+    toastr.success('已保存')
   })
 }
 </script>
@@ -742,18 +754,51 @@ async function handleEditorSaveRequested(): Promise<void> {
             >
               <i class="fa-solid fa-arrow-left" aria-hidden="true" />
             </button>
+            <div v-if="mode === 'editor'" class="vfs-preview-chrome-actions">
+              <button
+                type="button"
+                class="menu_button vfs-preview-chrome-button"
+                data-testid="editor-preview-toggle"
+                :title="editorPreviewMode ? '查看源码' : '预览渲染'"
+                :aria-label="editorPreviewMode ? '查看源码' : '预览渲染'"
+                @click="editorPreviewMode = !editorPreviewMode"
+              >
+                <i
+                  :class="editorPreviewMode ? 'fa-solid fa-code' : 'fa-solid fa-eye'"
+                  aria-hidden="true"
+                />
+              </button>
+              <button
+                data-testid="editor-save-submit"
+                type="button"
+                class="menu_button vfs-preview-chrome-button"
+                :title="saveInProgress ? '保存中' : '保存'"
+                :aria-label="saveInProgress ? '保存中' : '保存'"
+                :disabled="saveInProgress"
+                :aria-busy="saveInProgress ? 'true' : undefined"
+                @click="void handleEditorSaveRequested()"
+              >
+                <i
+                  v-if="saveInProgress"
+                  class="fa-solid fa-spinner fa-spin"
+                  aria-hidden="true"
+                />
+                <i v-else class="fa-solid fa-floppy-disk" aria-hidden="true" />
+              </button>
+            </div>
           </header>
           <ReaderScreen v-if="mode === 'reader'" :key="`reader-${viewRefreshToken}`" :html="readerHtml" />
           <EditorScreen
             v-else-if="mode === 'editor'"
             :key="`editor-${viewRefreshToken}`"
             v-model="editorContent"
+            v-model:preview-mode="editorPreviewMode"
             :history-records="editorHistoryRecords"
             :save-in-progress="saveInProgress"
             :rollback-in-progress="rollbackInProgress"
             :show-history-controls="!isTemplateScope"
+            :embed-toolbar="false"
             @update:model-value="isDirty = true"
-            @save-requested="handleEditorSaveRequested"
             @manual-rollback-requested="handleEditorManualRollback"
           />
           <SlideshowScreen
@@ -817,9 +862,32 @@ async function handleEditorSaveRequested(): Promise<void> {
 
 .vfs-preview-top-bar {
   display: flex;
+  flex-wrap: nowrap;
   align-items: center;
   gap: 8px;
   flex: 0 0 auto;
+}
+
+.vfs-preview-chrome-actions {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.vfs-preview-chrome-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.25rem;
+  min-height: 2.25rem;
+  padding: 6px 10px;
+}
+
+.vfs-preview-body > :not(.vfs-preview-top-bar) {
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
 }
 
 .vfs-preview-back-button {

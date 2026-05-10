@@ -21,6 +21,7 @@ const useVfsRollbackActionMock = vi.fn<(commitId: string) => Promise<boolean>>()
 const useVfsBatchRollbackActionMock = vi.fn<(commitIds: string[]) => Promise<boolean>>()
 const fetchLogsMock = vi.fn(async () => ({ items: [], total: 0 }))
 let toastrErrorMock: ReturnType<typeof vi.fn>
+let toastrSuccessMock: ReturnType<typeof vi.fn>
 
 const mountedWrappers: Array<{ unmount: () => void }> = []
 /** Flush Vue updates after opening menus so lifecycle hooks settle before outside-dismiss assertions. */
@@ -152,7 +153,11 @@ describe('vfs ui cr loop fixes', () => {
     useVfsBatchRollbackActionMock.mockResolvedValue(true)
     fetchLogsMock.mockClear()
     toastrErrorMock = vi.fn()
-    ;(globalThis as { toastr: { error: (message: string) => void } }).toastr = { error: toastrErrorMock }
+    toastrSuccessMock = vi.fn()
+    ;(globalThis as { toastr: { error: (message: string) => void; success: (message: string) => void } }).toastr = {
+      error: toastrErrorMock,
+      success: toastrSuccessMock,
+    }
     const now = Date.now()
     const templateSnapshot = {
       schemaVersion: 1,
@@ -536,6 +541,7 @@ describe('vfs ui cr loop fixes', () => {
     expect(useVfsCommitActionsMock).toHaveBeenCalledWith('/docs/docs.md')
     expect(dispatchSpy).toHaveBeenCalledWith({ type: 'SAVE_REQUEST' })
     expect(dispatchSpy).toHaveBeenCalledWith({ type: 'SAVE_SUCCESS' })
+    expect(toastrSuccessMock).toHaveBeenCalledWith('已保存')
     expect(wrapper.text()).toContain('/docs/docs.md')
 
     await wrapper.get('[data-testid="vfs-preview-back"]').trigger('click')
@@ -562,8 +568,49 @@ describe('vfs ui cr loop fixes', () => {
     const template = vfsPersistenceStore.getState().extension.extensionTemplateVfsSnapshot
     expect(template).not.toBeNull()
     expect(decodeFileFromSnapshot(template!, '/template.md')).toBe('template updated')
+    expect(toastrSuccessMock).toHaveBeenCalledWith('已保存')
     // WHY: template mode is Tab1-only and should not append chat commit history.
     expect(useVfsCommitActionsMock).not.toHaveBeenCalled()
+  })
+
+  it('shows error toast when chat commit fails after save write', async () => {
+    // WHY: the mocked module must still surface errors like the real useVfsCommitActions (toastr.error on !ok).
+    useVfsCommitActionsMock.mockImplementation(async () => {
+      toastrErrorMock('[E_SAVE_FAILED] Save failed')
+      return false
+    })
+    const wrapper = mountTracked(VfsMainScreen)
+    await selectDocsFile(wrapper)
+    await triggerEntityAction(wrapper, 'edit', 'docs.md')
+    await wrapper.get('textarea.vfs-editor').setValue('commit fails')
+    await wrapper.get('[data-testid="editor-save-submit"]').trigger('click')
+    await flushPromises()
+    await wrapper.vm.$nextTick()
+
+    expect(dispatchSpy.mock.calls.map((entry) => entry[0])).toContainEqual(
+      expect.objectContaining({ type: 'SAVE_FAILED' }),
+    )
+    expect(toastrErrorMock).toHaveBeenCalled()
+    expect(toastrSuccessMock).not.toHaveBeenCalled()
+  })
+
+  it('merges editor chrome into preview top bar (no second toolbar row)', async () => {
+    const wrapper = mountTracked(VfsMainScreen)
+    await selectDocsFile(wrapper)
+    await triggerEntityAction(wrapper, 'edit', 'docs.md')
+    expect(wrapper.get('[data-testid="vfs-preview-back"]').exists()).toBe(true)
+    expect(wrapper.get('[data-testid="editor-save-submit"]').exists()).toBe(true)
+    expect(wrapper.get('[data-testid="editor-preview-toggle"]').exists()).toBe(true)
+    expect(wrapper.find('.vfs-editor-toolbar').exists()).toBe(false)
+  })
+
+  it('sets editor textarea resize to none for flex fill layout', async () => {
+    const wrapper = mountTracked(VfsMainScreen)
+    await selectDocsFile(wrapper)
+    await triggerEntityAction(wrapper, 'edit', 'docs.md')
+    const textarea = wrapper.get('textarea.vfs-editor').element as HTMLTextAreaElement
+    expect(textarea.style.height).toBe('')
+    expect(window.getComputedStyle(textarea).resize).toBe('none')
   })
 
   it('allows overlapping save and rollback requests and leaves resolution to execution result', async () => {

@@ -4,25 +4,28 @@ import type { VfsCommitHistoryRecord } from '@/app/composables/components-compos
 import ReaderScreen from '@/app/screens/pure-screens/ReaderScreen.vue'
 
 const model = defineModel<string>({ required: true })
+const previewMode = defineModel<boolean>('previewMode', { default: false })
 const props = withDefaults(
   defineProps<{
     historyRecords?: VfsCommitHistoryRecord[]
     saveInProgress?: boolean
     rollbackInProgress?: boolean
     showHistoryControls?: boolean
+    /** When false, preview/save live in the parent preview chrome (e.g. VfsMainScreen top bar). */
+    embedToolbar?: boolean
   }>(),
   {
     historyRecords: () => [],
     saveInProgress: false,
     rollbackInProgress: false,
     showHistoryControls: true,
+    embedToolbar: true,
   },
 )
 const emits = defineEmits<{
   manualRollbackRequested: [payload: { sourceVersionId: string }]
   saveRequested: []
 }>()
-const previewMode = ref(false)
 const rollbackSourceVersionId = ref<string | null>(null)
 const rollbackOptions = computed(() =>
   props.historyRecords.flatMap((record) => {
@@ -48,7 +51,7 @@ function requestSave(): void {
 
 <template>
   <section class="vfs-editor-screen">
-    <header class="vfs-editor-toolbar">
+    <header v-if="props.embedToolbar" class="vfs-editor-toolbar">
       <button
         type="button"
         class="menu_button vfs-editor-toolbar__icon-button"
@@ -80,7 +83,9 @@ function requestSave(): void {
       </button>
     </header>
     <textarea v-if="!previewMode" v-model="model" class="vfs-editor"></textarea>
-    <ReaderScreen v-else :html="model" />
+    <div v-else class="vfs-editor-preview-pane">
+      <ReaderScreen :html="model" />
+    </div>
     <aside v-if="props.showHistoryControls" class="vfs-editor-history-panel">
       <h4>History</h4>
       <ul>
@@ -118,6 +123,14 @@ function requestSave(): void {
 </template>
 
 <style scoped>
+.vfs-editor-screen {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+}
+
 .vfs-editor-toolbar {
   display: flex;
   flex-wrap: wrap;
@@ -133,5 +146,20 @@ function requestSave(): void {
   min-width: 2.25rem;
   min-height: 2.25rem;
   padding: 6px 10px;
+}
+
+.vfs-editor {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  box-sizing: border-box;
+  overflow: auto;
+  resize: none;
+}
+
+.vfs-editor-preview-pane {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
 }
 </style>

@@ -32,5 +32,6 @@ declare global {
     const $: any;
     const toastr: {
         error: (message: string) => void;
+        success: (message: string) => void;
     };
 }
