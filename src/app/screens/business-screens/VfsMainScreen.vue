@@ -574,6 +574,12 @@ function handleEntityAction(action: VfsEntityAction, entityOverride?: VfsManager
         return
       }
       // WHY: unified open always lands in editor with preview-first experience.
+      // Root-cause fix: load the file content for the target path; editorContent is otherwise reused across opens.
+      const source = readFileContentFromSnapshot(currentSnapshot.value, entity.path)
+      activeContextPath.value = entity.path
+      editorContent.value = source
+      savedContent.value = source
+      isDirty.value = false
       editorPreviewMode.value = true
       requestModeChange('editor')
       return

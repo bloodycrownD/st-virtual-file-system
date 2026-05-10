@@ -219,7 +219,7 @@ describe('vfs ui cr loop fixes', () => {
             path: '/docs',
             name: 'docs',
             parentId: 'root',
-            children: ['node-3'],
+            children: ['node-3', 'node-4'],
             mtime: now,
           },
           'node-3': {
@@ -230,6 +230,18 @@ describe('vfs ui cr loop fixes', () => {
             parentId: 'node-2',
             size: 3,
             content: { encoding: 'plain', data: '# a', originalSize: 3 },
+            mtime: now,
+            ctime: now,
+            updatedBy: 'user',
+          },
+          'node-4': {
+            id: 'node-4',
+            type: 'file',
+            path: '/docs/other.md',
+            name: 'other.md',
+            parentId: 'node-2',
+            size: 3,
+            content: { encoding: 'plain', data: '# b', originalSize: 3 },
             mtime: now,
             ctime: now,
             updatedBy: 'user',
@@ -553,7 +565,8 @@ describe('vfs ui cr loop fixes', () => {
     await selectDocsFile(wrapper)
     await triggerEntityAction(wrapper, 'open', 'docs.md')
     await ensureEditorSourceMode(wrapper)
-    expect((wrapper.get('textarea.vfs-editor').element as HTMLTextAreaElement).value).toBe('')
+    // WHY: opening a file must always load its own content, not keep previous editor buffer.
+    expect((wrapper.get('textarea.vfs-editor').element as HTMLTextAreaElement).value).toBe('# a')
   })
 
   it('prompts before tab switch and stays on files when cancelled', async () => {
@@ -857,6 +870,22 @@ describe('vfs ui cr loop fixes', () => {
 
     expect(wrapper.find('.vfs-editor-screen').exists()).toBe(true)
     expect(wrapper.get('[data-testid="editor-preview-toggle"]').attributes('title')).toBe('查看源码')
+  })
+
+  it('loads correct file content when opening different files (no shared editor buffer)', async () => {
+    const wrapper = mountTracked(VfsMainScreen)
+    await selectDocsFile(wrapper)
+
+    await triggerEntityAction(wrapper, 'open', 'docs.md')
+    await ensureEditorSourceMode(wrapper)
+    expect((wrapper.get('textarea.vfs-editor').element as HTMLTextAreaElement).value).toBe('# a')
+
+    await wrapper.get('[data-testid="vfs-preview-back"]').trigger('click')
+    await nextTick()
+
+    await triggerEntityAction(wrapper, 'open', 'other.md')
+    await ensureEditorSourceMode(wrapper)
+    expect((wrapper.get('textarea.vfs-editor').element as HTMLTextAreaElement).value).toBe('# b')
   })
 
   it('applies row menu entity actions without relying on list selection state', async () => {
