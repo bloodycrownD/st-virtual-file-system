@@ -1,6 +1,6 @@
 import { mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
-import VfsActionMenu from './VfsActionMenu.vue'
+import VfsActionMenu from '@/app/components/business-components/VfsActionMenu.vue'
 
 describe('VfsActionMenu', () => {
   it('shows slideshow action label as 幻灯片', async () => {

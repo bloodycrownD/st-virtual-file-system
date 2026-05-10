@@ -1,6 +1,6 @@
 import { mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
-import SlideshowScreen from './SlideshowScreen.vue'
+import SlideshowScreen from '@/app/screens/pure-screens/SlideshowScreen.vue'
 
 describe('SlideshowScreen', () => {
   it('renders only current page content without slideshow toolbar controls', () => {
