@@ -885,17 +885,55 @@ describe('vfs ui cr loop fixes', () => {
     expect(panel.querySelector('[data-action="apply-strategy"]')).toBeNull()
   })
 
-  it('renders strategy dialog controls with spec field types', async () => {
+  it('renders strategy dialog controls with custom listbox semantics', async () => {
     const wrapper = mountTracked(VfsMainScreen)
     await selectDocsFile(wrapper)
     await triggerHeaderAction(wrapper, 'apply-strategy')
     await nextTick()
 
-    expect(wrapper.get('[data-testid="vfs-action-input-sortField"]').element.tagName).toBe('SELECT')
-    expect(wrapper.get('[data-testid="vfs-action-input-sortDirection"]').element.tagName).toBe('SELECT')
-    expect(wrapper.get('[data-testid="vfs-action-input-fill"]').element.tagName).toBe('SELECT')
+    const sortField = wrapper.get('[data-testid="vfs-action-input-sortField"]')
+    const sortDirection = wrapper.get('[data-testid="vfs-action-input-sortDirection"]')
+    const fill = wrapper.get('[data-testid="vfs-action-input-fill"]')
+    expect(sortField.attributes('role')).toBe('combobox')
+    expect(sortDirection.attributes('role')).toBe('combobox')
+    expect(fill.attributes('role')).toBe('combobox')
+    expect(wrapper.find('[data-testid="vfs-action-input-sortField-listbox"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="vfs-action-input-headCount-range"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="vfs-action-input-tailCount-range"]').exists()).toBe(true)
+  })
+
+  it('supports listbox keyboard flow and commit via Enter', async () => {
+    const wrapper = mountTracked(VfsMainScreen)
+    await selectDocsFile(wrapper)
+    await triggerHeaderAction(wrapper, 'apply-strategy')
+    await nextTick()
+
+    const trigger = wrapper.get('[data-testid="vfs-action-input-sortDirection"]')
+    await trigger.trigger('keydown', { key: 'ArrowDown' })
+    await nextTick()
+    expect(wrapper.find('[data-testid="vfs-action-input-sortDirection-listbox"]').exists()).toBe(true)
+    await trigger.trigger('keydown', { key: 'ArrowDown' })
+    await trigger.trigger('keydown', { key: 'Enter' })
+    await nextTick()
+    expect(wrapper.find('[data-testid="vfs-action-input-sortDirection-listbox"]').exists()).toBe(false)
+    expect(vfsPersistenceStore.getState().chat.workTree?.directoryOverrides['/docs']?.sortDirection).toBe('desc')
+  })
+
+  it('closes open listbox on outside click without breaking dialog', async () => {
+    const wrapper = mountTracked(VfsMainScreen, { attachTo: document.body })
+    await selectDocsFile(wrapper)
+    await triggerHeaderAction(wrapper, 'apply-strategy')
+    await nextTick()
+
+    const trigger = wrapper.get('[data-testid="vfs-action-input-fill"]')
+    await trigger.trigger('click')
+    await nextTick()
+    expect(wrapper.find('[data-testid="vfs-action-input-fill-listbox"]').exists()).toBe(true)
+
+    document.body.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }))
+    await nextTick()
+    expect(wrapper.find('[data-testid="vfs-action-input-fill-listbox"]').exists()).toBe(false)
+    expect(wrapper.findComponent(VfsActionInputDialog).exists()).toBe(true)
   })
 
   it('clamps strategy numeric values and persists to chat scope only', async () => {

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 
 type VfsActionInputField = {
   key: string
@@ -36,13 +36,16 @@ const emits = defineEmits<{
 }>()
 
 const localValues = ref<Record<string, string>>({})
-const firstInputRef = ref<HTMLInputElement | HTMLSelectElement | null>(null)
+const firstInputRef = ref<HTMLInputElement | HTMLButtonElement | null>(null)
+const rootRef = ref<HTMLElement | null>(null)
+const openSelectKey = ref<string | null>(null)
+const activeOptionIndexByKey = ref<Record<string, number>>({})
 
 const normalizedFields = computed(() => props.fields ?? [])
 
 function setFirstInputRef(el: unknown, idx: number): void {
   if (idx !== 0) return
-  firstInputRef.value = (el as HTMLInputElement | HTMLSelectElement | null) ?? null
+  firstInputRef.value = (el as HTMLInputElement | HTMLButtonElement | null) ?? null
 }
 
 function normalizeNumericValue(raw: string, min: number, max: number): string {
@@ -57,11 +60,133 @@ function onRangeNumberInput(field: VfsActionInputField, raw: string): void {
   localValues.value[field.key] = normalizeNumericValue(raw, min, max)
 }
 
+function getOptions(field: VfsActionInputField): Array<{ label: string; value: string }> {
+  return field.options ?? []
+}
+
+function getSelectedOptionLabel(field: VfsActionInputField): string {
+  const value = localValues.value[field.key] ?? ''
+  const selected = getOptions(field).find((opt) => opt.value === value)
+  return selected?.label ?? ''
+}
+
+function getSelectedIndex(field: VfsActionInputField): number {
+  const value = localValues.value[field.key] ?? ''
+  return getOptions(field).findIndex((opt) => opt.value === value)
+}
+
+function ensureActiveIndexInitialized(field: VfsActionInputField): void {
+  const options = getOptions(field)
+  if (options.length === 0) {
+    activeOptionIndexByKey.value[field.key] = -1
+    return
+  }
+  const selectedIndex = getSelectedIndex(field)
+  activeOptionIndexByKey.value[field.key] = selectedIndex >= 0 ? selectedIndex : 0
+}
+
+function closeOpenListbox(): void {
+  openSelectKey.value = null
+}
+
+function openListbox(field: VfsActionInputField): void {
+  openSelectKey.value = field.key
+  ensureActiveIndexInitialized(field)
+}
+
+function toggleListbox(field: VfsActionInputField): void {
+  if (openSelectKey.value === field.key) {
+    closeOpenListbox()
+    return
+  }
+  openListbox(field)
+}
+
+function selectOption(field: VfsActionInputField, value: string): void {
+  localValues.value[field.key] = value
+  closeOpenListbox()
+}
+
+function moveActiveOption(field: VfsActionInputField, delta: 1 | -1): void {
+  const options = getOptions(field)
+  if (options.length === 0) return
+  const current = activeOptionIndexByKey.value[field.key] ?? getSelectedIndex(field)
+  if (current < 0) {
+    activeOptionIndexByKey.value[field.key] = 0
+    return
+  }
+  // WHY: keep keyboard navigation bounded so Arrow keys never escape valid option range.
+  const next = Math.max(0, Math.min(options.length - 1, current + delta))
+  activeOptionIndexByKey.value[field.key] = next
+}
+
+function commitActiveOption(field: VfsActionInputField): void {
+  const options = getOptions(field)
+  const idx = activeOptionIndexByKey.value[field.key] ?? -1
+  if (!options[idx]) return
+  selectOption(field, options[idx].value)
+}
+
+function onSelectTriggerKeydown(event: KeyboardEvent, field: VfsActionInputField): void {
+  switch (event.key) {
+    case 'ArrowDown': {
+      event.preventDefault()
+      if (openSelectKey.value !== field.key) {
+        openListbox(field)
+        return
+      }
+      moveActiveOption(field, 1)
+      return
+    }
+    case 'ArrowUp': {
+      event.preventDefault()
+      if (openSelectKey.value !== field.key) {
+        openListbox(field)
+        return
+      }
+      moveActiveOption(field, -1)
+      return
+    }
+    case 'Enter': {
+      event.preventDefault()
+      if (openSelectKey.value !== field.key) {
+        openListbox(field)
+        return
+      }
+      commitActiveOption(field)
+      return
+    }
+    case 'Escape': {
+      if (openSelectKey.value === field.key) {
+        event.preventDefault()
+        closeOpenListbox()
+      }
+      return
+    }
+    case 'Tab': {
+      // WHY: Tab should preserve native focus flow; only collapse popup before focus leaves trigger.
+      closeOpenListbox()
+      return
+    }
+  }
+}
+
+function onClickOutside(event: MouseEvent): void {
+  if (!openSelectKey.value) return
+  const root = rootRef.value
+  if (!root) return
+  const target = event.target
+  if (target instanceof Node && root.contains(target)) return
+  closeOpenListbox()
+}
+
 watch(
   () => [props.open, props.fields] as const,
   async ([open]) => {
     if (!open) {
       localValues.value = {}
+      openSelectKey.value = null
+      activeOptionIndexByKey.value = {}
       return
     }
     const next: Record<string, string> = {}
@@ -78,6 +203,11 @@ function submit(): void {
 }
 
 function handleKeydown(event: KeyboardEvent): void {
+  if (event.key === 'Escape' && openSelectKey.value) {
+    event.preventDefault()
+    closeOpenListbox()
+    return
+  }
   if (event.key === 'Escape') {
     event.preventDefault()
     emits('cancel')
@@ -88,11 +218,20 @@ function handleKeydown(event: KeyboardEvent): void {
     submit()
   }
 }
+
+onMounted(() => {
+  document.addEventListener('mousedown', onClickOutside, true)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('mousedown', onClickOutside, true)
+})
 </script>
 
 <template>
   <div
     v-if="open"
+    ref="rootRef"
     class="vfs-create-modal__overlay"
     role="dialog"
     aria-modal="true"
@@ -115,17 +254,54 @@ function handleKeydown(event: KeyboardEvent): void {
             :placeholder="field.placeholder"
             :data-testid="`vfs-action-input-${field.key}`"
           />
-          <select
+          <div
             v-else-if="field.type === 'select'"
-            :ref="(el) => setFirstInputRef(el, idx)"
-            v-model="localValues[field.key]"
-            class="text_pole vfs-action-input-dialog__select"
-            :data-testid="`vfs-action-input-${field.key}`"
           >
-            <option v-for="opt in field.options ?? []" :key="`${field.key}-${opt.value}`" :value="opt.value">
-              {{ opt.label }}
-            </option>
-          </select>
+            <button
+              :id="`vfs-action-input-${field.key}`"
+              :ref="(el) => setFirstInputRef(el, idx)"
+              type="button"
+              class="vfs-action-input-dialog__listbox-trigger"
+              role="combobox"
+              aria-haspopup="listbox"
+              :aria-expanded="openSelectKey === field.key ? 'true' : 'false'"
+              :aria-controls="`vfs-action-input-listbox-${field.key}`"
+              :aria-activedescendant="
+                openSelectKey === field.key && activeOptionIndexByKey[field.key] >= 0
+                  ? `vfs-action-input-option-${field.key}-${activeOptionIndexByKey[field.key]}`
+                  : undefined
+              "
+              :data-testid="`vfs-action-input-${field.key}`"
+              @click="toggleListbox(field)"
+              @keydown="onSelectTriggerKeydown($event, field)"
+            >
+              <span>{{ getSelectedOptionLabel(field) }}</span>
+              <i class="fa-solid fa-chevron-down" aria-hidden="true" />
+            </button>
+            <ul
+              v-if="openSelectKey === field.key"
+              :id="`vfs-action-input-listbox-${field.key}`"
+              class="vfs-action-input-dialog__listbox-popup"
+              role="listbox"
+              :aria-labelledby="`vfs-action-input-${field.key}`"
+              :data-testid="`vfs-action-input-${field.key}-listbox`"
+            >
+              <li v-for="(opt, optIdx) in getOptions(field)" :key="`${field.key}-${opt.value}`" role="presentation">
+                <button
+                  :id="`vfs-action-input-option-${field.key}-${optIdx}`"
+                  type="button"
+                  class="vfs-action-input-dialog__listbox-option"
+                  role="option"
+                  :aria-selected="localValues[field.key] === opt.value ? 'true' : 'false'"
+                  :data-active="activeOptionIndexByKey[field.key] === optIdx ? 'true' : 'false'"
+                  @mouseenter="activeOptionIndexByKey[field.key] = optIdx"
+                  @click="selectOption(field, opt.value)"
+                >
+                  {{ opt.label }}
+                </button>
+              </li>
+            </ul>
+          </div>
           <div v-else class="vfs-action-input-dialog__range-number">
             <input
               :ref="(el) => setFirstInputRef(el, idx)"
@@ -181,21 +357,57 @@ function handleKeydown(event: KeyboardEvent): void {
   align-items: center;
 }
 
-.vfs-action-input-dialog__select {
-  appearance: none;
+.vfs-action-input-dialog__listbox-trigger {
+  width: 100%;
   min-height: 40px;
-  padding-right: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(15, 18, 24, 0.92);
+  color: inherit;
+  text-align: left;
   line-height: 1.35;
   font-size: 1rem;
+  cursor: pointer;
 }
 
-.vfs-action-input-dialog__select:focus-visible {
+.vfs-action-input-dialog__listbox-trigger:focus-visible {
   outline-offset: 1px;
 }
 
-.vfs-action-input-dialog__select option {
+.vfs-action-input-dialog__listbox-popup {
+  margin: 6px 0 0;
+  padding: 4px;
+  list-style: none;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(20, 24, 32, 0.98);
+  max-height: 220px;
+  overflow: auto;
+}
+
+.vfs-action-input-dialog__listbox-option {
+  width: 100%;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  padding: 8px 10px;
   font-size: 1rem;
-  line-height: 1.4;
-  padding-block: 6px;
+  line-height: 1.35;
+  cursor: pointer;
+}
+
+.vfs-action-input-dialog__listbox-option[data-active='true'] {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.vfs-action-input-dialog__listbox-option[aria-selected='true'] {
+  font-weight: 600;
 }
 </style>
