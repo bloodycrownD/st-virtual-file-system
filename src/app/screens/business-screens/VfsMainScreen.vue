@@ -78,6 +78,8 @@ const currentDirectoryPath = ref<string>(ROOT_PATH)
 /** Active document / preview target — not list selection (list rows no longer emit selected). */
 const activeContextPath = ref<string | null>(null)
 const slideshowDirectoryPath = ref<string>(ROOT_PATH)
+// WHY: store `getState()` reads are non-reactive; mirror workTree into a ref so row status icons rerender.
+const currentWorkTree = ref<WorkTreeConfig>(ensureWorkTreeConfig(vfsPersistenceStore.getState().chat.workTree))
 const createModalOpen = ref(false)
 const createKind = ref<'file' | 'directory'>('directory')
 const codec = new DeflateContentCodec()
@@ -130,6 +132,10 @@ function ensureWorkTreeConfig(existing: WorkTreeConfig | null): WorkTreeConfig {
   }
 }
 
+function syncReactiveWorkTree(): void {
+  currentWorkTree.value = ensureWorkTreeConfig(vfsPersistenceStore.getState().chat.workTree)
+}
+
 function getNodeByPath(snapshot: VfsSnapshot, path: string) {
   const p = normalizePath(path)
   return Object.values(snapshot.nodes).find((candidate) => candidate.path === p) ?? null
@@ -153,8 +159,7 @@ function listDirectoryEntries(snapshot: VfsSnapshot, directoryPath: string): Vfs
 }
 
 function isEntityEnabled(entity: VfsBrowserEntity): boolean {
-  if (isTemplateScope.value) return false
-  const config = ensureWorkTreeConfig(vfsPersistenceStore.getState().chat.workTree)
+  const config = currentWorkTree.value
   if (entity.kind === 'file') return config.selectedFiles.includes(entity.path)
   return config.directoryRulesEnabled[entity.path] === true
 }
@@ -207,6 +212,7 @@ function replaceWorkTreePaths(oldPath: string, newPath: string): void {
       },
     }
   })
+  syncReactiveWorkTree()
 }
 
 function removeWorkTreePaths(removedPath: string): void {
@@ -219,11 +225,13 @@ function removeWorkTreePaths(removedPath: string): void {
     delete directoryOverrides[removedPath]
     return { ...draft, workTree: { ...config, selectedFiles, directoryRulesEnabled, directoryOverrides } }
   })
+  syncReactiveWorkTree()
 }
 
 function refreshAuthoritativeState(): void {
   const state = vfsPersistenceStore.getState()
   currentSnapshot.value = readSnapshotFromStore()
+  syncReactiveWorkTree()
   if (isTemplateScope.value) {
     history.replaceRecords([])
   } else {
@@ -592,6 +600,7 @@ function handleEntityAction(action: VfsEntityAction, entityOverride?: VfsManager
           workTree: { ...config, directoryRulesEnabled: { ...config.directoryRulesEnabled, [path]: !enabled } },
         }
       })
+      syncReactiveWorkTree()
       requestModeChange('list')
       return
     }
@@ -728,6 +737,7 @@ function onInputDialogConfirm(payload: Record<string, string>): void {
         },
       }
     })
+    syncReactiveWorkTree()
     requestModeChange('list')
     closeActionDialogs()
   } catch {

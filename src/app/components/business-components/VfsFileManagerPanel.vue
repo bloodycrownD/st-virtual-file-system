@@ -85,12 +85,13 @@ function toManagerEntity(entry: VfsBrowserEntity): VfsManagerEntity {
           <!-- WHY: fixed status slot keeps kebab hit area stable across state toggles. -->
           <span
             class="vfs-fm-row-status"
+            :class="entry.enabled === false ? 'vfs-fm-row-status--off' : 'vfs-fm-row-status--on'"
             role="img"
             data-testid="vfs-fm-row-status"
             :title="entry.enabled === false ? '已禁用' : '已启用'"
             :aria-label="entry.enabled === false ? '状态：已禁用' : '状态：已启用'"
           >
-            <i :class="entry.enabled === false ? 'fa-solid fa-toggle-off' : 'fa-solid fa-toggle-on'" aria-hidden="true" />
+            <i class="fa-solid fa-lightbulb" aria-hidden="true" />
           </span>
           <VfsActionMenu
             :entity="toManagerEntity(entry)"
@@ -221,6 +222,18 @@ function toManagerEntity(entry: VfsBrowserEntity): VfsManagerEntity {
   border: 1px solid rgba(255, 255, 255, 0.12);
   background: rgba(0, 0, 0, 0.2);
   opacity: 0.95;
+}
+
+.vfs-fm-row-status--on {
+  color: #ffd54a;
+  border-color: rgba(255, 213, 74, 0.5);
+  box-shadow: 0 0 10px rgba(255, 213, 74, 0.2);
+}
+
+.vfs-fm-row-status--off {
+  color: rgba(255, 255, 255, 0.4);
+  border-color: rgba(255, 255, 255, 0.12);
+  filter: saturate(0.2) brightness(0.75);
 }
 
 .vfs-fm-kind {
