@@ -30,6 +30,9 @@ const toggleRef = ref<HTMLElement | null>(null)
 const overlayInlineStyle = ref<Record<string, string>>({})
 let syncPositionWithViewport: (() => void) | null = null
 let dismissOnOutsideClick: ((event: MouseEvent) => void) | null = null
+// WHY: syncMenuLifecycle is async; overlapping runs (toggle handler + rapid clicks) must not leave orphaned
+// document/window listeners — that breaks later opens, especially for row menus users hammer repeatedly.
+const menuLifecycleGeneration = ref(0)
 
 const entityActions = computed(() => getVisibleActions(props.entity))
 const globalCreateActions: VfsGlobalAction[] = ['create-directory', 'create-file']
@@ -92,6 +95,8 @@ function onToggleClick(event: MouseEvent): void {
   event.preventDefault()
   closePeerMenus(details)
   details.setAttribute('open', '')
+  // WHY: jsdom / some hosts omit `toggle` for programmatic `open`; always sync here. Overlapping runs with
+  // `@toggle` are deduped via `menuLifecycleGeneration` so we don't orphan capture listeners.
   void syncMenuLifecycle(details)
 }
 
@@ -132,7 +137,11 @@ async function syncMenuLifecycle(details: HTMLDetailsElement): Promise<void> {
   teardownOutsideDismiss()
   if (!details.open) return
   closePeerMenus(details)
+  menuLifecycleGeneration.value += 1
+  const lifecycleTicket = menuLifecycleGeneration.value
   await nextTick()
+  if (lifecycleTicket !== menuLifecycleGeneration.value) return
+  if (!detailsRef.value?.open || detailsRef.value !== details) return
   updateEntityMenuAnchor()
   // WHY: capture outside clicks early so dismiss works even when other handlers stop bubble-phase events.
   const outsideDismiss = (clickEvent: MouseEvent) => {
