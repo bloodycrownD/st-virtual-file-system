@@ -745,6 +745,35 @@ describe('vfs ui cr loop fixes', () => {
     expect(rowMenus[1]!.get('details.vfs-action-menu').attributes('open')).toBeDefined()
   })
 
+  it('teleports zero entity action panels when all row menus are closed, and one when a row is open', async () => {
+    const wrapper = mountTracked(VfsFileManagerPanel, {
+      attachTo: document.body,
+      props: {
+        mode: 'list',
+        currentPath: '/',
+        entries: [
+          { path: '/a.md', name: 'a.md', kind: 'file' },
+          { path: '/b.md', name: 'b.md', kind: 'file' },
+        ],
+      },
+      slots: {
+        actions: '<div />',
+      },
+    })
+    expect(document.querySelectorAll('[data-testid="vfs-entity-action-menu-panel"]')).toHaveLength(0)
+
+    const rowMenus = wrapper.findAllComponents(VfsActionMenu).filter((menu) => menu.props('mode') === 'entity-actions')
+    await rowMenus[0]!.get('summary.vfs-action-menu__toggle').trigger('click')
+    await flushActionMenuDom()
+    expect(document.querySelectorAll('[data-testid="vfs-entity-action-menu-panel"]')).toHaveLength(1)
+
+    await settleActionMenuOutsideBinding()
+    document.body.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    await wrapper.vm.$nextTick()
+    await flushActionMenuDom()
+    expect(document.querySelectorAll('[data-testid="vfs-entity-action-menu-panel"]')).toHaveLength(0)
+  })
+
   it.each([
     { label: 'chat-desktop', scope: undefined, width: 1366 },
     { label: 'chat-mobile', scope: undefined, width: 375 },

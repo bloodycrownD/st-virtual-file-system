@@ -11,6 +11,8 @@
   - Single-open inside the popup: `closePeerMenus` closes peer `details.vfs-action-menu[open]`.
   - Outside dismiss uses `document` capture `click` plus one `AbortController`; listeners attach synchronously on
     open (no deferral used only to stage dismiss). Row panels outside `details` count as “inside” for dismiss.
+  - Row `entity-actions`: the teleported `<ul>` is mounted only while `details` is open (`v-if` on `isOpen`), so a
+    closed row cannot leave a coordinate-less list node in the teleport host (no top-left “ghost” panel).
 -->
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, ref } from 'vue'
@@ -42,6 +44,8 @@ const emits = defineEmits<{
 const detailsRef = ref<HTMLDetailsElement | null>(null)
 const toggleRef = ref<HTMLElement | null>(null)
 const panelRef = ref<HTMLUListElement | null>(null)
+/** Entity row panel: kept in lockstep with `details.open` so Teleport content unmounts when closed (see header). */
+const isOpen = ref(false)
 /** Pixel gap between toggle bottom edge and panel top (matches prior absolute `top: calc(100% + 8px)`). */
 const ROW_PANEL_GAP_PX = 8
 
@@ -119,6 +123,7 @@ function onToggleClick(event: MouseEvent): void {
   event.preventDefault()
   closePeerMenus(details)
   details.setAttribute('open', '')
+  isOpen.value = true
   // WHY: jsdom / some hosts omit `toggle` for programmatic `open`; always sync here.
   syncMenuLifecycle(details)
 }
@@ -178,6 +183,8 @@ function syncMenuLifecycle(details: HTMLDetailsElement): void {
     if (details.contains(target)) return
     if (isEntityActions.value && panelRef.value?.contains(target)) return
     details.removeAttribute('open')
+    // WHY: programmatic close may not emit `toggle` in jsdom / some hosts; keep `isOpen` aligned so Teleport unmounts.
+    if (isEntityActions.value) isOpen.value = false
     teardownMenuInteraction()
   }
 
@@ -200,6 +207,7 @@ function syncMenuLifecycle(details: HTMLDetailsElement): void {
 function onOpenStateChanged(event: Event): void {
   const details = event.currentTarget as HTMLDetailsElement | null
   if (!details) return
+  if (isEntityActions.value) isOpen.value = details.open
   syncMenuLifecycle(details)
 }
 
@@ -208,12 +216,14 @@ function triggerAction(action: VfsEntityAction): void {
   if (!isActionTriggerable(props.entity, action)) return
   emits('actionSelected', action)
   detailsRef.value?.removeAttribute('open')
+  if (isEntityActions.value) isOpen.value = false
   teardownMenuInteraction()
 }
 
 function triggerGlobalAction(action: VfsGlobalAction): void {
   emits('globalActionSelected', action)
   detailsRef.value?.removeAttribute('open')
+  if (isEntityActions.value) isOpen.value = false
   teardownMenuInteraction()
 }
 
@@ -242,6 +252,7 @@ onBeforeUnmount(() => {
     </summary>
     <Teleport :to="teleportTarget" :disabled="!isEntityActions">
       <ul
+        v-if="!isEntityActions || isOpen"
         ref="panelRef"
         class="vfs-action-menu__list"
         :class="{ 'vfs-action-menu__list--entity-fixed': isEntityActions }"
