@@ -28,6 +28,19 @@ async function settleActionMenuOutsideBinding(): Promise<void> {
   await flushPromises()
   await nextTick()
 }
+
+async function flushActionMenuDom(): Promise<void> {
+  await flushPromises()
+  await nextTick()
+}
+
+function requireEntityActionMenuPanel(): HTMLElement {
+  const panel = document.querySelector('[data-testid="vfs-entity-action-menu-panel"]')
+  if (!panel) {
+    throw new Error('entity action menu panel not found')
+  }
+  return panel as HTMLElement
+}
 function mountTracked<T>(...args: Parameters<typeof mount<T>>) {
   const wrapper = mount<T>(...args)
   mountedWrappers.push(wrapper)
@@ -70,7 +83,14 @@ async function triggerEntityAction(wrapper: ReturnType<typeof mount>, action: st
     throw new Error(`file manager row containing "${rowTextIncludes}" not found`)
   }
   await targetRow.get('summary.vfs-action-menu__toggle').trigger('click')
-  await targetRow.get(`[data-action="${action}"]`).trigger('click')
+  await flushActionMenuDom()
+  const panel = requireEntityActionMenuPanel()
+  const actionButton = panel.querySelector(`[data-action="${action}"]`)
+  if (!actionButton) {
+    throw new Error(`entity action "${action}" not found`)
+  }
+  actionButton.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+  await flushActionMenuDom()
 }
 
 async function selectDocsFile(wrapper: ReturnType<typeof mount>) {
@@ -468,7 +488,7 @@ describe('vfs ui cr loop fixes', () => {
     await selectDocsFile(wrapper)
     await triggerEntityAction(wrapper, 'edit', 'docs.md')
     await wrapper.get('textarea.vfs-editor').setValue('discard me')
-    await wrapper.get('[data-action="view"]').trigger('click')
+    await triggerEntityAction(wrapper, 'view', 'docs.md')
 
     expect(confirmSpy).toHaveBeenCalled()
     expect(wrapper.find('textarea.vfs-editor').exists()).toBe(false)
@@ -638,7 +658,7 @@ describe('vfs ui cr loop fixes', () => {
     expect(wrapper.find('textarea.vfs-editor').exists()).toBe(true)
   })
 
-  it('positions row action menu like header (absolute list) without shifting parent scroll', async () => {
+  it('anchors row entity menu with fixed teleported overlay without shifting parent scroll', async () => {
     const wrapper = mountTracked(VfsMainScreen)
     const rowMenu = wrapper.findAllComponents(VfsActionMenu).find((menu) => menu.props('mode') === 'entity-actions')
     if (!rowMenu) throw new Error('entity row VfsActionMenu not found')
@@ -648,18 +668,60 @@ describe('vfs ui cr loop fixes', () => {
     const listScrollBefore = (list.element as HTMLElement).scrollTop
 
     await rowMenu.get('summary.vfs-action-menu__toggle').trigger('click')
-    await flushPromises()
-    await nextTick()
+    await flushActionMenuDom()
 
     const listScrollAfter = (list.element as HTMLElement).scrollTop
-    const menuList = rowMenu.get('ul.vfs-action-menu__list')
-    expect(menuList.classes()).toContain('vfs-action-menu__list')
-    expect(menuList.attributes('style')).toBeUndefined()
+    const menuList = requireEntityActionMenuPanel()
+    expect(menuList.classList.contains('vfs-action-menu__list')).toBe(true)
+    expect(menuList.style.position).toBe('fixed')
     expect(listScrollAfter).toBe(listScrollBefore)
+  })
+
+  it('does not change list scrollHeight or scrollTop when toggling row entity menu (teleported panel)', async () => {
+    const entries = Array.from({ length: 36 }, (_, index) => ({
+      path: `/f${index}.md`,
+      name: `file-${index}.md`,
+      kind: 'file' as const,
+    }))
+    const wrapper = mountTracked(VfsFileManagerPanel, {
+      attachTo: document.body,
+      props: {
+        mode: 'list',
+        currentPath: '/',
+        entries,
+      },
+      slots: {
+        actions: '<div />',
+      },
+    })
+    const list = wrapper.get('[data-testid="vfs-file-manager-list"]').element as HTMLElement
+    list.style.maxHeight = '140px'
+    list.style.overflow = 'auto'
+
+    const rowMenus = wrapper.findAllComponents(VfsActionMenu).filter((menu) => menu.props('mode') === 'entity-actions')
+    expect(rowMenus.length).toBeGreaterThan(0)
+
+    const beforeHeight = list.scrollHeight
+    list.scrollTop = 48
+    const beforeTop = list.scrollTop
+
+    await rowMenus[0]!.get('summary.vfs-action-menu__toggle').trigger('click')
+    await flushActionMenuDom()
+    expect(list.scrollHeight).toBe(beforeHeight)
+    expect(list.scrollTop).toBe(beforeTop)
+
+    document.body.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    await wrapper.vm.$nextTick()
+
+    await rowMenus[0]!.get('summary.vfs-action-menu__toggle').trigger('click')
+    await flushActionMenuDom()
+    expect(list.scrollHeight).toBe(beforeHeight)
+    expect(list.scrollTop).toBe(beforeTop)
   })
 
   it('keeps only one row menu open at a time', async () => {
     const wrapper = mountTracked(VfsFileManagerPanel, {
+      attachTo: document.body,
       props: {
         mode: 'list',
         currentPath: '/',
@@ -702,13 +764,12 @@ describe('vfs ui cr loop fixes', () => {
     const listScrollBefore = (list.element as HTMLElement).scrollTop
 
     await rowMenu.get('summary.vfs-action-menu__toggle').trigger('click')
-    await flushPromises()
-    await nextTick()
-    const menuList = rowMenu.get('ul.vfs-action-menu__list')
+    await flushActionMenuDom()
+    const menuList = requireEntityActionMenuPanel()
     const listScrollAfter = (list.element as HTMLElement).scrollTop
 
-    expect(menuList.classes()).toContain('vfs-action-menu__list')
-    expect(menuList.attributes('style')).toBeUndefined()
+    expect(menuList.classList.contains('vfs-action-menu__list')).toBe(true)
+    expect(menuList.style.position).toBe('fixed')
     expect(listScrollAfter).toBe(listScrollBefore)
   })
 
@@ -852,31 +913,31 @@ describe('vfs ui cr loop fixes', () => {
     expect(JSON.stringify(vfsPersistenceStore.getState().chat.chatVfsSnapshot)).toBe(beforeSnapshot)
   })
 
-it('blocks relative segment "." in create modal submit path', async () => {
-  const wrapper = mountTracked(VfsMainScreen)
-  const beforeSnapshot = JSON.stringify(vfsPersistenceStore.getState().chat.chatVfsSnapshot)
-  await getHeaderActionMenu(wrapper).vm.$emit('global-action-selected', 'create-file')
-  await wrapper.vm.$nextTick()
+  it('blocks relative segment "." in create modal submit path', async () => {
+    const wrapper = mountTracked(VfsMainScreen)
+    const beforeSnapshot = JSON.stringify(vfsPersistenceStore.getState().chat.chatVfsSnapshot)
+    await getHeaderActionMenu(wrapper).vm.$emit('global-action-selected', 'create-file')
+    await wrapper.vm.$nextTick()
 
-  await wrapper.findComponent(VfsCreateEntityModal).vm.$emit('confirm', '.')
-  await wrapper.vm.$nextTick()
+    await wrapper.findComponent(VfsCreateEntityModal).vm.$emit('confirm', '.')
+    await wrapper.vm.$nextTick()
 
-  expect(toastrErrorMock).toHaveBeenCalledWith('名称不能为 . 或 ..')
-  expect(JSON.stringify(vfsPersistenceStore.getState().chat.chatVfsSnapshot)).toBe(beforeSnapshot)
-})
+    expect(toastrErrorMock).toHaveBeenCalledWith('名称不能为 . 或 ..')
+    expect(JSON.stringify(vfsPersistenceStore.getState().chat.chatVfsSnapshot)).toBe(beforeSnapshot)
+  })
 
-it('blocks relative segment ".." in create modal submit path', async () => {
-  const wrapper = mountTracked(VfsMainScreen)
-  const beforeSnapshot = JSON.stringify(vfsPersistenceStore.getState().chat.chatVfsSnapshot)
-  await getHeaderActionMenu(wrapper).vm.$emit('global-action-selected', 'create-directory')
-  await wrapper.vm.$nextTick()
+  it('blocks relative segment ".." in create modal submit path', async () => {
+    const wrapper = mountTracked(VfsMainScreen)
+    const beforeSnapshot = JSON.stringify(vfsPersistenceStore.getState().chat.chatVfsSnapshot)
+    await getHeaderActionMenu(wrapper).vm.$emit('global-action-selected', 'create-directory')
+    await wrapper.vm.$nextTick()
 
-  await wrapper.findComponent(VfsCreateEntityModal).vm.$emit('confirm', '..')
-  await wrapper.vm.$nextTick()
+    await wrapper.findComponent(VfsCreateEntityModal).vm.$emit('confirm', '..')
+    await wrapper.vm.$nextTick()
 
-  expect(toastrErrorMock).toHaveBeenCalledWith('名称不能为 . 或 ..')
-  expect(JSON.stringify(vfsPersistenceStore.getState().chat.chatVfsSnapshot)).toBe(beforeSnapshot)
-})
+    expect(toastrErrorMock).toHaveBeenCalledWith('名称不能为 . 或 ..')
+    expect(JSON.stringify(vfsPersistenceStore.getState().chat.chatVfsSnapshot)).toBe(beforeSnapshot)
+  })
 
   it('maps create exceptions to user-visible reasons using real error details', async () => {
     const wrapper = mountTracked(VfsMainScreen)
