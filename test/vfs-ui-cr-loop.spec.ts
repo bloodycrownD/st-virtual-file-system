@@ -3,6 +3,8 @@ import { nextTick } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import VfsActionMenu from '@/app/components/business-components/VfsActionMenu.vue'
 import VfsCommitTab from '@/app/components/business-components/VfsCommitTab.vue'
+import VfsActionConfirmDialog from '@/app/components/business-components/VfsActionConfirmDialog.vue'
+import VfsActionInputDialog from '@/app/components/business-components/VfsActionInputDialog.vue'
 import VfsCreateEntityModal from '@/app/components/business-components/VfsCreateEntityModal.vue'
 import VfsFileManagerPanel from '@/app/components/business-components/VfsFileManagerPanel.vue'
 import VfsHistoryScreen from '@/app/screens/business-screens/VfsHistoryScreen.vue'
@@ -238,31 +240,41 @@ describe('vfs ui cr loop fixes', () => {
           sourceVersion: { id: 'v1', reason: 'rollback-target' },
         },
       ],
+      workTree: {
+        defaultRule: { headCount: 0, tailCount: 0, fill: 'omit' },
+        directoryOverrides: {},
+        directoryRulesEnabled: { '/docs': true },
+        selectedFiles: ['/docs/docs.md'],
+      },
     }))
   })
 
-  it('requires explicit destructive confirmation before template overwrite', async () => {
+  it('requires explicit destructive confirmation dialog before template overwrite', async () => {
     const initial = JSON.stringify(vfsPersistenceStore.getState().chat.chatVfsSnapshot)
     const initialLogs = vfsPersistenceStore.getState().chat.chatVfsLogs.length
     const initialVersions = vfsPersistenceStore.getState().chat.chatVfsVersions.length
-    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false)
     const wrapper = mountTracked(VfsMainScreen)
 
     const overwriteButton = getButtonByText(wrapper, '模板覆盖当前目录')
     await overwriteButton.trigger('click')
+    await wrapper.vm.$nextTick()
+    expect(wrapper.findComponent(VfsActionConfirmDialog).exists()).toBe(true)
+    await wrapper.findComponent(VfsActionConfirmDialog).vm.$emit('cancel')
+    await wrapper.vm.$nextTick()
 
-    expect(confirmSpy).toHaveBeenCalledTimes(1)
     expect(JSON.stringify(vfsPersistenceStore.getState().chat.chatVfsSnapshot)).toBe(initial)
     expect(vfsPersistenceStore.getState().chat.chatVfsLogs.length).toBe(initialLogs)
     expect(vfsPersistenceStore.getState().chat.chatVfsVersions.length).toBe(initialVersions)
   })
 
-  it('overwrites chat snapshot and resets chat logs/version history after confirmation', async () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(true)
+  it('overwrites chat snapshot and resets chat logs/version history after dialog confirm', async () => {
     const wrapper = mountTracked(VfsMainScreen)
 
     const overwriteButton = getButtonByText(wrapper, '模板覆盖当前目录')
     await overwriteButton.trigger('click')
+    await wrapper.vm.$nextTick()
+    await wrapper.findComponent(VfsActionConfirmDialog).vm.$emit('confirm')
+    await wrapper.vm.$nextTick()
 
     const state = vfsPersistenceStore.getState()
     const template = state.extension.extensionTemplateVfsSnapshot
@@ -271,6 +283,32 @@ describe('vfs ui cr loop fixes', () => {
     expect(state.chat.chatVfsLogs).toEqual([])
     expect(state.chat.chatVfsVersions).toEqual([])
     expect(state.chat.templateInitialized).toBe(true)
+  })
+
+  it('replaces native prompt in rename flow with styled input dialog', async () => {
+    const promptSpy = vi.spyOn(window, 'prompt')
+    const wrapper = mountTracked(VfsMainScreen)
+    await selectDocsFile(wrapper)
+    await triggerEntityAction(wrapper, 'rename', 'docs.md')
+    await wrapper.vm.$nextTick()
+
+    expect(promptSpy).not.toHaveBeenCalled()
+    expect(wrapper.findComponent(VfsActionInputDialog).exists()).toBe(true)
+    await wrapper.findComponent(VfsActionInputDialog).vm.$emit('confirm', { name: 'renamed.md' })
+    await wrapper.vm.$nextTick()
+
+    const snapshot = vfsPersistenceStore.getState().chat.chatVfsSnapshot
+    expect(Object.values(snapshot.nodes).some((node) => node.path === '/docs/renamed.md')).toBe(true)
+  })
+
+  it('renders row status icon before kebab with chinese a11y labels', async () => {
+    const wrapper = mountTracked(VfsMainScreen)
+    await selectDocsFile(wrapper)
+    const row = wrapper.findAll('li.vfs-fm-row').find((candidate) => candidate.text().includes('docs.md'))
+    if (!row) throw new Error('docs.md row not found')
+    const status = row.get('[data-testid="vfs-fm-row-status"]')
+    expect(status.attributes('title')).toBe('已启用')
+    expect(status.attributes('aria-label')).toBe('状态：已启用')
   })
 
   it('forces Tab1-only when mounted in template scope', async () => {

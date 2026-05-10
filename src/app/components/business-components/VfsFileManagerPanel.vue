@@ -13,6 +13,7 @@ export interface VfsBrowserEntity {
   path: string
   name: string
   kind: VfsBrowserEntityKind
+  enabled?: boolean
 }
 
 defineProps<{
@@ -81,6 +82,16 @@ function toManagerEntity(entry: VfsBrowserEntity): VfsManagerEntity {
           <span class="vfs-fm-name">{{ entry.name }}</span>
         </button>
         <div class="vfs-fm-row-actions" @click.stop>
+          <!-- WHY: fixed status slot keeps kebab hit area stable across state toggles. -->
+          <span
+            class="vfs-fm-row-status"
+            role="img"
+            data-testid="vfs-fm-row-status"
+            :title="entry.enabled === false ? '已禁用' : '已启用'"
+            :aria-label="entry.enabled === false ? '状态：已禁用' : '状态：已启用'"
+          >
+            <i :class="entry.enabled === false ? 'fa-solid fa-toggle-off' : 'fa-solid fa-toggle-on'" aria-hidden="true" />
+          </span>
           <VfsActionMenu
             :entity="toManagerEntity(entry)"
             mode="entity-actions"
@@ -192,10 +203,24 @@ function toManagerEntity(entry: VfsBrowserEntity): VfsManagerEntity {
 .vfs-fm-row-actions {
   display: inline-flex;
   align-items: center;
+  gap: 6px;
   justify-content: center;
   flex: 0 0 auto;
   position: relative;
   z-index: 2;
+}
+
+.vfs-fm-row-status {
+  width: 28px;
+  min-width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.2);
+  opacity: 0.95;
 }
 
 .vfs-fm-kind {

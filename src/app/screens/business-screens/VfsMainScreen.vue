@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import VfsActionMenu from '@/app/components/business-components/VfsActionMenu.vue'
+import VfsActionConfirmDialog from '@/app/components/business-components/VfsActionConfirmDialog.vue'
+import VfsActionInputDialog from '@/app/components/business-components/VfsActionInputDialog.vue'
 import VfsUnsavedEditorDialog from '@/app/components/business-components/VfsUnsavedEditorDialog.vue'
 import {
   createVfsCommitHistoryStore,
@@ -84,6 +86,16 @@ const unsavedDialogOpen = ref(false)
 const pendingEditorLeave = ref<PendingEditorLeave | null>(null)
 /** Preview vs source toggle for editor mode; lifted here so back + preview + save share one top bar. */
 const editorPreviewMode = ref(false)
+const confirmDialogState = ref<null | { title: string; message: string; action: 'overwrite' | 'delete' }>(null)
+const inputDialogState = ref<
+  null | {
+    title: string
+    fields: Array<{ key: string; label: string; value: string; placeholder?: string }>
+    action: 'rename' | 'apply-strategy'
+  }
+>(null)
+const pendingEntityActionContext = ref<VfsManagerEntity | null>(null)
+const inputDialogError = ref('')
 
 const readerHtml = computed(() => editorContent.value)
 const editorHistoryRecords = computed<VfsCommitHistoryRecord[]>(() => history.records.value)
@@ -138,6 +150,13 @@ function listDirectoryEntries(snapshot: VfsSnapshot, directoryPath: string): Vfs
       if (a.kind !== b.kind) return a.kind === 'directory' ? -1 : 1
       return a.name.localeCompare(b.name)
     })
+}
+
+function isEntityEnabled(entity: VfsBrowserEntity): boolean {
+  if (isTemplateScope.value) return false
+  const config = ensureWorkTreeConfig(vfsPersistenceStore.getState().chat.workTree)
+  if (entity.kind === 'file') return config.selectedFiles.includes(entity.path)
+  return config.directoryRulesEnabled[entity.path] === true
 }
 
 function readFileContentFromSnapshot(snapshot: VfsSnapshot, path: string): string {
@@ -351,24 +370,11 @@ function handleTabChanged(nextTab: 'files' | 'history' | 'logs'): void {
 
 function overwriteCurrentChatWithTemplate(): void {
   if (isTemplateScope.value) return
-  if (!window.confirm('此操作将用模板覆盖当前 chat 目录，并清空日志与版本历史。此操作不可恢复，确认继续？')) return
-  const template = vfsPersistenceStore.getState().extension.extensionTemplateVfsSnapshot
-  if (!template) {
-    toastr.error(toVfsErrorToast(VFS_ERROR_CODES.SAVE_FAILED, '模板为空，无法覆盖'))
-    return
-  }
-  try {
-    // WHY: overwrite is treated as chat re-initialization; clear logs/versions to avoid stale history after reset.
-    vfsPersistenceStore.updateChat((draft) => ({
-      ...draft,
-      chatVfsSnapshot: serializeVfsSnapshot(template),
-      chatVfsLogs: [],
-      chatVfsVersions: [],
-      templateInitialized: true,
-    }))
-    refreshAllViews()
-  } catch {
-    toastr.error(toVfsErrorToast(VFS_ERROR_CODES.SAVE_FAILED, '模板覆盖失败'))
+  pendingEntityActionContext.value = null
+  confirmDialogState.value = {
+    action: 'overwrite',
+    title: '确认覆盖',
+    message: '此操作将用模板覆盖当前 chat 目录，并清空日志与版本历史。此操作不可恢复，确认继续？',
   }
 }
 
@@ -417,7 +423,12 @@ function requestModeChange(nextMode: 'list' | 'reader' | 'editor' | 'slideshow')
   openUnsavedEditorLeave({ kind: 'mode', next: nextMode })
 }
 
-const directoryEntries = computed(() => listDirectoryEntries(currentSnapshot.value, currentDirectoryPath.value))
+const directoryEntries = computed(() =>
+  listDirectoryEntries(currentSnapshot.value, currentDirectoryPath.value).map((entry) => ({
+    ...entry,
+    enabled: isEntityEnabled(entry),
+  })),
+)
 const selectedEntity = computed<VfsManagerEntity | null>(() => {
   if (!activeContextPath.value) return null
   const node = getNodeByPath(currentSnapshot.value, activeContextPath.value)
@@ -530,6 +541,20 @@ function handleGlobalAction(action: VfsGlobalAction): void {
   }
 }
 
+function closeActionDialogs(): void {
+  confirmDialogState.value = null
+  inputDialogState.value = null
+  pendingEntityActionContext.value = null
+  inputDialogError.value = ''
+}
+
+function validateEntityName(name: string): string | null {
+  if (!name) return '名称不能为空'
+  if (/[\\/／＼∕∖⧵]/u.test(name)) return '名称不能包含路径分隔符'
+  if (name === '.' || name === '..') return '名称不能为 . 或 ..'
+  return null
+}
+
 function handleEntityAction(action: VfsEntityAction, entityOverride?: VfsManagerEntity | null): void {
   const entity = entityOverride ?? selectedEntity.value
   if (!isActionTriggerable(entity, action)) return
@@ -571,64 +596,142 @@ function handleEntityAction(action: VfsEntityAction, entityOverride?: VfsManager
       return
     }
     case 'delete': {
-      if (!window.confirm(`Delete ${entity.path}?`)) return
-      try {
-        applySnapshotMutation((core) => core.delete(entity.path, { recursive: true }))
-        removeWorkTreePaths(entity.path)
-        activeContextPath.value = null
-        requestModeChange('list')
-      } catch (e) {
-        toastr.error(toVfsErrorToast(VFS_ERROR_CODES.DELETE_FAILED, '删除失败'))
+      pendingEntityActionContext.value = entity
+      confirmDialogState.value = {
+        action: 'delete',
+        title: '确认删除',
+        message: `确定删除 ${entity.path} 吗？`,
       }
       return
     }
     case 'rename': {
-      const nextName = window.prompt('New name', entity.name)?.trim()
-      if (!nextName) return
-      const oldPath = entity.path
-      try {
-        applySnapshotMutation((core) => core.rename(oldPath, nextName))
-        const parent = dirname(oldPath)
-        const nextPath = normalizePath(`${parent}/${nextName}`)
-        replaceWorkTreePaths(oldPath, nextPath)
-        activeContextPath.value = nextPath
-        requestModeChange('list')
-      } catch {
-        toastr.error(toVfsErrorToast(VFS_ERROR_CODES.RENAME_FAILED, '重命名失败'))
+      pendingEntityActionContext.value = entity
+      inputDialogError.value = ''
+      inputDialogState.value = {
+        action: 'rename',
+        title: '重命名',
+        fields: [{ key: 'name', label: '名称', value: entity.name, placeholder: '请输入新名称' }],
       }
       return
     }
     case 'apply-strategy': {
       if (entity.kind !== 'directory') return
-      const headCount = Number(window.prompt('Head count (0..1000)', '0') ?? '0')
-      const tailCount = Number(window.prompt('Tail count (0..1000)', '0') ?? '0')
-      const fill = (window.prompt('Fill strategy: filename | frontmatter | omit', 'omit') ?? 'omit').trim()
-      try {
-        vfsPersistenceStore.updateChat((draft) => {
-          const config = ensureWorkTreeConfig(draft.workTree)
-          const nextRule: DirectoryRule = {
-            ...config.defaultRule,
-            headCount: Number.isFinite(headCount) ? Math.max(0, Math.min(1000, Math.floor(headCount))) : 0,
-            tailCount: Number.isFinite(tailCount) ? Math.max(0, Math.min(1000, Math.floor(tailCount))) : 0,
-            fill: fill === 'filename' || fill === 'frontmatter' || fill === 'omit' ? fill : 'omit',
-          }
-          return {
-            ...draft,
-            workTree: {
-              ...config,
-              directoryOverrides: { ...config.directoryOverrides, [entity.path]: nextRule },
-              directoryRulesEnabled: { ...config.directoryRulesEnabled, [entity.path]: true },
-            },
-          }
-        })
-      } catch {
-        toastr.error(toVfsErrorToast(VFS_ERROR_CODES.STRATEGY_APPLY_FAILED, '展示策略应用失败'))
+      pendingEntityActionContext.value = entity
+      inputDialogError.value = ''
+      inputDialogState.value = {
+        action: 'apply-strategy',
+        title: '应用展示策略',
+        fields: [
+          { key: 'headCount', label: 'Head count (0..1000)', value: '0' },
+          { key: 'tailCount', label: 'Tail count (0..1000)', value: '0' },
+          { key: 'fill', label: 'Fill strategy', value: 'omit', placeholder: 'filename | frontmatter | omit' },
+        ],
       }
-      requestModeChange('list')
       return
     }
     default:
       requestModeChange('list')
+  }
+}
+
+function onConfirmDialogCancel(): void {
+  closeActionDialogs()
+}
+
+function onConfirmDialogConfirm(): void {
+  const action = confirmDialogState.value?.action
+  const entity = pendingEntityActionContext.value
+  closeActionDialogs()
+  if (!action) return
+  if (action === 'overwrite') {
+    const template = vfsPersistenceStore.getState().extension.extensionTemplateVfsSnapshot
+    if (!template) {
+      toastr.error(toVfsErrorToast(VFS_ERROR_CODES.SAVE_FAILED, '模板为空，无法覆盖'))
+      return
+    }
+    try {
+      // WHY: overwrite is treated as chat re-initialization; clear logs/versions to avoid stale history after reset.
+      vfsPersistenceStore.updateChat((draft) => ({
+        ...draft,
+        chatVfsSnapshot: serializeVfsSnapshot(template),
+        chatVfsLogs: [],
+        chatVfsVersions: [],
+        templateInitialized: true,
+      }))
+      refreshAllViews()
+    } catch {
+      toastr.error(toVfsErrorToast(VFS_ERROR_CODES.SAVE_FAILED, '模板覆盖失败'))
+    }
+    return
+  }
+  if (!entity) return
+  try {
+    applySnapshotMutation((core) => core.delete(entity.path, { recursive: true }))
+    removeWorkTreePaths(entity.path)
+    activeContextPath.value = null
+    requestModeChange('list')
+  } catch {
+    toastr.error(toVfsErrorToast(VFS_ERROR_CODES.DELETE_FAILED, '删除失败'))
+  }
+}
+
+function onInputDialogCancel(): void {
+  closeActionDialogs()
+}
+
+function onInputDialogConfirm(payload: Record<string, string>): void {
+  const action = inputDialogState.value?.action
+  const entity = pendingEntityActionContext.value
+  if (!action || !entity) {
+    closeActionDialogs()
+    return
+  }
+  if (action === 'rename') {
+    const nextName = (payload.name ?? '').trim()
+    const error = validateEntityName(nextName)
+    if (error) {
+      inputDialogError.value = error
+      return
+    }
+    const oldPath = entity.path
+    try {
+      applySnapshotMutation((core) => core.rename(oldPath, nextName))
+      const parent = dirname(oldPath)
+      const nextPath = normalizePath(`${parent}/${nextName}`)
+      replaceWorkTreePaths(oldPath, nextPath)
+      activeContextPath.value = nextPath
+      requestModeChange('list')
+      closeActionDialogs()
+    } catch {
+      toastr.error(toVfsErrorToast(VFS_ERROR_CODES.RENAME_FAILED, '重命名失败'))
+    }
+    return
+  }
+  const headCount = Number(payload.headCount ?? '0')
+  const tailCount = Number(payload.tailCount ?? '0')
+  const fill = (payload.fill ?? 'omit').trim()
+  try {
+    vfsPersistenceStore.updateChat((draft) => {
+      const config = ensureWorkTreeConfig(draft.workTree)
+      const nextRule: DirectoryRule = {
+        ...config.defaultRule,
+        headCount: Number.isFinite(headCount) ? Math.max(0, Math.min(1000, Math.floor(headCount))) : 0,
+        tailCount: Number.isFinite(tailCount) ? Math.max(0, Math.min(1000, Math.floor(tailCount))) : 0,
+        fill: fill === 'filename' || fill === 'frontmatter' || fill === 'omit' ? fill : 'omit',
+      }
+      return {
+        ...draft,
+        workTree: {
+          ...config,
+          directoryOverrides: { ...config.directoryOverrides, [entity.path]: nextRule },
+          directoryRulesEnabled: { ...config.directoryRulesEnabled, [entity.path]: true },
+        },
+      }
+    })
+    requestModeChange('list')
+    closeActionDialogs()
+  } catch {
+    toastr.error(toVfsErrorToast(VFS_ERROR_CODES.STRATEGY_APPLY_FAILED, '展示策略应用失败'))
   }
 }
 
@@ -825,6 +928,21 @@ async function handleEditorSaveRequested(): Promise<void> {
       @save="onUnsavedEditorDialogSave"
       @discard="onUnsavedEditorDialogDiscard"
       @cancel="onUnsavedEditorDialogCancel"
+    />
+    <VfsActionConfirmDialog
+      :open="confirmDialogState !== null"
+      :title="confirmDialogState?.title"
+      :message="confirmDialogState?.message ?? ''"
+      @confirm="onConfirmDialogConfirm"
+      @cancel="onConfirmDialogCancel"
+    />
+    <VfsActionInputDialog
+      :open="inputDialogState !== null"
+      :title="inputDialogState?.title"
+      :fields="inputDialogState?.fields ?? []"
+      :error-message="inputDialogError"
+      @confirm="onInputDialogConfirm"
+      @cancel="onInputDialogCancel"
     />
   </VfsTabShellScreen>
 </template>
