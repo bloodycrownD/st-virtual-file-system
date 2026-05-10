@@ -676,6 +676,10 @@ function handleGlobalAction(action: VfsGlobalAction): void {
   }
   if (action === 'create-file') {
     openCreateModal('file')
+    return
+  }
+  if (action === 'apply-strategy') {
+    openDisplayStrategyDialogForCurrentDirectory()
   }
 }
 
@@ -1017,18 +1021,10 @@ async function handleEditorSaveRequested(): Promise<void> {
           @entity-action-requested="handleRowEntityActionRequested"
         >
           <template #actions>
-            <button
-              v-if="isNonRootDirectory"
-              type="button"
-              class="menu_button"
-              data-testid="vfs-header-display-strategy"
-              @click="openDisplayStrategyDialogForCurrentDirectory"
-            >
-              展示策略
-            </button>
             <VfsActionMenu
               :entity="null"
               mode="global-create"
+              :include-display-strategy="isNonRootDirectory"
               @global-action-selected="handleGlobalAction"
             />
           </template>

@@ -30,9 +30,11 @@ const props = withDefaults(
   defineProps<{
     entity: VfsManagerEntity | null
     mode?: VfsActionMenuMode
+    includeDisplayStrategy?: boolean
   }>(),
   {
     mode: 'combined',
+    includeDisplayStrategy: false,
   },
 )
 const emits = defineEmits<{
@@ -55,9 +57,13 @@ const panelFixedStyle = ref<Record<string, string>>({})
 let menuInteractionAbort: AbortController | null = null
 
 const entityActions = computed(() => getVisibleActions(props.entity))
-const globalCreateActions: VfsGlobalAction[] = ['create-directory', 'create-file']
+const globalCreateActions = computed<VfsGlobalAction[]>(() => {
+  const actions: VfsGlobalAction[] = ['create-directory', 'create-file']
+  if (props.includeDisplayStrategy) actions.push('apply-strategy')
+  return actions
+})
 
-const globalActions = computed(() => (props.mode === 'entity-actions' ? [] : globalCreateActions))
+const globalActions = computed(() => (props.mode === 'entity-actions' ? [] : globalCreateActions.value))
 const actions = computed(() => (props.mode === 'global-create' ? [] : entityActions.value))
 
 const isEntityActions = computed(() => props.mode === 'entity-actions')
@@ -87,6 +93,7 @@ const ACTION_LABELS: Record<VfsEntityAction, string> = {
 const GLOBAL_ACTION_LABELS: Record<VfsGlobalAction, string> = {
   'create-directory': '新建目录',
   'create-file': '新建文件',
+  'apply-strategy': '展示策略',
 }
 
 function getPopupScopeRoot(details: HTMLElement): HTMLElement | null {

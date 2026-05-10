@@ -102,6 +102,18 @@ async function triggerEntityAction(wrapper: ReturnType<typeof mount>, action: st
   await flushActionMenuDom()
 }
 
+async function triggerHeaderAction(wrapper: ReturnType<typeof mount>, action: string): Promise<void> {
+  const menu = getHeaderActionMenu(wrapper)
+  await menu.get('summary.vfs-action-menu__toggle').trigger('click')
+  await flushActionMenuDom()
+  const actionButton = menu.find(`[data-action="${action}"]`)
+  if (!actionButton.exists()) {
+    throw new Error(`header action "${action}" not found`)
+  }
+  await actionButton.trigger('click')
+  await flushActionMenuDom()
+}
+
 async function selectDocsFile(wrapper: ReturnType<typeof mount>) {
   const list = wrapper.get('[data-testid="vfs-file-manager-list"]')
   const candidates = list.findAll('button.vfs-fm-item')
@@ -848,17 +860,22 @@ describe('vfs ui cr loop fixes', () => {
     await menu.get('summary.vfs-action-menu__toggle').trigger('click')
     expect(menu.text()).toContain('新建目录')
     expect(menu.text()).toContain('新建文件')
+    expect(menu.text()).not.toContain('展示策略')
     expect(menu.text()).not.toContain('查看')
     expect(menu.text()).not.toContain('编辑')
   })
 
   it('shows display-strategy only in non-root header and removes it from row menu', async () => {
     const wrapper = mountTracked(VfsMainScreen)
-    expect(wrapper.find('[data-testid="vfs-header-display-strategy"]').exists()).toBe(false)
+    const headerMenu = getHeaderActionMenu(wrapper)
+    await headerMenu.get('summary.vfs-action-menu__toggle').trigger('click')
+    expect(headerMenu.find('[data-action="apply-strategy"]').exists()).toBe(false)
+    await flushActionMenuDom()
 
     await selectDocsFile(wrapper)
-    const headerButton = wrapper.find('[data-testid="vfs-header-display-strategy"]')
-    expect(headerButton.exists()).toBe(true)
+    await headerMenu.get('summary.vfs-action-menu__toggle').trigger('click')
+    expect(headerMenu.find('[data-action="apply-strategy"]').exists()).toBe(true)
+    await flushActionMenuDom()
 
     const row = wrapper.findAll('li.vfs-fm-row').find((candidate) => candidate.text().includes('docs.md'))
     if (!row) throw new Error('docs.md row not found')
@@ -871,7 +888,7 @@ describe('vfs ui cr loop fixes', () => {
   it('renders strategy dialog controls with spec field types', async () => {
     const wrapper = mountTracked(VfsMainScreen)
     await selectDocsFile(wrapper)
-    await wrapper.get('[data-testid="vfs-header-display-strategy"]').trigger('click')
+    await triggerHeaderAction(wrapper, 'apply-strategy')
     await nextTick()
 
     expect(wrapper.get('[data-testid="vfs-action-input-sortField"]').element.tagName).toBe('SELECT')
@@ -884,7 +901,7 @@ describe('vfs ui cr loop fixes', () => {
   it('clamps strategy numeric values and persists to chat scope only', async () => {
     const wrapper = mountTracked(VfsMainScreen)
     await selectDocsFile(wrapper)
-    await wrapper.get('[data-testid="vfs-header-display-strategy"]').trigger('click')
+    await triggerHeaderAction(wrapper, 'apply-strategy')
     await nextTick()
 
     await wrapper.findComponent(VfsActionInputDialog).vm.$emit('confirm', {
@@ -912,7 +929,7 @@ describe('vfs ui cr loop fixes', () => {
     const templateWrapper = mountTracked(VfsMainScreen, { props: { scope: 'template' } })
     await templateWrapper.findComponent(VfsFileManagerPanel).vm.$emit('opened', '/docs')
     await nextTick()
-    await templateWrapper.get('[data-testid="vfs-header-display-strategy"]').trigger('click')
+    await triggerHeaderAction(templateWrapper, 'apply-strategy')
     await nextTick()
     await templateWrapper.findComponent(VfsActionInputDialog).vm.$emit('confirm', {
       sortField: 'ctime',

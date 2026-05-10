@@ -119,7 +119,7 @@ function handleKeydown(event: KeyboardEvent): void {
             v-else-if="field.type === 'select'"
             :ref="(el) => setFirstInputRef(el, idx)"
             v-model="localValues[field.key]"
-            class="text_pole"
+            class="text_pole vfs-action-input-dialog__select"
             :data-testid="`vfs-action-input-${field.key}`"
           >
             <option v-for="opt in field.options ?? []" :key="`${field.key}-${opt.value}`" :value="opt.value">
@@ -179,5 +179,23 @@ function handleKeydown(event: KeyboardEvent): void {
   grid-template-columns: 1fr 92px;
   gap: 8px;
   align-items: center;
+}
+
+.vfs-action-input-dialog__select {
+  appearance: none;
+  min-height: 40px;
+  padding-right: 28px;
+  line-height: 1.35;
+  font-size: 1rem;
+}
+
+.vfs-action-input-dialog__select:focus-visible {
+  outline-offset: 1px;
+}
+
+.vfs-action-input-dialog__select option {
+  font-size: 1rem;
+  line-height: 1.4;
+  padding-block: 6px;
 }
 </style>
