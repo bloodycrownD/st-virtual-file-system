@@ -23,7 +23,7 @@ const fetchLogsMock = vi.fn(async () => ({ items: [], total: 0 }))
 let toastrErrorMock: ReturnType<typeof vi.fn>
 
 const mountedWrappers: Array<{ unmount: () => void }> = []
-/** Flush Vue + deferred outside-dismiss binding (`queueMicrotask` when `import.meta.env.MODE === 'test'`). */
+/** Flush Vue updates after opening menus so lifecycle hooks settle before outside-dismiss assertions. */
 async function settleActionMenuOutsideBinding(): Promise<void> {
   await flushPromises()
   await nextTick()
@@ -638,7 +638,7 @@ describe('vfs ui cr loop fixes', () => {
     expect(wrapper.find('textarea.vfs-editor').exists()).toBe(true)
   })
 
-  it('anchors row action menu as fixed overlay-right-bottom without parent layout shift', async () => {
+  it('positions row action menu like header (absolute list) without shifting parent scroll', async () => {
     const wrapper = mountTracked(VfsMainScreen)
     const rowMenu = wrapper.findAllComponents(VfsActionMenu).find((menu) => menu.props('mode') === 'entity-actions')
     if (!rowMenu) throw new Error('entity row VfsActionMenu not found')
@@ -648,10 +648,13 @@ describe('vfs ui cr loop fixes', () => {
     const listScrollBefore = (list.element as HTMLElement).scrollTop
 
     await rowMenu.get('summary.vfs-action-menu__toggle').trigger('click')
+    await flushPromises()
+    await nextTick()
 
     const listScrollAfter = (list.element as HTMLElement).scrollTop
     const menuList = rowMenu.get('ul.vfs-action-menu__list')
-    expect(menuList.classes()).toContain('vfs-action-menu__list--entity-overlay')
+    expect(menuList.classes()).toContain('vfs-action-menu__list')
+    expect(menuList.attributes('style')).toBeUndefined()
     expect(listScrollAfter).toBe(listScrollBefore)
   })
 
@@ -685,7 +688,7 @@ describe('vfs ui cr loop fixes', () => {
     { label: 'chat-mobile', scope: undefined, width: 375 },
     { label: 'template-desktop', scope: 'template' as const, width: 1366 },
     { label: 'template-mobile', scope: 'template' as const, width: 375 },
-  ])('keeps row menu overlay stable without parent scroll shift in $label', async ({ scope, width }) => {
+  ])('keeps row menu dropdown stable without parent scroll shift in $label', async ({ scope, width }) => {
     window.innerWidth = width
     const wrapper = mountTracked(VfsMainScreen, scope ? { props: { scope } } : undefined)
     window.dispatchEvent(new Event('resize'))
@@ -699,10 +702,13 @@ describe('vfs ui cr loop fixes', () => {
     const listScrollBefore = (list.element as HTMLElement).scrollTop
 
     await rowMenu.get('summary.vfs-action-menu__toggle').trigger('click')
+    await flushPromises()
+    await nextTick()
     const menuList = rowMenu.get('ul.vfs-action-menu__list')
     const listScrollAfter = (list.element as HTMLElement).scrollTop
 
-    expect(menuList.classes()).toContain('vfs-action-menu__list--entity-overlay')
+    expect(menuList.classes()).toContain('vfs-action-menu__list')
+    expect(menuList.attributes('style')).toBeUndefined()
     expect(listScrollAfter).toBe(listScrollBefore)
   })
 
