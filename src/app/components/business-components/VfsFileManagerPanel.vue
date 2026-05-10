@@ -175,8 +175,6 @@ function toManagerEntity(entry: VfsBrowserEntity): VfsManagerEntity {
   display: flex;
   align-items: stretch;
   gap: 6px;
-  /* WHY: row action dropdown uses absolute positioning; allow it to paint past the scrollport clip. */
-  overflow: visible;
 }
 
 .vfs-fm-item {
@@ -198,7 +196,6 @@ function toManagerEntity(entry: VfsBrowserEntity): VfsManagerEntity {
   flex: 0 0 auto;
   position: relative;
   z-index: 2;
-  overflow: visible;
 }
 
 .vfs-fm-kind {

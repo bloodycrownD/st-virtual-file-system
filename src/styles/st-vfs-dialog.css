@@ -53,6 +53,22 @@
   min-height: 0;
 }
 
+/*
+  Host node for Vue Teleport: row entity-actions menus mount here so panels are not clipped by
+  `ul.vfs-fm-list` overflow and do not affect list scroll metrics.
+*/
+#st-vfs-popup #st-vfs-action-menu-teleport {
+  position: absolute;
+  inset: 0;
+  /* Override `#st-vfs-popup.st-vfs-popup * { pointer-events: auto !important }` so clicks pass through to list/header. */
+  pointer-events: none !important;
+  z-index: 80;
+}
+
+#st-vfs-popup #st-vfs-action-menu-teleport > * {
+  pointer-events: auto !important;
+}
+
 /* Hard guard: if host CSS disables interactions on dialogs, re-enable within popup only. */
 #st-vfs-popup.st-vfs-popup * {
   pointer-events: auto !important;

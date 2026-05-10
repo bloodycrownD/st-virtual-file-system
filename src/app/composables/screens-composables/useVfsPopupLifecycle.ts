@@ -8,6 +8,8 @@ import {
 
 const POPUP_ID = 'st-vfs-popup'
 const POPUP_APP_ID = 'st-vfs-popup-app'
+/** Dedicated Teleport target for row `entity-actions` dropdown panels (outside scrollports). */
+const POPUP_ACTION_MENU_TELEPORT_ID = 'st-vfs-action-menu-teleport'
 const POPUP_CLASS = 'st-vfs-popup'
 type VfsPopupScope = 'chat' | 'template'
 interface VfsPopupOpenOptions {
@@ -127,7 +129,10 @@ export function useVfsPopupLifecycle() {
     const appRoot = document.createElement('div')
     appRoot.id = POPUP_APP_ID
     appRoot.className = 'st-vfs-popup__app'
-    popup.append(header, appRoot)
+    const actionMenuTeleportHost = document.createElement('div')
+    actionMenuTeleportHost.id = POPUP_ACTION_MENU_TELEPORT_ID
+    actionMenuTeleportHost.className = 'st-vfs-popup__action-menu-teleport'
+    popup.append(header, appRoot, actionMenuTeleportHost)
     popup.addEventListener('close', onClose)
     popup.addEventListener('cancel', onCancel)
     document.body.appendChild(popup)

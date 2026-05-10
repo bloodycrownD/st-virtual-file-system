@@ -1,3 +1,17 @@
+<!--
+  Row vs header geometry:
+  - Header paths (`combined`, `global-create`) sit outside `ul.vfs-fm-list` overflow scrollports, so the menu
+    panel can stay `position:absolute` under `details` without clipping or scrollmetric side-effects.
+  - Row `entity-actions` shares list scroll ancestors; its panel is Teleported to `#st-vfs-action-menu-teleport`
+    (fallback: `#st-vfs-popup-app`, then `document.body`) and positioned with `fixed` coords from
+    `getBoundingClientRect(summary)` — overlay-right-bottom: right edges align via `translateX(-100%)`,
+    vertical gap below the toggle (`FR-1`/`FR-2`).
+
+  Invariants:
+  - Single-open inside the popup: `closePeerMenus` closes peer `details.vfs-action-menu[open]`.
+  - Outside dismiss uses `document` capture `click` plus one `AbortController`; listeners attach synchronously on
+    open (no deferral used only to stage dismiss). Row panels outside `details` count as “inside” for dismiss.
+-->
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, ref } from 'vue'
 import {
@@ -26,7 +40,14 @@ const emits = defineEmits<{
 }>()
 
 const detailsRef = ref<HTMLDetailsElement | null>(null)
-/** AbortController removes the capture-phase outside-dismiss listener when the menu closes or unmounts. */
+const toggleRef = ref<HTMLElement | null>(null)
+const panelRef = ref<HTMLUListElement | null>(null)
+/** Pixel gap between toggle bottom edge and panel top (matches prior absolute `top: calc(100% + 8px)`). */
+const ROW_PANEL_GAP_PX = 8
+
+const panelFixedStyle = ref<Record<string, string>>({})
+
+/** AbortController removes capture-phase listeners when the menu closes or unmounts. */
 let menuInteractionAbort: AbortController | null = null
 
 const entityActions = computed(() => getVisibleActions(props.entity))
@@ -34,6 +55,15 @@ const globalCreateActions: VfsGlobalAction[] = ['create-directory', 'create-file
 
 const globalActions = computed(() => (props.mode === 'entity-actions' ? [] : globalCreateActions))
 const actions = computed(() => (props.mode === 'global-create' ? [] : entityActions.value))
+
+const isEntityActions = computed(() => props.mode === 'entity-actions')
+
+const teleportTarget = computed((): string => {
+  if (typeof document === 'undefined') return 'body'
+  if (document.querySelector('#st-vfs-action-menu-teleport')) return '#st-vfs-action-menu-teleport'
+  if (document.querySelector('#st-vfs-popup-app')) return '#st-vfs-popup-app'
+  return 'body'
+})
 
 // WHY: "more actions" must stay usable even without selection so users can trigger create actions globally.
 const isDisabled = computed(() => globalActions.value.length === 0 && actions.value.length === 0)
@@ -90,39 +120,81 @@ function onToggleClick(event: MouseEvent): void {
   closePeerMenus(details)
   details.setAttribute('open', '')
   // WHY: jsdom / some hosts omit `toggle` for programmatic `open`; always sync here.
-  void syncMenuLifecycle(details)
+  syncMenuLifecycle(details)
 }
 
 function teardownMenuInteraction(): void {
   menuInteractionAbort?.abort()
   menuInteractionAbort = null
+  panelFixedStyle.value = {}
 }
 
-async function onOpenStateChanged(event: Event): Promise<void> {
-  const details = event.currentTarget as HTMLDetailsElement | null
-  if (!details) return
-  await syncMenuLifecycle(details)
+function updateFixedPanelPosition(): void {
+  if (!isEntityActions.value || !detailsRef.value?.open) return
+  const toggle = toggleRef.value
+  const panel = panelRef.value
+  if (!toggle || !panel) return
+  const r = toggle.getBoundingClientRect()
+  panelFixedStyle.value = {
+    position: 'fixed',
+    top: `${Math.round(r.bottom + ROW_PANEL_GAP_PX)}px`,
+    left: `${Math.round(r.right)}px`,
+    transform: 'translateX(-100%)',
+    zIndex: '90',
+  }
 }
 
-async function syncMenuLifecycle(details: HTMLDetailsElement): Promise<void> {
+function attachScrollContainerReposition(handler: () => void, signal: AbortSignal): void {
+  const toggle = toggleRef.value
+  if (!toggle) return
+  for (let cur: HTMLElement | null = toggle; cur; cur = cur.parentElement) {
+    const { overflowY, overflowX } = window.getComputedStyle(cur)
+    if (
+      overflowY === 'auto' ||
+      overflowY === 'scroll' ||
+      overflowX === 'auto' ||
+      overflowX === 'scroll'
+    ) {
+      cur.addEventListener('scroll', handler, { capture: true, signal })
+    }
+  }
+}
+
+function syncMenuLifecycle(details: HTMLDetailsElement): void {
   teardownMenuInteraction()
   if (!details.open) return
   closePeerMenus(details)
-  await nextTick()
-  if (!detailsRef.value?.open || detailsRef.value !== details) return
 
   const controller = new AbortController()
   menuInteractionAbort = controller
+  const { signal } = controller
 
   const outsideDismiss = (clickEvent: MouseEvent): void => {
     if (!detailsRef.value?.open) return
-    if (details.contains(clickEvent.target as Node | null)) return
+    const target = clickEvent.target as Node | null
+    if (!target) return
+    if (details.contains(target)) return
+    if (isEntityActions.value && panelRef.value?.contains(target)) return
     details.removeAttribute('open')
     teardownMenuInteraction()
   }
 
-  // WHY: register immediately on open (same path as header); deferrals strand teardown vs outside clicks in jsdom and real hosts.
-  document.addEventListener('click', outsideDismiss, { capture: true, signal: controller.signal })
+  document.addEventListener('click', outsideDismiss, { capture: true, signal })
+
+  if (isEntityActions.value) {
+    const reposition = (): void => {
+      updateFixedPanelPosition()
+    }
+    window.addEventListener('resize', reposition, { signal })
+    attachScrollContainerReposition(reposition, signal)
+    void nextTick(() => reposition())
+  }
+}
+
+function onOpenStateChanged(event: Event): void {
+  const details = event.currentTarget as HTMLDetailsElement | null
+  if (!details) return
+  syncMenuLifecycle(details)
 }
 
 function triggerAction(action: VfsEntityAction): void {
@@ -152,6 +224,7 @@ onBeforeUnmount(() => {
     @toggle="onOpenStateChanged"
   >
     <summary
+      ref="toggleRef"
       class="vfs-action-menu__toggle"
       data-testid="vfs-action-menu-toggle"
       :aria-disabled="isDisabled"
@@ -161,36 +234,45 @@ onBeforeUnmount(() => {
     >
       <i :class="ACTION_MENU_ICON" aria-hidden="true"></i>
     </summary>
-    <ul class="vfs-action-menu__list" role="menu">
-      <li v-for="action in globalActions" :key="action" role="none">
-        <button
-          type="button"
-          class="menu_button"
-          role="menuitem"
-          :data-action="action"
-          @click="triggerGlobalAction(action)"
-        >
-          {{ GLOBAL_ACTION_LABELS[action] }}
-        </button>
-      </li>
-      <li
-        v-if="globalActions.length > 0 && actions.length > 0"
-        class="vfs-action-menu__separator"
-        role="separator"
-        aria-hidden="true"
-      ></li>
-      <li v-for="action in actions" :key="action" role="none">
-        <button
-          type="button"
-          class="menu_button"
-          role="menuitem"
-          :data-action="action"
-          @click="triggerAction(action)"
-        >
-          {{ ACTION_LABELS[action] }}
-        </button>
-      </li>
-    </ul>
+    <Teleport :to="teleportTarget" :disabled="!isEntityActions">
+      <ul
+        ref="panelRef"
+        class="vfs-action-menu__list"
+        :class="{ 'vfs-action-menu__list--entity-fixed': isEntityActions }"
+        :data-testid="isEntityActions ? 'vfs-entity-action-menu-panel' : undefined"
+        role="menu"
+        :style="isEntityActions ? panelFixedStyle : undefined"
+      >
+        <li v-for="action in globalActions" :key="action" role="none">
+          <button
+            type="button"
+            class="menu_button"
+            role="menuitem"
+            :data-action="action"
+            @click="triggerGlobalAction(action)"
+          >
+            {{ GLOBAL_ACTION_LABELS[action] }}
+          </button>
+        </li>
+        <li
+          v-if="globalActions.length > 0 && actions.length > 0"
+          class="vfs-action-menu__separator"
+          role="separator"
+          aria-hidden="true"
+        ></li>
+        <li v-for="action in actions" :key="action" role="none">
+          <button
+            type="button"
+            class="menu_button"
+            role="menuitem"
+            :data-action="action"
+            @click="triggerAction(action)"
+          >
+            {{ ACTION_LABELS[action] }}
+          </button>
+        </li>
+      </ul>
+    </Teleport>
   </details>
 </template>
 
@@ -222,7 +304,7 @@ onBeforeUnmount(() => {
 }
 
 .vfs-action-menu__list {
-  /* Intent: render as an overlay so opening it doesn't change dialog layout/scroll. */
+  /* Intent: render as an overlay so opening it doesn't change dialog layout/scroll (non-row modes stay absolute). */
   margin: 0;
   padding: 8px;
   list-style: none;
@@ -237,6 +319,12 @@ onBeforeUnmount(() => {
   max-height: min(50vh, 360px);
   overflow: auto;
   box-shadow: 0 10px 24px rgba(0, 0, 0, 0.45);
+}
+
+.vfs-action-menu__list--entity-fixed {
+  /* Top/left/transform/z-index come from `panelFixedStyle` (viewport anchored). */
+  top: unset;
+  right: unset;
 }
 
 .vfs-action-menu__separator {
