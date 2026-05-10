@@ -22,9 +22,13 @@ const safeHtml = computed(() => {
 
 <style scoped>
 .vfs-reader {
-  line-height: 1.65;
+  line-height: 1.72;
   font-size: 14px;
-  max-width: 78ch;
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .vfs-reader :deep(h1),
@@ -36,7 +40,13 @@ const safeHtml = computed(() => {
 }
 
 .vfs-reader :deep(p) {
-  margin: 10px 0;
+  margin: 12px 0;
+}
+
+.vfs-reader :deep(ul),
+.vfs-reader :deep(ol) {
+  margin: 12px 0;
+  padding-left: 1.4em;
 }
 
 .vfs-reader :deep(pre) {

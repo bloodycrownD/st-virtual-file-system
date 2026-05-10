@@ -529,6 +529,19 @@ const currentViewerFileTitle = computed(() => {
   const node = getNodeByPath(currentSnapshot.value, path)
   return node?.name ?? path.split('/').at(-1) ?? path
 })
+const currentViewerFileNode = computed(() => {
+  const path = activeContextPath.value
+  if (!path) return null
+  const node = getNodeByPath(currentSnapshot.value, path)
+  if (!node || node.type !== 'file') return null
+  return node
+})
+function formatShortDateTime(timestamp?: number): string {
+  if (typeof timestamp !== 'number' || !Number.isFinite(timestamp)) return '—'
+  return new Intl.DateTimeFormat(undefined, { dateStyle: 'short', timeStyle: 'short' }).format(timestamp)
+}
+const currentViewerCreatedAtText = computed(() => formatShortDateTime(currentViewerFileNode.value?.ctime))
+const currentViewerUpdatedAtText = computed(() => formatShortDateTime(currentViewerFileNode.value?.mtime))
 const canGoPrevSlideshowPage = computed(() => viewerIndex.value > 0)
 const canGoNextSlideshowPage = computed(() => viewerIndex.value < viewerFilePaths.value.length - 1)
 // WHY: list stage is intentionally single-pane across desktop/mobile to maximize file-manager workspace.
@@ -1130,26 +1143,37 @@ async function handleEditorSaveRequested(): Promise<void> {
               </button>
             </div>
           </header>
-          <ReaderScreen v-if="mode === 'reader'" :key="`reader-${viewRefreshToken}`" :html="readerHtml" />
-          <div v-else-if="mode === 'editor'" class="vfs-editor-stage">
-            <EditorScreen
-              :key="`editor-${viewRefreshToken}`"
-              v-model="editorContent"
-              v-model:preview-mode="editorPreviewMode"
-              :history-records="editorHistoryRecords"
-              :save-in-progress="saveInProgress"
-              :rollback-in-progress="rollbackInProgress"
-              :show-history-controls="!isTemplateScope"
-              :embed-toolbar="false"
-              @update:model-value="isDirty = true"
-              @manual-rollback-requested="handleEditorManualRollback"
+          <section class="vfs-preview-content-frame" data-testid="vfs-preview-content-frame">
+            <ReaderScreen v-if="mode === 'reader'" :key="`reader-${viewRefreshToken}`" :html="readerHtml" />
+            <div v-else-if="mode === 'editor'" class="vfs-editor-stage">
+              <EditorScreen
+                :key="`editor-${viewRefreshToken}`"
+                v-model="editorContent"
+                v-model:preview-mode="editorPreviewMode"
+                :history-records="editorHistoryRecords"
+                :save-in-progress="saveInProgress"
+                :rollback-in-progress="rollbackInProgress"
+                :show-history-controls="!isTemplateScope"
+                :embed-toolbar="false"
+                @update:model-value="isDirty = true"
+                @manual-rollback-requested="handleEditorManualRollback"
+              />
+            </div>
+            <SlideshowScreen
+              v-else-if="mode === 'slideshow'"
+              :pages="slideshowPages"
+              :page-index="viewerIndex"
             />
-          </div>
-          <SlideshowScreen
-            v-else-if="mode === 'slideshow'"
-            :pages="slideshowPages"
-            :page-index="viewerIndex"
-          />
+            <footer
+              v-if="currentViewerFileNode"
+              class="vfs-preview-meta"
+              data-testid="vfs-preview-meta"
+              :title="`创建: ${currentViewerCreatedAtText} | 更新: ${currentViewerUpdatedAtText}`"
+            >
+              <span>创建: {{ currentViewerCreatedAtText }}</span>
+              <span>更新: {{ currentViewerUpdatedAtText }}</span>
+            </footer>
+          </section>
         </section>
       </div>
     </div>
@@ -1250,6 +1274,19 @@ async function handleEditorSaveRequested(): Promise<void> {
   min-width: 0;
 }
 
+.vfs-preview-content-frame {
+  /* WHY: keep all preview modes inside one shared visual container while preserving existing mode switching behavior. */
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.14);
+}
+
 .vfs-editor-stage {
   /* WHY: stabilize editor flex growth across component boundaries in both desktop/mobile preview layouts. */
   display: flex;
@@ -1280,6 +1317,21 @@ async function handleEditorSaveRequested(): Promise<void> {
   text-align: center;
   pointer-events: none;
   opacity: 0.92;
+  font-weight: 700;
+  font-size: 1.08rem;
+  line-height: 1.2;
+}
+
+.vfs-preview-meta {
+  margin-top: 8px;
+  align-self: flex-end;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  line-height: 1.3;
+  opacity: 0.72;
+  white-space: nowrap;
 }
 
 .vfs-chat-actions {

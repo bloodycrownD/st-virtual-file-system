@@ -10,6 +10,7 @@ import VfsFileManagerPanel from '@/app/components/business-components/VfsFileMan
 import VfsHistoryScreen from '@/app/screens/business-screens/VfsHistoryScreen.vue'
 import VfsMainScreen from '@/app/screens/business-screens/VfsMainScreen.vue'
 import EditorScreen from '@/app/screens/pure-screens/EditorScreen.vue'
+import ReaderScreen from '@/app/screens/pure-screens/ReaderScreen.vue'
 import VfsHistoryPanel from '@/app/components/business-components/VfsHistoryPanel.vue'
 import { createVfsCommitHistoryStore } from '@/app/composables/components-composables/useVfsCommitHistory'
 import { VFS_LOG_REFRESH_AUTO, VFS_POPUP_BEFORE_CLOSE } from '@/app/composables/components-composables/useVfsMessageHooks'
@@ -1069,6 +1070,35 @@ describe('vfs ui cr loop fixes', () => {
     expect(wrapper.get('[data-testid="slideshow-prev-page"]').attributes('title')).toBe('Prev')
     expect(wrapper.get('[data-testid="slideshow-next-page"]').attributes('title')).toBe('Next')
     expect(wrapper.find('.vfs-preview-top-bar [data-testid="editor-save-submit"]').exists()).toBe(true)
+  })
+
+  it('renders preview metadata and typography shell for reader content', async () => {
+    const wrapper = mountTracked(VfsMainScreen)
+    await selectDocsFile(wrapper)
+    await triggerEntityAction(wrapper, 'open', 'docs.md')
+    await wrapper.get('[data-testid="editor-preview-toggle"]').trigger('click')
+    await nextTick()
+
+    const title = wrapper.get('[data-testid="viewer-file-title"]')
+    expect(title.text()).toContain('docs.md')
+    expect(title.classes()).toContain('vfs-preview-file-title')
+
+    const metadata = wrapper.get('[data-testid="vfs-preview-meta"]')
+    expect(metadata.text()).toContain('创建:')
+    expect(metadata.text()).toContain('更新:')
+
+    const frame = wrapper.get('[data-testid="vfs-preview-content-frame"]')
+    expect(frame.classes()).toContain('vfs-preview-content-frame')
+    expect(frame.find('.vfs-editor-screen').exists()).toBe(true)
+
+    const readerWrapper = mountTracked(ReaderScreen, {
+      props: {
+        html: '# Heading\n\nA very long line without spaces '.repeat(8),
+      },
+    })
+    const reader = readerWrapper.get('.vfs-reader')
+    expect(window.getComputedStyle(reader.element).maxWidth).toBe('none')
+    expect(reader.classes()).toContain('vfs-reader')
   })
 
   it('navigates Prev/Next only within current directory files', async () => {
