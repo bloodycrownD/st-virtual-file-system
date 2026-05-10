@@ -46,7 +46,7 @@ const emits = defineEmits<{
 const detailsRef = ref<HTMLDetailsElement | null>(null)
 const toggleRef = ref<HTMLElement | null>(null)
 const panelRef = ref<HTMLUListElement | null>(null)
-/** Entity row panel: kept in lockstep with `details.open` so Teleport content unmounts when closed (see header). */
+/** Menu panel: kept in lockstep with `details.open` so Teleport content unmounts when closed. */
 const isOpen = ref(false)
 /** Pixel gap between toggle bottom edge and panel top (matches prior absolute `top: calc(100% + 8px)`). */
 const ROW_PANEL_GAP_PX = 8
@@ -74,6 +74,15 @@ const teleportTarget = computed((): string => {
   if (document.querySelector('#st-vfs-popup-app')) return '#st-vfs-popup-app'
   return 'body'
 })
+const shouldTeleportToOverlayHost = computed(() => teleportTarget.value === '#st-vfs-action-menu-teleport')
+const isMountedInsideVfsPopup = computed(() => Boolean(detailsRef.value?.closest?.('#st-vfs-popup')))
+// WHY: keep unit tests predictable (no dialog mount) while still preventing scroll/clip inside the real popup.
+const shouldTeleportPanel = computed(
+  () => isEntityActions.value || (shouldTeleportToOverlayHost.value && isMountedInsideVfsPopup.value),
+)
+const shouldUseFixedOverlay = computed(
+  () => isEntityActions.value || (shouldTeleportToOverlayHost.value && isMountedInsideVfsPopup.value),
+)
 
 // WHY: "more actions" must stay usable even without selection so users can trigger create actions globally.
 const isDisabled = computed(() => globalActions.value.length === 0 && actions.value.length === 0)
@@ -141,7 +150,7 @@ function teardownMenuInteraction(): void {
 }
 
 function updateFixedPanelPosition(): void {
-  if (!isEntityActions.value || !detailsRef.value?.open) return
+  if (!shouldUseFixedOverlay.value || !detailsRef.value?.open) return
   const toggle = toggleRef.value
   // WHY: coords come from the trigger only. `panelRef` may be null on the first frame after Teleport
   // commits; gating on it left `panelFixedStyle` empty so scoped `position:absolute` + `top/right:unset`
@@ -187,33 +196,31 @@ function syncMenuLifecycle(details: HTMLDetailsElement): void {
     const target = clickEvent.target as Node | null
     if (!target) return
     if (details.contains(target)) return
-    if (isEntityActions.value && panelRef.value?.contains(target)) return
+    if (panelRef.value?.contains(target)) return
     details.removeAttribute('open')
     // WHY: programmatic close may not emit `toggle` in jsdom / some hosts; keep `isOpen` aligned so Teleport unmounts.
-    if (isEntityActions.value) isOpen.value = false
+    isOpen.value = false
     teardownMenuInteraction()
   }
 
   document.addEventListener('click', outsideDismiss, { capture: true, signal })
 
-  if (isEntityActions.value) {
-    const reposition = (): void => {
-      updateFixedPanelPosition()
-    }
-    window.addEventListener('resize', reposition, { signal })
-    attachScrollContainerReposition(reposition, signal)
-    reposition()
-    void nextTick(() => {
-      reposition()
-      requestAnimationFrame(() => reposition())
-    })
+  const reposition = (): void => {
+    updateFixedPanelPosition()
   }
+  window.addEventListener('resize', reposition, { signal })
+  attachScrollContainerReposition(reposition, signal)
+  reposition()
+  void nextTick(() => {
+    reposition()
+    requestAnimationFrame(() => reposition())
+  })
 }
 
 function onOpenStateChanged(event: Event): void {
   const details = event.currentTarget as HTMLDetailsElement | null
   if (!details) return
-  if (isEntityActions.value) isOpen.value = details.open
+  isOpen.value = details.open
   syncMenuLifecycle(details)
 }
 
@@ -222,14 +229,14 @@ function triggerAction(action: VfsEntityAction): void {
   if (!isActionTriggerable(props.entity, action)) return
   emits('actionSelected', action)
   detailsRef.value?.removeAttribute('open')
-  if (isEntityActions.value) isOpen.value = false
+  isOpen.value = false
   teardownMenuInteraction()
 }
 
 function triggerGlobalAction(action: VfsGlobalAction): void {
   emits('globalActionSelected', action)
   detailsRef.value?.removeAttribute('open')
-  if (isEntityActions.value) isOpen.value = false
+  isOpen.value = false
   teardownMenuInteraction()
 }
 
@@ -256,15 +263,18 @@ onBeforeUnmount(() => {
     >
       <i :class="ACTION_MENU_ICON" aria-hidden="true"></i>
     </summary>
-    <Teleport :to="teleportTarget" :disabled="!isEntityActions">
+    <Teleport :to="teleportTarget" :disabled="!shouldTeleportPanel">
       <ul
-        v-if="!isEntityActions || isOpen"
+        v-if="!shouldTeleportPanel || isOpen"
         ref="panelRef"
         class="vfs-action-menu__list"
-        :class="{ 'vfs-action-menu__list--entity-fixed': isEntityActions }"
+        :class="{
+          'vfs-action-menu__list--entity-fixed': isEntityActions,
+          'vfs-action-menu__list--fixed-overlay': shouldUseFixedOverlay,
+        }"
         :data-testid="isEntityActions ? 'vfs-entity-action-menu-panel' : undefined"
         role="menu"
-        :style="isEntityActions ? panelFixedStyle : undefined"
+        :style="shouldUseFixedOverlay ? panelFixedStyle : undefined"
       >
         <li v-for="action in globalActions" :key="action" role="none">
           <button
@@ -327,7 +337,7 @@ onBeforeUnmount(() => {
 }
 
 .vfs-action-menu__list {
-  /* Intent: render as an overlay so opening it doesn't change dialog layout/scroll (non-row modes stay absolute). */
+  /* Intent: render as an overlay so opening it doesn't change dialog layout/scroll. */
   margin: 0;
   padding: 8px;
   list-style: none;
@@ -347,6 +357,13 @@ onBeforeUnmount(() => {
 .vfs-action-menu__list--entity-fixed {
   /* Viewport-anchored overlay: override base `position:absolute` so an empty `panelFixedStyle` cannot
      fall back to the teleport host's (0,0) absolute box. Top/left/transform/z-index from inline style. */
+  position: fixed;
+  top: unset;
+  right: unset;
+}
+
+.vfs-action-menu__list--fixed-overlay {
+  /* Header/global overlay uses the same fixed positioning strategy as row menus. */
   position: fixed;
   top: unset;
   right: unset;

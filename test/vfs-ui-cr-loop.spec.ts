@@ -73,6 +73,14 @@ function getButtonByText(wrapper: ReturnType<typeof mount>, label: string) {
   return button
 }
 
+function getButtonByAriaLabel(wrapper: ReturnType<typeof mount>, label: string) {
+  const button = wrapper.find(`button[aria-label="${label}"]`)
+  if (!button.exists()) {
+    throw new Error(`button aria-label "${label}" not found`)
+  }
+  return button
+}
+
 function getHeaderActionMenu(wrapper: ReturnType<typeof mount>) {
   const headerActions = wrapper.find('.vfs-fm-action-group')
   if (!headerActions.exists()) {
@@ -296,7 +304,7 @@ describe('vfs ui cr loop fixes', () => {
     const initialVersions = vfsPersistenceStore.getState().chat.chatVfsVersions.length
     const wrapper = mountTracked(VfsMainScreen)
 
-    const overwriteButton = getButtonByText(wrapper, '模板覆盖当前目录')
+    const overwriteButton = getButtonByAriaLabel(wrapper, '覆盖')
     await overwriteButton.trigger('click')
     await wrapper.vm.$nextTick()
     expect(wrapper.findComponent(VfsActionConfirmDialog).exists()).toBe(true)
@@ -311,7 +319,7 @@ describe('vfs ui cr loop fixes', () => {
   it('overwrites chat snapshot and resets chat logs/version history after dialog confirm', async () => {
     const wrapper = mountTracked(VfsMainScreen)
 
-    const overwriteButton = getButtonByText(wrapper, '模板覆盖当前目录')
+    const overwriteButton = getButtonByAriaLabel(wrapper, '覆盖')
     await overwriteButton.trigger('click')
     await wrapper.vm.$nextTick()
     await wrapper.findComponent(VfsActionConfirmDialog).vm.$emit('confirm')

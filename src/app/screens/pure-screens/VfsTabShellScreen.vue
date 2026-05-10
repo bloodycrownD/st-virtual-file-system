@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 
-const ALL_TABS = ['files', 'history', 'logs'] as const
+const ALL_TABS = ['files', 'history', 'logs', 'worktree'] as const
 type VfsTab = (typeof ALL_TABS)[number]
 const activeTab = ref<VfsTab>('files')
 const TAB_LABELS: Record<VfsTab, string> = {
   files: '文件管理',
   history: '提交记录',
   logs: '日志',
+  worktree: '工作树',
 }
 const props = defineProps<{
   tabs?: VfsTab[]
@@ -75,10 +76,15 @@ defineExpose({ forceSwitchTab })
 
 .vfs-tabs {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   overflow-x: auto;
-  padding-bottom: 4px;
+  padding: 6px;
+  padding-bottom: 6px;
   flex: 0 0 auto;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.14);
+  white-space: nowrap;
 }
 
 .vfs-tab-content {
@@ -95,8 +101,24 @@ defineExpose({ forceSwitchTab })
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  background: transparent;
+  opacity: 0.9;
+  transition: background 120ms ease, border-color 120ms ease, opacity 120ms ease;
 }
-.active {
+
+.vfs-tab:hover {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.vfs-tab.active {
+  opacity: 1;
   font-weight: 700;
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.22);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.18);
 }
 </style>

@@ -118,11 +118,13 @@ function handleRowDoubleClick(entry: VfsBrowserEntity): void {
 
 .vfs-fm-header {
   display: flex;
+  flex-wrap: nowrap;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
   margin-bottom: 10px;
   flex: 0 0 auto;
+  min-width: 0;
 }
 
 .vfs-fm-nav-group {
@@ -138,6 +140,11 @@ function handleRowDoubleClick(entry: VfsBrowserEntity): void {
   align-items: center;
   justify-content: flex-end;
   flex: 0 0 auto;
+  gap: 8px;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+  overflow-x: auto;
+  max-width: 55%;
 }
 
 .vfs-fm-icon-button {
@@ -155,6 +162,25 @@ function handleRowDoubleClick(entry: VfsBrowserEntity): void {
 }
 
 .vfs-fm-icon-button i {
+  font-size: 14px;
+  line-height: 1;
+}
+
+::v-slotted(.vfs-fm-icon-button) {
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.2);
+  color: inherit;
+  padding: 0;
+  flex: 0 0 auto;
+}
+
+::v-slotted(.vfs-fm-icon-button i) {
   font-size: 14px;
   line-height: 1;
 }

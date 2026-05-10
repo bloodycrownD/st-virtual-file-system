@@ -29,6 +29,7 @@ import EditorScreen from '@/app/screens/pure-screens/EditorScreen.vue'
 import ReaderScreen from '@/app/screens/pure-screens/ReaderScreen.vue'
 import SlideshowScreen from '@/app/screens/pure-screens/SlideshowScreen.vue'
 import VfsTabShellScreen from '@/app/screens/pure-screens/VfsTabShellScreen.vue'
+import WorkTreeScreen from '@/app/screens/pure-screens/WorkTreeScreen.vue'
 import { useVfsCommitActions } from '@/app/composables/components-composables/useVfsCommitActions'
 import { createVfsHistoryStateMachine } from '@/app/composables/screens-composables/useVfsHistoryStateMachine'
 import { useVfsRollbackAction } from '@/app/composables/components-composables/useVfsRollbackActions'
@@ -40,11 +41,12 @@ import { dirname, normalizePath, ROOT_PATH } from '@/domain/vfs/path-utils'
 import { DeflateContentCodec } from '@/infra/serialization/deflate-codec'
 import { VfsCore } from '@/domain/vfs/vfs-core'
 import { DEFAULT_DIRECTORY_RULE, type DirectoryRule, type WorkTreeConfig } from '@/domain/work-tree/work-tree.types'
+import { renderVirtualWorkTree } from '@/domain/work-tree/work-tree-engine'
 import { mapVfsMutationError, toVfsErrorToast } from '@/app/utils/vfsErrorMapper'
 import { createEmptyVfsSnapshot, serializeVfsSnapshot } from '@/infra/persistence/vfs-snapshot.schema'
 
 type VfsScreenScope = 'chat' | 'template'
-type VfsScreenTab = 'files' | 'history' | 'logs'
+type VfsScreenTab = 'files' | 'history' | 'logs' | 'worktree'
 type ViewerOriginKind = 'file-open' | 'dir-slideshow'
 type ViewerOriginContext = {
   kind: ViewerOriginKind
@@ -63,7 +65,7 @@ const props = withDefaults(
   }>(),
   {
     scope: 'chat',
-    tabs: () => ['files', 'history', 'logs'],
+    tabs: () => ['files', 'history', 'logs', 'worktree'],
   },
 )
 
@@ -134,6 +136,7 @@ function readSnapshotFromStore(): VfsSnapshot {
   return vfsPersistenceStore.getState().chat.chatVfsSnapshot
 }
 const currentSnapshot = ref<VfsSnapshot>(readSnapshotFromStore())
+const renderedWorkTreeText = computed(() => renderVirtualWorkTree(currentSnapshot.value, currentWorkTree.value))
 
 const logRefreshToken = ref(0)
 const logAutoRefreshPending = ref(false)
@@ -433,7 +436,7 @@ function onLogRefreshAutoRequested(): void {
   logAutoRefreshPending.value = true
 }
 
-function handleTabChanged(nextTab: 'files' | 'history' | 'logs'): void {
+function handleTabChanged(nextTab: VfsScreenTab): void {
   activeTab.value = nextTab
   if (nextTab === 'logs' && logAutoRefreshPending.value) {
     logAutoRefreshPending.value = false
@@ -973,7 +976,7 @@ function handleRowEntityActionRequested(payload: { entity: VfsManagerEntity; act
   handleEntityAction(payload.action, payload.entity)
 }
 
-function guardTabChange(nextTab: 'files' | 'history' | 'logs'): boolean {
+function guardTabChange(nextTab: VfsScreenTab): boolean {
   if (nextTab === 'files' || mode.value !== 'editor' || !isDirty.value) return true
   openUnsavedEditorLeave({ kind: 'tab', next: nextTab })
   return false
@@ -1048,9 +1051,6 @@ async function handleEditorSaveRequested(): Promise<void> {
     @tab-changed="handleTabChanged"
     v-slot="{ activeTab: slotTab }"
   >
-    <div v-if="!isTemplateScope && slotTab === 'files'" class="vfs-chat-actions">
-      <button type="button" class="menu_button" @click="overwriteCurrentChatWithTemplate">模板覆盖当前目录</button>
-    </div>
     <div
       v-if="slotTab === 'files'"
       data-testid="vfs-main-layout"
@@ -1068,6 +1068,16 @@ async function handleEditorSaveRequested(): Promise<void> {
           @entity-action-requested="handleRowEntityActionRequested"
         >
           <template #actions>
+            <button
+              v-if="!isTemplateScope"
+              type="button"
+              class="vfs-fm-icon-button"
+              title="覆盖"
+              aria-label="覆盖"
+              @click="overwriteCurrentChatWithTemplate"
+            >
+              <i class="fa-solid fa-download" aria-hidden="true" />
+            </button>
             <VfsActionMenu
               :entity="null"
               mode="global-create"
@@ -1199,6 +1209,7 @@ async function handleEditorSaveRequested(): Promise<void> {
     </div>
 
     <VfsHistoryScreen v-else-if="slotTab === 'history'" :key="`history-${viewRefreshToken}`" />
+    <WorkTreeScreen v-else-if="slotTab === 'worktree'" :text="renderedWorkTreeText" />
     <VfsLogPanel v-else :refresh-token="logRefreshToken" />
     <VfsCreateEntityModal
       :open="createModalOpen"
@@ -1366,9 +1377,5 @@ async function handleEditorSaveRequested(): Promise<void> {
 .vfs-preview-meta--flow {
   margin-top: 8px;
   margin-left: auto;
-}
-
-.vfs-chat-actions {
-  margin-bottom: 8px;
 }
 </style>

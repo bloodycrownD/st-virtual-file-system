@@ -81,7 +81,7 @@ watch(
 
 <template>
   <section class="vfs-log-panel">
-    <header>
+    <header class="vfs-log-panel-header">
       <button type="button" :disabled="isLoading" @click="requestManualRefresh">Refresh Logs</button>
       <span>{{ status }}</span>
       <span>Page {{ pagination.currentPage }} / {{ pagination.totalPages }}</span>
@@ -101,3 +101,15 @@ watch(
     </footer>
   </section>
 </template>
+
+<style scoped>
+.vfs-log-panel-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+  overflow-x: auto;
+  margin-bottom: 8px;
+}
+</style>
