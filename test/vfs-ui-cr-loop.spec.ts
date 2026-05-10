@@ -39,7 +39,7 @@ async function flushActionMenuDom(): Promise<void> {
 
 async function ensureEditorSourceMode(wrapper: ReturnType<typeof mount>): Promise<void> {
   if (wrapper.find('textarea.vfs-editor').exists()) return
-  await wrapper.get('[data-testid="editor-preview-toggle"]').trigger('click')
+  await wrapper.get('[data-testid="viewer-edit-mode"]').trigger('click')
   await nextTick()
 }
 
@@ -610,7 +610,7 @@ describe('vfs ui cr loop fixes', () => {
     await selectDocsFile(wrapper)
     await triggerEntityAction(wrapper, 'open', 'docs.md')
     expect(wrapper.find('.vfs-editor-screen').exists()).toBe(true)
-    expect(wrapper.get('[data-testid="editor-preview-toggle"]').attributes('title')).toBe('查看源码')
+    expect(wrapper.get('[data-testid="editor-preview-toggle"]').attributes('title')).toBe('预览')
     expect(wrapper.find('textarea.vfs-editor').exists()).toBe(false)
   })
 
@@ -869,7 +869,7 @@ describe('vfs ui cr loop fixes', () => {
     await nextTick()
 
     expect(wrapper.find('.vfs-editor-screen').exists()).toBe(true)
-    expect(wrapper.get('[data-testid="editor-preview-toggle"]').attributes('title')).toBe('查看源码')
+    expect(wrapper.get('[data-testid="editor-preview-toggle"]').attributes('title')).toBe('预览')
   })
 
   it('loads correct file content when opening different files (no shared editor buffer)', async () => {
@@ -886,6 +886,52 @@ describe('vfs ui cr loop fixes', () => {
     await triggerEntityAction(wrapper, 'open', 'other.md')
     await ensureEditorSourceMode(wrapper)
     expect((wrapper.get('textarea.vfs-editor').element as HTMLTextAreaElement).value).toBe('# b')
+  })
+
+  it('shows unified viewer toolbar actions for file open entry', async () => {
+    const wrapper = mountTracked(VfsMainScreen)
+    await selectDocsFile(wrapper)
+    await triggerEntityAction(wrapper, 'open', 'docs.md')
+
+    expect(wrapper.get('[data-testid="vfs-preview-back"]').attributes('title')).toBe('返回')
+    expect(wrapper.get('[data-testid="viewer-edit-mode"]').attributes('title')).toBe('编辑')
+    expect(wrapper.get('[data-testid="editor-preview-toggle"]').attributes('title')).toBe('预览')
+    expect(wrapper.get('[data-testid="slideshow-prev-page"]').attributes('title')).toBe('Prev')
+    expect(wrapper.get('[data-testid="slideshow-next-page"]').attributes('title')).toBe('Next')
+  })
+
+  it('navigates Prev/Next only within current directory files', async () => {
+    const wrapper = mountTracked(VfsMainScreen)
+    await selectDocsFile(wrapper)
+    await triggerEntityAction(wrapper, 'open', 'docs.md')
+
+    expect(wrapper.get('[data-testid="slideshow-prev-page"]').attributes('disabled')).toBeDefined()
+    expect(wrapper.get('[data-testid="slideshow-next-page"]').attributes('disabled')).toBeUndefined()
+    expect(wrapper.text()).toContain('/docs/docs.md')
+
+    await wrapper.get('[data-testid="slideshow-next-page"]').trigger('click')
+    await nextTick()
+    await ensureEditorSourceMode(wrapper)
+    expect((wrapper.get('textarea.vfs-editor').element as HTMLTextAreaElement).value).toBe('# b')
+    expect(wrapper.get('[data-testid="slideshow-next-page"]').attributes('disabled')).toBeDefined()
+
+    await wrapper.get('[data-testid="slideshow-prev-page"]').trigger('click')
+    await nextTick()
+    await ensureEditorSourceMode(wrapper)
+    expect((wrapper.get('textarea.vfs-editor').element as HTMLTextAreaElement).value).toBe('# a')
+  })
+
+  it('restores directory origin context when back from open-slideshow entry', async () => {
+    const wrapper = mountTracked(VfsMainScreen)
+    await triggerEntityAction(wrapper, 'open-slideshow', 'docs')
+    expect(wrapper.get('[data-testid="vfs-preview-stack"]').exists()).toBe(true)
+
+    await wrapper.get('[data-testid="vfs-preview-back"]').trigger('click')
+    await nextTick()
+
+    expect(wrapper.get('[data-testid="vfs-list-only-layout"]').exists()).toBe(true)
+    expect(wrapper.text()).toContain('/')
+    expect(wrapper.text()).toContain('docs')
   })
 
   it('applies row menu entity actions without relying on list selection state', async () => {

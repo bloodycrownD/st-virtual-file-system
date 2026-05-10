@@ -45,6 +45,12 @@ import { createEmptyVfsSnapshot, serializeVfsSnapshot } from '@/infra/persistenc
 
 type VfsScreenScope = 'chat' | 'template'
 type VfsScreenTab = 'files' | 'history' | 'logs'
+type ViewerOriginKind = 'file-open' | 'dir-slideshow'
+type ViewerOriginContext = {
+  kind: ViewerOriginKind
+  originPath: string
+  originDirectoryPath: string
+}
 type PendingEditorLeave =
   | { kind: 'mode'; next: 'list' | 'reader' | 'editor' | 'slideshow' }
   | { kind: 'tab'; next: VfsScreenTab }
@@ -77,8 +83,10 @@ const rollbackInProgress = ref(false)
 const currentDirectoryPath = ref<string>(ROOT_PATH)
 /** Active document / preview target — not list selection (list rows no longer emit selected). */
 const activeContextPath = ref<string | null>(null)
-const slideshowDirectoryPath = ref<string>(ROOT_PATH)
-const slideshowPageIndex = ref(0)
+const viewerDirectoryPath = ref<string>(ROOT_PATH)
+const viewerFilePaths = ref<string[]>([])
+const viewerIndex = ref(0)
+const viewerOrigin = ref<ViewerOriginContext | null>(null)
 // WHY: store `getState()` reads are non-reactive; mirror workTree into a ref so row status icons rerender.
 const currentWorkTree = ref<WorkTreeConfig>(ensureWorkTreeConfig(vfsPersistenceStore.getState().chat.workTree))
 const createModalOpen = ref(false)
@@ -452,43 +460,108 @@ const selectedEntity = computed<VfsManagerEntity | null>(() => {
 
 const slideshowPages = computed(() => {
   const snapshot = currentSnapshot.value
-  const dirPath = slideshowDirectoryPath.value
-  const entries = listDirectoryEntries(snapshot, dirPath)
-  const files = entries.filter((entry) => entry.kind === 'file')
-  return files.map((entry) => ({
-    path: entry.path,
-    title: entry.name,
-    content: readFileContentFromSnapshot(snapshot, entry.path),
-  }))
+  return viewerFilePaths.value.map((path) => {
+    const node = getNodeByPath(snapshot, path)
+    return {
+      path,
+      title: node?.name ?? path.split('/').at(-1) ?? path,
+      content: readFileContentFromSnapshot(snapshot, path),
+    }
+  })
 })
-const canGoPrevSlideshowPage = computed(() => slideshowPageIndex.value > 0)
-const canGoNextSlideshowPage = computed(() => slideshowPageIndex.value < slideshowPages.value.length - 1)
+const canGoPrevSlideshowPage = computed(() => viewerIndex.value > 0)
+const canGoNextSlideshowPage = computed(() => viewerIndex.value < viewerFilePaths.value.length - 1)
 // WHY: list stage is intentionally single-pane across desktop/mobile to maximize file-manager workspace.
 const isListStage = computed(() => mode.value === 'list')
 // WHY: reader/editor/slideshow use one full-width preview stack (no desktop sidebar); return to list for the file tree.
 const isPreviewStage = computed(() => mode.value !== 'list')
 
-watch(slideshowDirectoryPath, () => {
-  // Intent: changing slideshow directory defines a new reading context; always restart from first page.
-  slideshowPageIndex.value = 0
-})
+function buildDirectoryFilePaths(directoryPath: string): string[] {
+  return listDirectoryEntries(currentSnapshot.value, directoryPath)
+    .filter((entry) => entry.kind === 'file')
+    .map((entry) => entry.path)
+}
 
-watch(
-  () => slideshowPages.value.length,
-  () => {
-    // Intent: file-set mutations inside the same directory should not leave an out-of-range slideshow cursor.
-    slideshowPageIndex.value = 0
-  },
-)
+function loadViewerFileAt(index: number): void {
+  const targetPath = viewerFilePaths.value[index]
+  if (!targetPath) return
+  const source = readFileContentFromSnapshot(currentSnapshot.value, targetPath)
+  viewerIndex.value = index
+  activeContextPath.value = targetPath
+  editorContent.value = source
+  savedContent.value = source
+  isDirty.value = false
+  editorPreviewMode.value = true
+  requestModeChange('editor')
+}
+
+function initializeViewer(
+  entryPath: string,
+  originKind: ViewerOriginKind,
+  originDirectoryPath: string,
+  originPath: string,
+): void {
+  const directoryPath = dirname(entryPath)
+  const filePaths = buildDirectoryFilePaths(directoryPath)
+  const entryIndex = filePaths.findIndex((path) => path === entryPath)
+  if (entryIndex < 0) return
+  // WHY: back must restore where the user entered from, not a fixed list root.
+  viewerOrigin.value = {
+    kind: originKind,
+    originPath,
+    originDirectoryPath,
+  }
+  viewerDirectoryPath.value = directoryPath
+  viewerFilePaths.value = filePaths
+  loadViewerFileAt(entryIndex)
+}
+
+function initializeViewerFromDirectory(
+  directoryPath: string,
+  originDirectoryPath: string,
+  originPath: string,
+): void {
+  const filePaths = buildDirectoryFilePaths(directoryPath)
+  viewerOrigin.value = {
+    kind: 'dir-slideshow',
+    originPath,
+    originDirectoryPath,
+  }
+  viewerDirectoryPath.value = directoryPath
+  viewerFilePaths.value = filePaths
+  if (filePaths.length === 0) {
+    requestModeChange('list')
+    return
+  }
+  loadViewerFileAt(0)
+}
 
 function goToPrevSlideshowPage(): void {
   if (!canGoPrevSlideshowPage.value) return
-  slideshowPageIndex.value -= 1
+  loadViewerFileAt(viewerIndex.value - 1)
 }
 
 function goToNextSlideshowPage(): void {
   if (!canGoNextSlideshowPage.value) return
-  slideshowPageIndex.value += 1
+  loadViewerFileAt(viewerIndex.value + 1)
+}
+
+function restoreViewerOriginOrFallbackToList(): void {
+  const origin = viewerOrigin.value
+  if (!origin) {
+    requestModeChange('list')
+    return
+  }
+  const originDirectory = getNodeByPath(currentSnapshot.value, origin.originDirectoryPath)
+  const originTarget = getNodeByPath(currentSnapshot.value, origin.originPath)
+  if (originDirectory?.type === 'directory' && originTarget) {
+    currentDirectoryPath.value = origin.originDirectoryPath
+    activeContextPath.value = origin.originPath
+  } else {
+    currentDirectoryPath.value = ROOT_PATH
+    activeContextPath.value = null
+  }
+  requestModeChange('list')
 }
 
 function onOpened(path: string): void {
@@ -595,21 +668,12 @@ function handleEntityAction(action: VfsEntityAction, entityOverride?: VfsManager
         onOpened(entity.path)
         return
       }
-      // WHY: unified open always lands in editor with preview-first experience.
-      // Root-cause fix: load the file content for the target path; editorContent is otherwise reused across opens.
-      const source = readFileContentFromSnapshot(currentSnapshot.value, entity.path)
-      activeContextPath.value = entity.path
-      editorContent.value = source
-      savedContent.value = source
-      isDirty.value = false
-      editorPreviewMode.value = true
-      requestModeChange('editor')
+      initializeViewer(entity.path, 'file-open', currentDirectoryPath.value, entity.path)
       return
     }
     case 'open-slideshow': {
       if (entity.kind !== 'directory') return
-      slideshowDirectoryPath.value = entity.path
-      requestModeChange('slideshow')
+      initializeViewerFromDirectory(entity.path, currentDirectoryPath.value, entity.path)
       return
     }
     case 'toggle-status': {
@@ -889,25 +953,34 @@ async function handleEditorSaveRequested(): Promise<void> {
               type="button"
               class="menu_button vfs-preview-back-button"
               data-testid="vfs-preview-back"
-              aria-label="返回文件列表"
-              title="返回文件列表"
-              @click="requestModeChange('list')"
+              aria-label="返回"
+              title="返回"
+              @click="restoreViewerOriginOrFallbackToList"
             >
               <i class="fa-solid fa-arrow-left" aria-hidden="true" />
             </button>
-            <div v-if="mode === 'editor'" class="vfs-preview-chrome-actions">
+            <div class="vfs-preview-chrome-actions">
+              <button
+                type="button"
+                class="menu_button vfs-preview-chrome-button"
+                data-testid="viewer-edit-mode"
+                title="编辑"
+                aria-label="编辑"
+                :disabled="!activeContextPath"
+                @click="editorPreviewMode = false"
+              >
+                <i class="fa-solid fa-pen-to-square" aria-hidden="true" />
+              </button>
               <button
                 type="button"
                 class="menu_button vfs-preview-chrome-button"
                 data-testid="editor-preview-toggle"
-                :title="editorPreviewMode ? '查看源码' : '预览渲染'"
-                :aria-label="editorPreviewMode ? '查看源码' : '预览渲染'"
-                @click="editorPreviewMode = !editorPreviewMode"
+                title="预览"
+                aria-label="预览"
+                :disabled="!activeContextPath"
+                @click="editorPreviewMode = true"
               >
-                <i
-                  :class="editorPreviewMode ? 'fa-solid fa-code' : 'fa-solid fa-eye'"
-                  aria-hidden="true"
-                />
+                <i class="fa-solid fa-eye" aria-hidden="true" />
               </button>
               <button
                 data-testid="editor-save-submit"
@@ -926,14 +999,12 @@ async function handleEditorSaveRequested(): Promise<void> {
                 />
                 <i v-else class="fa-solid fa-floppy-disk" aria-hidden="true" />
               </button>
-            </div>
-            <div v-else-if="mode === 'slideshow'" class="vfs-preview-chrome-actions">
               <button
                 type="button"
                 class="menu_button vfs-preview-chrome-button"
                 data-testid="slideshow-prev-page"
-                title="上一页"
-                aria-label="上一页"
+                title="Prev"
+                aria-label="Prev"
                 :disabled="!canGoPrevSlideshowPage"
                 @click="goToPrevSlideshowPage"
               >
@@ -943,8 +1014,8 @@ async function handleEditorSaveRequested(): Promise<void> {
                 type="button"
                 class="menu_button vfs-preview-chrome-button"
                 data-testid="slideshow-next-page"
-                title="下一页"
-                aria-label="下一页"
+                title="Next"
+                aria-label="Next"
                 :disabled="!canGoNextSlideshowPage"
                 @click="goToNextSlideshowPage"
               >
@@ -970,7 +1041,7 @@ async function handleEditorSaveRequested(): Promise<void> {
           <SlideshowScreen
             v-else-if="mode === 'slideshow'"
             :pages="slideshowPages"
-            :page-index="slideshowPageIndex"
+            :page-index="viewerIndex"
           />
         </section>
       </div>
