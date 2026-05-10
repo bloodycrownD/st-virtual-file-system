@@ -729,7 +729,7 @@ function openDisplayStrategyDialogForCurrentDirectory(): void {
         type: 'select',
         options: [
           { label: '文件名', value: 'filename' },
-          { label: 'FrontMatter读取', value: 'frontmatter' },
+          { label: '头信息', value: 'frontmatter' },
           { label: '不展示', value: 'omit' },
         ],
       },

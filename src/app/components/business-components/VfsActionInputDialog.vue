@@ -254,9 +254,7 @@ onUnmounted(() => {
             :placeholder="field.placeholder"
             :data-testid="`vfs-action-input-${field.key}`"
           />
-          <div
-            v-else-if="field.type === 'select'"
-          >
+          <div v-else-if="field.type === 'select'" class="vfs-action-input-dialog__listbox-field">
             <button
               :id="`vfs-action-input-${field.key}`"
               :ref="(el) => setFirstInputRef(el, idx)"
@@ -285,6 +283,8 @@ onUnmounted(() => {
               role="listbox"
               :aria-labelledby="`vfs-action-input-${field.key}`"
               :data-testid="`vfs-action-input-${field.key}-listbox`"
+              @mousedown.stop.prevent
+              @click.stop
             >
               <li v-for="(opt, optIdx) in getOptions(field)" :key="`${field.key}-${opt.value}`" role="presentation">
                 <button
@@ -295,7 +295,8 @@ onUnmounted(() => {
                   :aria-selected="localValues[field.key] === opt.value ? 'true' : 'false'"
                   :data-active="activeOptionIndexByKey[field.key] === optIdx ? 'true' : 'false'"
                   @mouseenter="activeOptionIndexByKey[field.key] = optIdx"
-                  @click="selectOption(field, opt.value)"
+                  @mousedown.stop.prevent
+                  @click.stop.prevent="selectOption(field, opt.value)"
                 >
                   {{ opt.label }}
                 </button>
@@ -379,8 +380,17 @@ onUnmounted(() => {
   outline-offset: 1px;
 }
 
+.vfs-action-input-dialog__listbox-field {
+  position: relative;
+}
+
 .vfs-action-input-dialog__listbox-popup {
-  margin: 6px 0 0;
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 20;
+  margin: 0;
   padding: 4px;
   list-style: none;
   border-radius: 8px;
