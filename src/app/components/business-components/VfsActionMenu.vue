@@ -77,10 +77,9 @@ const toggleTitle = computed(() => (disabledHint.value ? `${toggleLabel}（${dis
 // Intent: keep icon choices in one place so toolbar controls share a predictable visual language.
 const ACTION_MENU_ICON = 'fa-solid fa-ellipsis'
 const ACTION_LABELS: Record<VfsEntityAction, string> = {
+  open: '打开',
   'toggle-status': '切换状态',
   delete: '删除',
-  view: '查看',
-  edit: '编辑',
   rename: '重命名',
   'apply-strategy': '展示策略',
   'open-slideshow': '幻灯片/阅读模式',

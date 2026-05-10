@@ -34,11 +34,6 @@ const HEADER_ICON = {
   up: 'fa-solid fa-arrow-up',
 } as const
 
-function open(entry: VfsBrowserEntity): void {
-  if (entry.kind !== 'directory') return
-  emits('opened', entry.path)
-}
-
 function toManagerEntity(entry: VfsBrowserEntity): VfsManagerEntity {
   return {
     id: entry.path,
@@ -46,6 +41,17 @@ function toManagerEntity(entry: VfsBrowserEntity): VfsManagerEntity {
     kind: entry.kind,
     path: entry.path,
   }
+}
+
+function handleRowClick(entry: VfsBrowserEntity): void {
+  if (entry.kind !== 'directory') return
+  emits('opened', entry.path)
+}
+
+function handleRowDoubleClick(entry: VfsBrowserEntity): void {
+  if (entry.kind !== 'file') return
+  // Intent: keep double-click and row-menu "open" on one execution path.
+  emits('entityActionRequested', { entity: toManagerEntity(entry), action: 'open' })
 }
 </script>
 
@@ -76,8 +82,8 @@ function toManagerEntity(entry: VfsBrowserEntity): VfsManagerEntity {
 
     <ul class="vfs-fm-list" data-testid="vfs-file-manager-list">
       <li v-for="entry in entries" :key="entry.path" class="vfs-fm-row" :data-path="entry.path">
-        <!-- Intent: directory navigation remains on double-click; row body does not imply list selection. -->
-        <button type="button" class="vfs-fm-item" @dblclick="open(entry)">
+        <!-- Intent: directory single-click navigates, file double-click opens unified "open" action. -->
+        <button type="button" class="vfs-fm-item" @click="handleRowClick(entry)" @dblclick="handleRowDoubleClick(entry)">
           <span class="vfs-fm-kind">{{ entry.kind === 'directory' ? '📁' : '📄' }}</span>
           <span class="vfs-fm-name">{{ entry.name }}</span>
         </button>

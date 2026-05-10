@@ -568,13 +568,13 @@ function handleEntityAction(action: VfsEntityAction, entityOverride?: VfsManager
   if (!isActionTriggerable(entity, action)) return
   if (!entity) return
   switch (action) {
-    case 'view': {
-      if (entity.kind !== 'file') return
-      requestModeChange('reader')
-      return
-    }
-    case 'edit': {
-      if (entity.kind !== 'file') return
+    case 'open': {
+      if (entity.kind === 'directory') {
+        onOpened(entity.path)
+        return
+      }
+      // WHY: unified open always lands in editor with preview-first experience.
+      editorPreviewMode.value = true
       requestModeChange('editor')
       return
     }

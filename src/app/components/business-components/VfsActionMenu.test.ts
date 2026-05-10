@@ -31,6 +31,6 @@ describe('VfsActionMenu', () => {
     expect(wrapper.text()).toContain('新建目录')
     expect(wrapper.text()).toContain('新建文件')
     expect(wrapper.text()).toContain('重命名')
-    expect(wrapper.text()).toContain('编辑')
+    expect(wrapper.text()).toContain('打开')
   })
 })

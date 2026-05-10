@@ -37,6 +37,12 @@ async function flushActionMenuDom(): Promise<void> {
   await nextTick()
 }
 
+async function ensureEditorSourceMode(wrapper: ReturnType<typeof mount>): Promise<void> {
+  if (wrapper.find('textarea.vfs-editor').exists()) return
+  await wrapper.get('[data-testid="editor-preview-toggle"]').trigger('click')
+  await nextTick()
+}
+
 function requireEntityActionMenuPanel(): HTMLElement {
   const panel = document.querySelector('[data-testid="vfs-entity-action-menu-panel"]')
   if (!panel) {
@@ -103,8 +109,8 @@ async function selectDocsFile(wrapper: ReturnType<typeof mount>) {
   if (!docsDir) {
     throw new Error('docs directory not found')
   }
-  // WHY: list rows no longer toggle selection on click; navigate directories via double-click only.
-  await docsDir.trigger('dblclick')
+  // WHY: directory rows now use single-click for navigation.
+  await docsDir.trigger('click')
   await wrapper.vm.$nextTick()
 }
 
@@ -332,8 +338,8 @@ describe('vfs ui cr loop fixes', () => {
     })
 
     await selectTemplateFile(wrapper)
-    await triggerEntityAction(wrapper, 'edit', 'template.md')
-    expect(wrapper.find('textarea.vfs-editor').exists()).toBe(true)
+    await triggerEntityAction(wrapper, 'open', 'template.md')
+    expect(wrapper.find('.vfs-editor-screen').exists()).toBe(true)
     expect(wrapper.text()).not.toContain('History')
     expect(wrapper.find('[data-testid="editor-history-rollback-list"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="editor-history-rollback-submit"]').exists()).toBe(false)
@@ -376,11 +382,11 @@ describe('vfs ui cr loop fixes', () => {
       },
     })
 
-    expect(wrapper.text()).toContain('查看')
+    expect(wrapper.text()).toContain('打开')
     expect(wrapper.text()).not.toContain('幻灯片/阅读模式')
 
-    await wrapper.get('[data-action="view"]').trigger('click')
-    expect(wrapper.emitted('actionSelected')?.[0]).toEqual(['view'])
+    await wrapper.get('[data-action="open"]').trigger('click')
+    expect(wrapper.emitted('actionSelected')?.[0]).toEqual(['open'])
 
     expect(wrapper.find('[data-action="open-slideshow"]').exists()).toBe(false)
   })
@@ -516,7 +522,8 @@ describe('vfs ui cr loop fixes', () => {
     const wrapper = mountTracked(VfsMainScreen)
 
     await selectDocsFile(wrapper)
-    await triggerEntityAction(wrapper, 'edit', 'docs.md')
+    await triggerEntityAction(wrapper, 'open', 'docs.md')
+    await ensureEditorSourceMode(wrapper)
     await wrapper.get('textarea.vfs-editor').setValue('unsaved draft')
     confirmSpy.mockClear()
     await wrapper.get('[data-testid="vfs-preview-back"]').trigger('click')
@@ -532,7 +539,8 @@ describe('vfs ui cr loop fixes', () => {
     const wrapper = mountTracked(VfsMainScreen)
 
     await selectDocsFile(wrapper)
-    await triggerEntityAction(wrapper, 'edit', 'docs.md')
+    await triggerEntityAction(wrapper, 'open', 'docs.md')
+    await ensureEditorSourceMode(wrapper)
     await wrapper.get('textarea.vfs-editor').setValue('discard me')
     confirmSpy.mockClear()
     await wrapper.get('[data-testid="vfs-preview-back"]').trigger('click')
@@ -543,7 +551,8 @@ describe('vfs ui cr loop fixes', () => {
     expect(wrapper.find('textarea.vfs-editor').exists()).toBe(false)
 
     await selectDocsFile(wrapper)
-    await triggerEntityAction(wrapper, 'edit', 'docs.md')
+    await triggerEntityAction(wrapper, 'open', 'docs.md')
+    await ensureEditorSourceMode(wrapper)
     expect((wrapper.get('textarea.vfs-editor').element as HTMLTextAreaElement).value).toBe('')
   })
 
@@ -552,7 +561,8 @@ describe('vfs ui cr loop fixes', () => {
     const wrapper = mountTracked(VfsMainScreen)
 
     await selectDocsFile(wrapper)
-    await triggerEntityAction(wrapper, 'edit', 'docs.md')
+    await triggerEntityAction(wrapper, 'open', 'docs.md')
+    await ensureEditorSourceMode(wrapper)
     await wrapper.get('textarea.vfs-editor').setValue('dirty content')
     confirmSpy.mockClear()
     await wrapper.get('.vfs-tabs button:nth-of-type(2)').trigger('click')
@@ -567,7 +577,8 @@ describe('vfs ui cr loop fixes', () => {
   it('wires editor save action to commit flow and appends commit record on success', async () => {
     const wrapper = mountTracked(VfsMainScreen)
     await selectDocsFile(wrapper)
-    await triggerEntityAction(wrapper, 'edit', 'docs.md')
+    await triggerEntityAction(wrapper, 'open', 'docs.md')
+    await ensureEditorSourceMode(wrapper)
     await wrapper.get('textarea.vfs-editor').setValue('new content')
     await wrapper.get('[data-testid="editor-save-submit"]').trigger('click')
     await Promise.resolve()
@@ -584,9 +595,10 @@ describe('vfs ui cr loop fixes', () => {
 
     await wrapper.get('[data-testid="vfs-preview-back"]').trigger('click')
     await selectDocsFile(wrapper)
-    await triggerEntityAction(wrapper, 'view', 'docs.md')
+    await triggerEntityAction(wrapper, 'open', 'docs.md')
+    expect(wrapper.find('.vfs-editor-screen').exists()).toBe(true)
+    expect(wrapper.get('[data-testid="editor-preview-toggle"]').attributes('title')).toBe('查看源码')
     expect(wrapper.find('textarea.vfs-editor').exists()).toBe(false)
-    expect(wrapper.find('.vfs-reader').exists()).toBe(true)
   })
 
   it('persists edited content into extension template snapshot in template mode save', async () => {
@@ -597,7 +609,8 @@ describe('vfs ui cr loop fixes', () => {
     })
 
     await selectTemplateFile(wrapper)
-    await triggerEntityAction(wrapper, 'edit', 'template.md')
+    await triggerEntityAction(wrapper, 'open', 'template.md')
+    await ensureEditorSourceMode(wrapper)
     await wrapper.get('textarea.vfs-editor').setValue('template updated')
     await wrapper.get('[data-testid="editor-save-submit"]').trigger('click')
     await Promise.resolve()
@@ -619,7 +632,8 @@ describe('vfs ui cr loop fixes', () => {
     })
     const wrapper = mountTracked(VfsMainScreen)
     await selectDocsFile(wrapper)
-    await triggerEntityAction(wrapper, 'edit', 'docs.md')
+    await triggerEntityAction(wrapper, 'open', 'docs.md')
+    await ensureEditorSourceMode(wrapper)
     await wrapper.get('textarea.vfs-editor').setValue('commit fails')
     await wrapper.get('[data-testid="editor-save-submit"]').trigger('click')
     await flushPromises()
@@ -635,7 +649,7 @@ describe('vfs ui cr loop fixes', () => {
   it('merges editor chrome into preview top bar (no second toolbar row)', async () => {
     const wrapper = mountTracked(VfsMainScreen)
     await selectDocsFile(wrapper)
-    await triggerEntityAction(wrapper, 'edit', 'docs.md')
+    await triggerEntityAction(wrapper, 'open', 'docs.md')
     expect(wrapper.get('[data-testid="vfs-preview-back"]').exists()).toBe(true)
     expect(wrapper.get('[data-testid="editor-save-submit"]').exists()).toBe(true)
     expect(wrapper.get('[data-testid="editor-preview-toggle"]').exists()).toBe(true)
@@ -645,7 +659,8 @@ describe('vfs ui cr loop fixes', () => {
   it('sets editor textarea resize to none for flex fill layout', async () => {
     const wrapper = mountTracked(VfsMainScreen)
     await selectDocsFile(wrapper)
-    await triggerEntityAction(wrapper, 'edit', 'docs.md')
+    await triggerEntityAction(wrapper, 'open', 'docs.md')
+    await ensureEditorSourceMode(wrapper)
     const textarea = wrapper.get('textarea.vfs-editor').element as HTMLTextAreaElement
     expect(textarea.style.height).toBe('')
     expect(window.getComputedStyle(textarea).resize).toBe('none')
@@ -661,7 +676,8 @@ describe('vfs ui cr loop fixes', () => {
 
     const wrapper = mountTracked(VfsMainScreen)
     await selectDocsFile(wrapper)
-    await triggerEntityAction(wrapper, 'edit', 'docs.md')
+    await triggerEntityAction(wrapper, 'open', 'docs.md')
+    await ensureEditorSourceMode(wrapper)
     await wrapper.get('textarea.vfs-editor').setValue('pending save')
     await wrapper.get('[data-testid="editor-save-submit"]').trigger('click')
     const radio = wrapper.find('[data-testid="editor-history-rollback-list"] input[type="radio"]')
@@ -681,7 +697,8 @@ describe('vfs ui cr loop fixes', () => {
   it('registers popup before-close guard in template scope', async () => {
     const wrapper = mountTracked(VfsMainScreen, { props: { scope: 'template' } })
     await wrapper.vm.$nextTick()
-    await triggerEntityAction(wrapper, 'edit', 'template.md')
+    await triggerEntityAction(wrapper, 'open', 'template.md')
+    await ensureEditorSourceMode(wrapper)
     await wrapper.get('textarea.vfs-editor').setValue('dirty template')
     await flushPromises()
     await nextTick()
@@ -699,7 +716,8 @@ describe('vfs ui cr loop fixes', () => {
     const confirmSpy = vi.spyOn(window, 'confirm')
     const wrapper = mountTracked(VfsMainScreen)
     await selectDocsFile(wrapper)
-    await triggerEntityAction(wrapper, 'edit', 'docs.md')
+    await triggerEntityAction(wrapper, 'open', 'docs.md')
+    await ensureEditorSourceMode(wrapper)
     await wrapper.get('textarea.vfs-editor').setValue('unsaved by popup close')
     await flushPromises()
     await nextTick()
@@ -718,7 +736,8 @@ describe('vfs ui cr loop fixes', () => {
 
   it('unsaved dialog save persists draft and returns to list (template)', async () => {
     const wrapper = mountTracked(VfsMainScreen, { props: { scope: 'template' } })
-    await triggerEntityAction(wrapper, 'edit', 'template.md')
+    await triggerEntityAction(wrapper, 'open', 'template.md')
+    await ensureEditorSourceMode(wrapper)
     await wrapper.get('textarea.vfs-editor').setValue('dirty then save and leave')
     await flushPromises()
     await nextTick()
@@ -768,8 +787,8 @@ describe('vfs ui cr loop fixes', () => {
     expect(wrapper.find('[data-testid="vfs-desktop-grid"]').exists()).toBe(false)
 
     await selectDocsFile(wrapper)
-    await triggerEntityAction(wrapper, 'edit', 'docs.md')
-    expect(wrapper.find('textarea.vfs-editor').exists()).toBe(true)
+    await triggerEntityAction(wrapper, 'open', 'docs.md')
+    expect(wrapper.find('.vfs-editor-screen').exists()).toBe(true)
     expect(wrapper.get('[data-testid="vfs-preview-stack"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="vfs-desktop-grid"]').exists()).toBe(false)
     expect(wrapper.get('[data-testid="vfs-preview-back"]').exists()).toBe(true)
@@ -794,11 +813,31 @@ describe('vfs ui cr loop fixes', () => {
     expect(menu.text()).not.toContain('编辑')
   })
 
+  it('opens directory by single click and file by double-click into preview editor', async () => {
+    const wrapper = mountTracked(VfsMainScreen)
+    const list = wrapper.get('[data-testid="vfs-file-manager-list"]')
+    const docsDir = list.findAll('button.vfs-fm-item').find((btn) => btn.text().includes('docs'))
+    if (!docsDir) throw new Error('docs directory not found')
+    await docsDir.trigger('click')
+    await nextTick()
+
+    const docsFile = wrapper
+      .get('[data-testid="vfs-file-manager-list"]')
+      .findAll('button.vfs-fm-item')
+      .find((btn) => btn.text().includes('docs.md'))
+    if (!docsFile) throw new Error('docs.md row not found')
+    await docsFile.trigger('dblclick')
+    await nextTick()
+
+    expect(wrapper.find('.vfs-editor-screen').exists()).toBe(true)
+    expect(wrapper.get('[data-testid="editor-preview-toggle"]').attributes('title')).toBe('查看源码')
+  })
+
   it('applies row menu entity actions without relying on list selection state', async () => {
     const wrapper = mountTracked(VfsMainScreen)
     await selectDocsFile(wrapper)
-    await triggerEntityAction(wrapper, 'edit', 'docs.md')
-    expect(wrapper.find('textarea.vfs-editor').exists()).toBe(true)
+    await triggerEntityAction(wrapper, 'open', 'docs.md')
+    expect(wrapper.find('.vfs-editor-screen').exists()).toBe(true)
   })
 
   it('anchors row entity menu with fixed teleported overlay without shifting parent scroll', async () => {
