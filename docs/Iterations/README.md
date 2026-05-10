@@ -1,5 +1,5 @@
-# 迭代文档（工作区）
+# Iterations（进行中）
 
-- 进行中的规格与方案写在 `docs/Iterations/` 的子目录下；快照归档后以 [`docs/archive/<yyyyMMdd>/`](../archive/index.md) 为准，归档完成后应删除本节下与本次归档重复的副本，避免双份漂移。
-- 已归档：**2026-05-07** 见 [`../archive/20260507/`](../archive/20260507/index.md)。
-- 已归档：**2026-05-09** 见 [`../archive/20260509/`](../archive/20260509/index.md)。
+当前没有进行中的迭代文稿；**VFS-UI-Interaction-Fix** 全量已归档至 [`../archive/20260510/`](../archive/20260510/index.md)。
+
+新建草稿仍放在本目录对应需求名下；稳定后按仓库根目录 `.cursor/skills/archive-docs/SKILL.md` 归档。
