@@ -9,6 +9,7 @@
 | 需求名称 | 说明 |
 |----------|------|
 | [VFS-UI-Interaction-Fix](./VFS-UI-Interaction-Fix/) | 虚拟文件系统弹窗 / 文件管理器 UI 交互修复迭代（features 见下） |
+| [VFS-Style-Optimization](./VFS-Style-Optimization/) | 文件预览样式优化迭代（标题层级、边框、时间信息与换行） |
 
 ### VFS-UI-Interaction-Fix · `features/`
 
@@ -30,3 +31,9 @@
 | split-action-menus | [spec / plan](./VFS-UI-Interaction-Fix/features/split-action-menus/) |
 | styled-create-dialog | [spec / plan](./VFS-UI-Interaction-Fix/features/styled-create-dialog/) |
 | toolbar-button-unification | [spec / plan](./VFS-UI-Interaction-Fix/features/toolbar-button-unification/) |
+
+### VFS-Style-Optimization · `features/`
+
+| 变更名称 | 入口 |
+|----------|------|
+| style-optimization-rollout | [spec / plan](./VFS-Style-Optimization/features/style-optimization-rollout/) |
