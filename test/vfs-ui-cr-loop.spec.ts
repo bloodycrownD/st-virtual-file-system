@@ -631,6 +631,28 @@ describe('vfs ui cr loop fixes', () => {
     expect(wrapper.find('[data-testid="vfs-unsaved-editor-dialog"]').exists()).toBe(false)
   })
 
+  it('unsaved dialog save persists draft and returns to list (template)', async () => {
+    const wrapper = mountTracked(VfsMainScreen, { props: { scope: 'template' } })
+    await triggerEntityAction(wrapper, 'edit', 'template.md')
+    await wrapper.get('textarea.vfs-editor').setValue('dirty then save and leave')
+    await flushPromises()
+    await nextTick()
+
+    await wrapper.get('[data-testid="vfs-preview-back"]').trigger('click')
+    await nextTick()
+    expect(wrapper.get('[data-testid="vfs-unsaved-editor-dialog"]').exists()).toBe(true)
+
+    await wrapper.get('[data-testid="vfs-unsaved-save"]').trigger('click')
+    await flushPromises()
+    await nextTick()
+
+    expect(wrapper.find('[data-testid="vfs-unsaved-editor-dialog"]').exists()).toBe(false)
+    expect(wrapper.get('[data-testid="vfs-list-only-layout"]').exists()).toBe(true)
+    const template = vfsPersistenceStore.getState().extension.extensionTemplateVfsSnapshot
+    expect(template).not.toBeNull()
+    expect(decodeFileFromSnapshot(template!, '/template.md')).toBe('dirty then save and leave')
+  })
+
   it('disables rollback controls while rollback request is in progress', async () => {
     let resolveRollback: ((value: boolean) => void) | undefined
     useVfsRollbackActionMock.mockReturnValue(
