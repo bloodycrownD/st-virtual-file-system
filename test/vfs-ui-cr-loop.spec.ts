@@ -294,10 +294,13 @@ describe('vfs ui cr loop fixes', () => {
         },
       ],
       workTree: {
-        defaultRule: { headCount: 0, tailCount: 0, fill: 'omit' },
-        directoryOverrides: {},
-        directoryRulesEnabled: { '/docs': true },
-        selectedFiles: ['/docs/docs.md'],
+        schemaVersion: 2,
+        fileInclusionByPath: { '/docs/docs.md': 'explicit-include' },
+        directoryRuleByPath: {
+          '/': { sortField: 'name', sortDirection: 'asc', headCount: 1000, tailCount: 0, fill: 'omit' },
+          '/docs': { sortField: 'name', sortDirection: 'asc', headCount: 0, tailCount: 0, fill: 'omit' },
+        },
+        directoryRuleEnabledByPath: { '/docs': true },
       },
     }))
   })
@@ -360,8 +363,8 @@ describe('vfs ui cr loop fixes', () => {
     const row = wrapper.findAll('li.vfs-fm-row').find((candidate) => candidate.text().includes('docs.md'))
     if (!row) throw new Error('docs.md row not found')
     const status = row.get('[data-testid="vfs-fm-row-status"]')
-    expect(status.attributes('title')).toBe('已启用')
-    expect(status.attributes('aria-label')).toBe('状态：已启用')
+    expect(status.attributes('title')).toBe('已纳入工作树')
+    expect(status.attributes('aria-label')).toBe('状态：已纳入工作树')
   })
 
   it('forces Tab1-only when mounted in template scope', async () => {
@@ -883,16 +886,16 @@ describe('vfs ui cr loop fixes', () => {
     await menu.get('summary.vfs-action-menu__toggle').trigger('click')
     expect(menu.text()).toContain('新建目录')
     expect(menu.text()).toContain('新建文件')
-    expect(menu.text()).not.toContain('展示策略')
+    expect(menu.text()).toContain('目录纳入规则')
     expect(menu.text()).not.toContain('查看')
     expect(menu.text()).not.toContain('编辑')
   })
 
-  it('shows display-strategy only in non-root header and removes it from row menu', async () => {
+  it('shows directory rule action in header at root and under /docs; file rows omit apply-strategy', async () => {
     const wrapper = mountTracked(VfsMainScreen)
     const headerMenu = getHeaderActionMenu(wrapper)
     await headerMenu.get('summary.vfs-action-menu__toggle').trigger('click')
-    expect(headerMenu.find('[data-action="apply-strategy"]').exists()).toBe(false)
+    expect(headerMenu.find('[data-action="apply-strategy"]').exists()).toBe(true)
     await flushActionMenuDom()
 
     await selectDocsFile(wrapper)
@@ -963,7 +966,7 @@ describe('vfs ui cr loop fixes', () => {
     await trigger.trigger('keydown', { key: 'Enter' })
     await nextTick()
     expect(wrapper.find('[data-testid="vfs-action-input-sortDirection-listbox"]').exists()).toBe(false)
-    expect(vfsPersistenceStore.getState().chat.workTree?.directoryOverrides['/docs']?.sortDirection).toBe('desc')
+    expect(vfsPersistenceStore.getState().chat.workTree?.directoryRuleByPath['/docs']?.sortDirection).toBe('desc')
   })
 
   it('closes open listbox on outside click without breaking dialog', async () => {
@@ -999,14 +1002,14 @@ describe('vfs ui cr loop fixes', () => {
     await nextTick()
 
     const state = vfsPersistenceStore.getState()
-    expect(state.chat.workTree?.directoryOverrides['/docs']).toEqual({
+    expect(state.chat.workTree?.directoryRuleByPath['/docs']).toEqual({
       sortField: 'mtime',
       sortDirection: 'desc',
       headCount: 1000,
       tailCount: 0,
       fill: 'frontmatter',
     })
-    expect(state.chat.workTree?.directoryRulesEnabled['/docs']).toBe(true)
+    expect(state.chat.workTree?.directoryRuleEnabledByPath['/docs']).toBe(true)
     expect(state.extension.workTreeTemplate).toBeNull()
   })
 
@@ -1026,14 +1029,20 @@ describe('vfs ui cr loop fixes', () => {
     await nextTick()
 
     const state = vfsPersistenceStore.getState()
-    expect(state.extension.workTreeTemplate?.directoryOverrides['/docs']).toEqual({
+    expect(state.extension.workTreeTemplate?.directoryRuleByPath['/docs']).toEqual({
       sortField: 'ctime',
       sortDirection: 'asc',
       headCount: 8,
       tailCount: 5,
       fill: 'filename',
     })
-    expect(state.chat.workTree?.directoryOverrides['/docs']).toBeUndefined()
+    expect(state.chat.workTree?.directoryRuleByPath['/docs']).toEqual({
+      sortField: 'name',
+      sortDirection: 'asc',
+      headCount: 0,
+      tailCount: 0,
+      fill: 'omit',
+    })
   })
 
   it('opens directory by single click and file by double-click into preview editor', async () => {

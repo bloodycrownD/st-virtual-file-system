@@ -86,16 +86,12 @@ describe('chat vfs logs and templates', () => {
     store.updateExtension((draft) => ({
       ...draft,
       workTreeTemplate: {
-        defaultRule: {
-          sortField: 'name',
-          sortDirection: 'asc',
-          headCount: 2,
-          tailCount: 1,
-          fill: 'filename',
+        schemaVersion: 2,
+        fileInclusionByPath: { '/selected.md': 'explicit-include' },
+        directoryRuleByPath: {
+          '/': { sortField: 'name', sortDirection: 'asc', headCount: 2, tailCount: 1, fill: 'filename' },
         },
-        directoryOverrides: {},
-        directoryRulesEnabled: { '/': true },
-        selectedFiles: ['/selected.md'],
+        directoryRuleEnabledByPath: {},
       },
     }))
     const templateService = new ExtensionVfsTemplateService(store)
@@ -103,8 +99,8 @@ describe('chat vfs logs and templates', () => {
     const chatState = store.getState().chat
     expect(chatState.templateInitialized).toBe(true)
     expect(chatState.workTree).not.toBeNull()
-    expect(chatState.workTree?.selectedFiles).toEqual(['/selected.md'])
-    expect(chatState.workTree?.directoryRulesEnabled).toEqual({ '/': true })
+    expect(chatState.workTree?.schemaVersion).toBe(2)
+    expect(chatState.workTree?.fileInclusionByPath['/selected.md']).toBe('explicit-include')
   })
 
   it('queries logs by time range', () => {
