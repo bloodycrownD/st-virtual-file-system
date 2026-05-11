@@ -98,4 +98,22 @@ describe('vfs line numbers', () => {
 
     expect(getGutterLines(wrapper).map((line) => line.text())).toEqual(['1', '2', '3'])
   })
+
+  it('keeps numbering correct for 500+ logical lines', () => {
+    const content = Array.from({ length: 520 }, (_, index) => `line-${index + 1}`).join('\n')
+    const wrapper = mount(EditorScreen, {
+      props: {
+        modelValue: content,
+        previewMode: false,
+        showHistoryControls: false,
+        'onUpdate:modelValue': vi.fn(),
+        'onUpdate:previewMode': vi.fn(),
+      },
+    })
+
+    const lines = getGutterLines(wrapper).map((line) => line.text())
+    expect(lines).toHaveLength(520)
+    expect(lines[0]).toBe('1')
+    expect(lines[519]).toBe('520')
+  })
 })

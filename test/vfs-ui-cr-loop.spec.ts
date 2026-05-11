@@ -150,6 +150,10 @@ function getVisibleFileNames(wrapper: ReturnType<typeof mount>): string[] {
     .filter((name) => name.endsWith('.md'))
 }
 
+function getGutterLineTexts(wrapper: ReturnType<typeof mount>): string[] {
+  return wrapper.findAll('.vfs-line-number-gutter__line').map((line) => line.text())
+}
+
 async function selectTemplateFile(wrapper: ReturnType<typeof mount>) {
   await wrapper.vm.$nextTick()
   const list = wrapper.get('[data-testid="vfs-file-manager-list"]')
@@ -1154,6 +1158,61 @@ describe('vfs ui cr loop fixes', () => {
     expect(updatedText).toContain(expectedUpdated)
     expect(createdText.replace('创建:', '').trim()).not.toBe('—')
     expect(updatedText.replace('更新:', '').trim()).not.toBe('—')
+  })
+
+  it('keeps metadata visibility parity in viewer flow while line numbers remain available', async () => {
+    const wrapper = mountTracked(VfsMainScreen)
+    await selectDocsFile(wrapper)
+    await triggerEntityAction(wrapper, 'open', 'docs.md')
+    await nextTick()
+
+    expect(wrapper.find('[data-testid="vfs-preview-meta"]').exists()).toBe(true)
+    expect(getGutterLineTexts(wrapper)).toEqual(['1'])
+
+    await wrapper.get('[data-testid="editor-preview-toggle"]').trigger('click')
+    await nextTick()
+
+    expect(wrapper.find('[data-testid="vfs-preview-meta"]').exists()).toBe(false)
+    expect(getGutterLineTexts(wrapper)).toEqual(['1'])
+  })
+
+  it('keeps line numbers continuous after save then rollback rerender', async () => {
+    const wrapper = mountTracked(VfsMainScreen)
+    await selectDocsFile(wrapper)
+    await triggerEntityAction(wrapper, 'open', 'docs.md')
+    await ensureEditorSourceMode(wrapper)
+
+    await wrapper.get('textarea.vfs-editor').setValue('line-1\nline-2\nline-3\nline-4')
+    await wrapper.get('[data-testid="editor-save-submit"]').trigger('click')
+    await flushPromises()
+    await nextTick()
+    expect(getGutterLineTexts(wrapper)).toEqual(['1', '2', '3', '4'])
+
+    useVfsRollbackActionMock.mockImplementationOnce(async () => {
+      vfsPersistenceStore.updateChat((draft) => ({
+        ...draft,
+        chatVfsSnapshot: {
+          ...draft.chatVfsSnapshot,
+          nodes: {
+            ...draft.chatVfsSnapshot.nodes,
+            'node-3': {
+              ...draft.chatVfsSnapshot.nodes['node-3'],
+              size: 'restored\ncontent'.length,
+              content: { encoding: 'plain', data: 'restored\ncontent', originalSize: 'restored\ncontent'.length },
+            },
+          },
+        },
+      }))
+      return true
+    })
+
+    const rollbackRadio = wrapper.get('input[name="editor-rollback-source"]')
+    await rollbackRadio.setValue()
+    await wrapper.get('[data-testid="editor-history-rollback-submit"]').trigger('click')
+    await flushPromises()
+    await nextTick()
+
+    expect(getGutterLineTexts(wrapper)).toEqual(['1', '2'])
   })
 
   it('uses one shared preview surface across reader/editor/slideshow panels', async () => {
