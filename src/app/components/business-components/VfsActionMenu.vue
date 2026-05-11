@@ -96,13 +96,13 @@ const ACTION_LABELS: Record<VfsEntityAction, string> = {
   'toggle-status': '切换状态',
   delete: '删除',
   rename: '重命名',
-  'apply-strategy': '展示策略',
+  'apply-strategy': '目录纳入规则',
   'open-slideshow': '幻灯片',
 }
 const GLOBAL_ACTION_LABELS: Record<VfsGlobalAction, string> = {
   'create-directory': '新建目录',
   'create-file': '新建文件',
-  'apply-strategy': '展示策略',
+  'apply-strategy': '目录纳入规则',
 }
 
 function getPopupScopeRoot(details: HTMLElement): HTMLElement | null {

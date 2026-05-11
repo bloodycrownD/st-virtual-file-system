@@ -14,6 +14,9 @@ export interface VfsBrowserEntity {
   name: string
   kind: VfsBrowserEntityKind
   enabled?: boolean
+  /** Optional row-status hints: directory rows mean *rule enabled*, not file inclusion. */
+  statusHintTitle?: string
+  statusHintAria?: string
   ctime?: number
   mtime?: number
 }
@@ -92,8 +95,8 @@ function handleRowDoubleClick(entry: VfsBrowserEntity): void {
             :class="entry.enabled === false ? 'vfs-fm-row-status--off' : 'vfs-fm-row-status--on'"
             role="img"
             data-testid="vfs-fm-row-status"
-            :title="entry.enabled === false ? '已禁用' : '已启用'"
-            :aria-label="entry.enabled === false ? '状态：已禁用' : '状态：已启用'"
+            :title="entry.statusHintTitle ?? (entry.enabled === false ? '已禁用' : '已启用')"
+            :aria-label="entry.statusHintAria ?? (entry.enabled === false ? '状态：已禁用' : '状态：已启用')"
           >
             <i class="fa-solid fa-lightbulb" aria-hidden="true" />
           </span>

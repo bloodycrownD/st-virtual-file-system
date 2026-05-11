@@ -40,8 +40,14 @@ import type { VfsBrowserEntity } from '@/app/components/business-components/VfsF
 import { dirname, normalizePath, ROOT_PATH } from '@/domain/vfs/path-utils'
 import { DeflateContentCodec } from '@/infra/serialization/deflate-codec'
 import { VfsCore } from '@/domain/vfs/vfs-core'
-import { DEFAULT_DIRECTORY_RULE, type DirectoryRule, type WorkTreeConfig } from '@/domain/work-tree/work-tree.types'
-import { renderVirtualWorkTree } from '@/domain/work-tree/work-tree-engine'
+import {
+  DEFAULT_ROOT_DIRECTORY_RULE,
+  type DirectoryRule,
+  type WorkTreeConfig,
+  type WorkTreeFileInclusionMode,
+  ensureWorkTreeConfig,
+} from '@/domain/work-tree/work-tree.types'
+import { isFileIncludedInWorkTree, renderVirtualWorkTree } from '@/domain/work-tree/work-tree-engine'
 import { mapVfsMutationError, toVfsErrorToast } from '@/app/utils/vfsErrorMapper'
 import { createEmptyVfsSnapshot, serializeVfsSnapshot } from '@/infra/persistence/vfs-snapshot.schema'
 
@@ -91,7 +97,7 @@ const viewerFilePaths = ref<string[]>([])
 const viewerIndex = ref(0)
 const viewerOrigin = ref<ViewerOriginContext | null>(null)
 // WHY: store `getState()` reads are non-reactive; mirror workTree into a ref so row status icons rerender.
-const currentWorkTree = ref<WorkTreeConfig>(ensureWorkTreeConfig(vfsPersistenceStore.getState().chat.workTree))
+const currentWorkTree = ref<WorkTreeConfig>(ensureWorkTreeConfig(vfsPersistenceStore.getState().chat.workTree ?? null))
 const createModalOpen = ref(false)
 const createKind = ref<'file' | 'directory'>('directory')
 const codec = new DeflateContentCodec()
@@ -124,7 +130,6 @@ const inputDialogError = ref('')
 const readerHtml = computed(() => editorContent.value)
 const editorHistoryRecords = computed<VfsCommitHistoryRecord[]>(() => history.records.value)
 const isTemplateScope = computed(() => props.scope === 'template')
-const isNonRootDirectory = computed(() => currentDirectoryPath.value !== ROOT_PATH)
 const resolvedTabs = computed<VfsScreenTab[]>(() => {
   if (isTemplateScope.value) return ['files']
   return props.tabs
@@ -145,16 +150,6 @@ let disposeMessageHooks: (() => void) | null = null
 const updateLayout = () => {
   layoutMode.value = window.innerWidth >= 1024 ? 'desktop' : 'mobile'
   viewportHeight.value = window.innerHeight
-}
-
-function ensureWorkTreeConfig(existing: WorkTreeConfig | null): WorkTreeConfig {
-  if (existing) return existing
-  return {
-    defaultRule: { ...DEFAULT_DIRECTORY_RULE },
-    directoryOverrides: {},
-    directoryRulesEnabled: {},
-    selectedFiles: [],
-  }
 }
 
 function readScopedWorkTreeFromStore(): WorkTreeConfig {
@@ -190,11 +185,14 @@ function getNodeByPath(snapshot: VfsSnapshot, path: string) {
 }
 
 function resolveDirectoryListRule(config: WorkTreeConfig, directoryPath: string): DirectoryRule {
-  // WHY: list sorting should follow directory strategy only when that directory's rule is explicitly enabled.
-  if (config.directoryRulesEnabled[directoryPath] !== true) {
-    return { ...config.defaultRule, sortField: 'name', sortDirection: 'asc' }
+  if (directoryPath === ROOT_PATH) {
+    return { ...DEFAULT_ROOT_DIRECTORY_RULE, ...config.directoryRuleByPath[ROOT_PATH] }
   }
-  return config.directoryOverrides[directoryPath] ?? config.defaultRule
+  // WHY: list order matches engine list pass — disabled non-root dirs sort by name asc only (SPEC).
+  if (config.directoryRuleEnabledByPath[directoryPath] !== true) {
+    return { ...DEFAULT_ROOT_DIRECTORY_RULE, sortField: 'name', sortDirection: 'asc' }
+  }
+  return { ...DEFAULT_ROOT_DIRECTORY_RULE, ...config.directoryRuleByPath[directoryPath] }
 }
 
 function listDirectoryEntries(snapshot: VfsSnapshot, directoryPath: string, config: WorkTreeConfig): VfsBrowserEntity[] {
@@ -231,10 +229,11 @@ function listDirectoryEntries(snapshot: VfsSnapshot, directoryPath: string, conf
     })
 }
 
-function isEntityEnabled(entity: VfsBrowserEntity): boolean {
+function isEntityRowLit(entity: VfsBrowserEntity): boolean {
   const config = currentWorkTree.value
-  if (entity.kind === 'file') return config.selectedFiles.includes(entity.path)
-  return config.directoryRulesEnabled[entity.path] === true
+  if (entity.kind === 'file') return isFileIncludedInWorkTree(currentSnapshot.value, config, entity.path)
+  if (entity.path === ROOT_PATH) return true
+  return config.directoryRuleEnabledByPath[entity.path] === true
 }
 
 function readFileContentFromSnapshot(snapshot: VfsSnapshot, path: string): string {
@@ -265,20 +264,23 @@ function applySnapshotMutation(mutator: (core: VfsCore) => void): void {
 function replaceWorkTreePaths(oldPath: string, newPath: string): void {
   // WHY: rename/delete must not leave dangling path references inside macro configuration.
   updateScopedWorkTree((config) => {
-    const selectedFiles = config.selectedFiles.map((p) => (p === oldPath ? newPath : p))
-    const directoryRulesEnabled: Record<string, boolean> = {}
-    for (const [k, v] of Object.entries(config.directoryRulesEnabled)) {
-      directoryRulesEnabled[k === oldPath ? newPath : k] = v
+    const fileInclusionByPath: Record<string, WorkTreeFileInclusionMode> = {}
+    for (const [k, v] of Object.entries(config.fileInclusionByPath)) {
+      fileInclusionByPath[k === oldPath ? newPath : k] = v
     }
-    const directoryOverrides: Record<string, DirectoryRule> = {}
-    for (const [k, v] of Object.entries(config.directoryOverrides)) {
-      directoryOverrides[k === oldPath ? newPath : k] = v
+    const directoryRuleEnabledByPath: Record<string, boolean> = {}
+    for (const [k, v] of Object.entries(config.directoryRuleEnabledByPath)) {
+      directoryRuleEnabledByPath[k === oldPath ? newPath : k] = v
+    }
+    const directoryRuleByPath: Record<string, DirectoryRule> = {}
+    for (const [k, v] of Object.entries(config.directoryRuleByPath)) {
+      directoryRuleByPath[k === oldPath ? newPath : k] = v
     }
     return {
       ...config,
-      selectedFiles,
-      directoryRulesEnabled,
-      directoryOverrides,
+      fileInclusionByPath,
+      directoryRuleEnabledByPath,
+      directoryRuleByPath,
     }
   })
   syncReactiveWorkTree()
@@ -286,12 +288,13 @@ function replaceWorkTreePaths(oldPath: string, newPath: string): void {
 
 function removeWorkTreePaths(removedPath: string): void {
   updateScopedWorkTree((config) => {
-    const selectedFiles = config.selectedFiles.filter((p) => p !== removedPath)
-    const directoryRulesEnabled = { ...config.directoryRulesEnabled }
-    delete directoryRulesEnabled[removedPath]
-    const directoryOverrides = { ...config.directoryOverrides }
-    delete directoryOverrides[removedPath]
-    return { ...config, selectedFiles, directoryRulesEnabled, directoryOverrides }
+    const fileInclusionByPath = { ...config.fileInclusionByPath }
+    delete fileInclusionByPath[removedPath]
+    const directoryRuleEnabledByPath = { ...config.directoryRuleEnabledByPath }
+    delete directoryRuleEnabledByPath[removedPath]
+    const directoryRuleByPath = { ...config.directoryRuleByPath }
+    delete directoryRuleByPath[removedPath]
+    return { ...config, fileInclusionByPath, directoryRuleEnabledByPath, directoryRuleByPath }
   })
   syncReactiveWorkTree()
 }
@@ -499,12 +502,27 @@ function requestModeChange(nextMode: 'list' | 'reader' | 'editor' | 'slideshow')
   openUnsavedEditorLeave({ kind: 'mode', next: nextMode })
 }
 
-const directoryEntries = computed(() =>
-  listDirectoryEntries(currentSnapshot.value, currentDirectoryPath.value, currentWorkTree.value).map((entry) => ({
-    ...entry,
-    enabled: isEntityEnabled(entry),
-  })),
-)
+const directoryEntries = computed(() => {
+  const cfg = currentWorkTree.value
+  return listDirectoryEntries(currentSnapshot.value, currentDirectoryPath.value, cfg).map((entry) => {
+    const lit = isEntityRowLit(entry)
+    if (entry.kind === 'file') {
+      return {
+        ...entry,
+        enabled: lit,
+        statusHintTitle: lit ? '已纳入工作树' : '未纳入工作树',
+        statusHintAria: lit ? '状态：已纳入工作树' : '状态：未纳入工作树',
+      }
+    }
+    const ruleOn = entry.path === ROOT_PATH || cfg.directoryRuleEnabledByPath[entry.path] === true
+    return {
+      ...entry,
+      enabled: ruleOn,
+      statusHintTitle: ruleOn ? '目录纳入规则：已启用' : '目录纳入规则：未启用',
+      statusHintAria: ruleOn ? '状态：目录纳入规则已启用' : '状态：目录纳入规则未启用',
+    }
+  })
+})
 const selectedEntity = computed<VfsManagerEntity | null>(() => {
   if (!activeContextPath.value) return null
   const node = getNodeByPath(currentSnapshot.value, activeContextPath.value)
@@ -734,10 +752,9 @@ function handleGlobalAction(action: VfsGlobalAction): void {
 }
 
 function openDisplayStrategyDialogForCurrentDirectory(): void {
-  if (!isNonRootDirectory.value) return
   const currentDirectory = currentDirectoryPath.value
   const config = readScopedWorkTreeFromStore()
-  const rule = config.directoryOverrides[currentDirectory] ?? config.defaultRule
+  const rule = { ...DEFAULT_ROOT_DIRECTORY_RULE, ...config.directoryRuleByPath[currentDirectory] }
   pendingEntityActionContext.value = {
     id: currentDirectory,
     name: currentDirectory.split('/').at(-1) || '/',
@@ -747,7 +764,7 @@ function openDisplayStrategyDialogForCurrentDirectory(): void {
   inputDialogError.value = ''
   inputDialogState.value = {
     action: 'apply-strategy',
-    title: '展示策略',
+    title: '目录纳入规则',
     fields: [
       {
         key: 'sortField',
@@ -823,15 +840,20 @@ function handleEntityAction(action: VfsEntityAction, entityOverride?: VfsManager
       const path = entity.path
       updateScopedWorkTree((config) => {
         if (entity.kind === 'file') {
-          const selected = new Set(config.selectedFiles)
-          if (selected.has(path)) selected.delete(path)
-          else selected.add(path)
-          return { ...config, selectedFiles: [...selected] }
+          const currentMode = config.fileInclusionByPath[path] ?? 'follow-parent'
+          const cycle: WorkTreeFileInclusionMode[] = ['follow-parent', 'explicit-include', 'explicit-exclude']
+          const idx = cycle.indexOf(currentMode)
+          const nextMode = cycle[(idx + 1) % cycle.length]
+          const fileInclusionByPath = { ...config.fileInclusionByPath }
+          if (nextMode === 'follow-parent') delete fileInclusionByPath[path]
+          else fileInclusionByPath[path] = nextMode
+          return { ...config, fileInclusionByPath }
         }
-        const enabled = config.directoryRulesEnabled[path] === true
+        if (path === ROOT_PATH) return config
+        const enabled = config.directoryRuleEnabledByPath[path] === true
         return {
           ...config,
-          directoryRulesEnabled: { ...config.directoryRulesEnabled, [path]: !enabled },
+          directoryRuleEnabledByPath: { ...config.directoryRuleEnabledByPath, [path]: !enabled },
         }
       })
       syncReactiveWorkTree()
@@ -878,12 +900,14 @@ function onConfirmDialogConfirm(): void {
   closeActionDialogs()
   if (!action) return
   if (action === 'overwrite') {
-    const template = vfsPersistenceStore.getState().extension.extensionTemplateVfsSnapshot
+    const state = vfsPersistenceStore.getState()
+    const template = state.extension.extensionTemplateVfsSnapshot
     if (!template) {
       toastr.error(toVfsErrorToast(VFS_ERROR_CODES.SAVE_FAILED, '模板为空，无法覆盖'))
       return
     }
     try {
+      const nextWorkTree = ensureWorkTreeConfig(state.extension.workTreeTemplate)
       // WHY: overwrite is treated as chat re-initialization; clear logs/versions to avoid stale history after reset.
       vfsPersistenceStore.updateChat((draft) => ({
         ...draft,
@@ -891,6 +915,7 @@ function onConfirmDialogConfirm(): void {
         chatVfsLogs: [],
         chatVfsVersions: [],
         templateInitialized: true,
+        workTree: nextWorkTree,
       }))
       refreshAllViews()
     } catch {
@@ -949,7 +974,6 @@ function onInputDialogConfirm(payload: Record<string, string>): void {
   try {
     updateScopedWorkTree((config) => {
       const nextRule: DirectoryRule = {
-        ...config.defaultRule,
         sortField,
         sortDirection,
         // WHY: dialog accepts free-form number input; enforce schema bounds only at commit time per spec.
@@ -957,17 +981,21 @@ function onInputDialogConfirm(payload: Record<string, string>): void {
         tailCount: Number.isFinite(tailCount) ? Math.max(0, Math.min(1000, Math.floor(tailCount))) : 0,
         fill,
       }
+      const directoryRuleByPath = { ...config.directoryRuleByPath, [entity.path]: nextRule }
+      if (entity.path === ROOT_PATH) {
+        return { ...config, directoryRuleByPath }
+      }
       return {
         ...config,
-        directoryOverrides: { ...config.directoryOverrides, [entity.path]: nextRule },
-        directoryRulesEnabled: { ...config.directoryRulesEnabled, [entity.path]: true },
+        directoryRuleByPath,
+        directoryRuleEnabledByPath: { ...config.directoryRuleEnabledByPath, [entity.path]: true },
       }
     })
     syncReactiveWorkTree()
     requestModeChange('list')
     closeActionDialogs()
   } catch {
-    toastr.error(toVfsErrorToast(VFS_ERROR_CODES.STRATEGY_APPLY_FAILED, '展示策略应用失败'))
+    toastr.error(toVfsErrorToast(VFS_ERROR_CODES.STRATEGY_APPLY_FAILED, '目录纳入规则应用失败'))
   }
 }
 
@@ -1081,7 +1109,7 @@ async function handleEditorSaveRequested(): Promise<void> {
             <VfsActionMenu
               :entity="null"
               mode="global-create"
-              :include-display-strategy="isNonRootDirectory"
+              :include-display-strategy="true"
               @global-action-selected="handleGlobalAction"
             />
           </template>

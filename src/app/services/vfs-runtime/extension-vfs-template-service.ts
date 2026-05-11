@@ -1,6 +1,7 @@
 import type { VfsPersistenceStore } from '@/app/stores/vfs-persistence-store'
 import { createEmptyVfsSnapshot } from '@/infra/persistence/vfs-snapshot.schema'
 import type { VfsSnapshot } from '@/domain/vfs/types'
+import { ensureWorkTreeConfig } from '@/domain/work-tree/work-tree.types'
 
 /**
  * Extension-level VFS template service.
@@ -46,7 +47,7 @@ export class ExtensionVfsTemplateService {
       this.store.updateChat((draft) => ({
         ...draft,
         chatVfsSnapshot: createEmptyVfsSnapshot(),
-        workTree: workTreeTemplate ?? draft.workTree,
+        workTree: ensureWorkTreeConfig(workTreeTemplate ?? draft.workTree),
         templateInitialized: true,
       }))
       return
@@ -54,7 +55,7 @@ export class ExtensionVfsTemplateService {
     this.store.updateChat((draft) => ({
       ...draft,
       chatVfsSnapshot: this.cloneSnapshot(templateSnapshot),
-      workTree: workTreeTemplate ?? draft.workTree,
+      workTree: ensureWorkTreeConfig(workTreeTemplate ?? draft.workTree),
       templateInitialized: true,
     }))
   }
@@ -70,6 +71,7 @@ export class ExtensionVfsTemplateService {
     const state = this.store.getState()
     const templateSnapshot = state.extension.extensionTemplateVfsSnapshot
     if (!templateSnapshot) return
+    const nextWorkTree = ensureWorkTreeConfig(state.extension.workTreeTemplate)
     this.store.updateChat((draft) => ({
       ...draft,
       // WHY: overwrite is semantic re-initialization, so logs/version history must be reset with content.
@@ -77,6 +79,8 @@ export class ExtensionVfsTemplateService {
       chatVfsLogs: [],
       chatVfsVersions: [],
       templateInitialized: true,
+      // WHY: chat work tree must follow template v2 (or default) — never keep pre-overwrite legacy config.
+      workTree: nextWorkTree,
     }))
   }
 
