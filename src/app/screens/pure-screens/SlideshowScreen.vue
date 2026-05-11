@@ -23,7 +23,7 @@ const currentPage = computed(() => props.pages[Math.max(0, Math.min(props.pageIn
         <p class="vfs-slide-empty">No readable pages in this directory.</p>
       </template>
       <template v-else>
-        <section v-if="currentPage" class="vfs-slide-one">
+        <section v-if="currentPage" :key="currentPage.path" class="vfs-slide-one">
           <ReaderScreen :html="currentPage.content" />
         </section>
       </template>

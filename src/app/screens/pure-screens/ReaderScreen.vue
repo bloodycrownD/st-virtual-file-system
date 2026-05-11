@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
+import LineNumberGutter from '@/app/components/pure-components/LineNumberGutter.vue'
 import { VFS_ERROR_CODES } from '@/app/constants/vfsErrorCodes'
 import { renderSafeContent } from '@/app/services/vfs/renderPipeline'
 import { toVfsErrorToast } from '@/app/utils/vfsErrorMapper'
 
 const props = defineProps<{ html: string }>()
+const readerScrollTop = ref(0)
 
 const safeHtml = computed(() => {
   const result = renderSafeContent(props.html)
@@ -14,19 +16,40 @@ const safeHtml = computed(() => {
   }
   return result.html ?? ''
 })
+
+const lineCount = computed(() => Math.max(1, props.html.split('\n').length))
+
+function handleReaderScroll(event: Event): void {
+  const target = event.target as HTMLElement | null
+  readerScrollTop.value = target?.scrollTop ?? 0
+}
 </script>
 
 <template>
-  <article class="vfs-reader prose" v-html="safeHtml"></article>
+  <section class="vfs-line-numbered-reader">
+    <LineNumberGutter :line-count="lineCount" :scroll-top="readerScrollTop" />
+    <article class="vfs-reader prose" v-html="safeHtml" @scroll="handleReaderScroll"></article>
+  </section>
 </template>
 
 <style scoped>
+.vfs-line-numbered-reader {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+}
+
 .vfs-reader {
   line-height: 1.72;
   font-size: 14px;
+  flex: 1 1 auto;
+  height: 100%;
   width: 100%;
   max-width: none;
   min-width: 0;
+  overflow: auto;
   overflow-wrap: anywhere;
   word-break: break-word;
 }

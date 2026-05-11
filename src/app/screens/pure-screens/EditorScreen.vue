@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import LineNumberGutter from '@/app/components/pure-components/LineNumberGutter.vue'
 import type { VfsCommitHistoryRecord } from '@/app/composables/components-composables/useVfsCommitHistory'
 import ReaderScreen from '@/app/screens/pure-screens/ReaderScreen.vue'
 
@@ -27,6 +28,7 @@ const emits = defineEmits<{
   saveRequested: []
 }>()
 const rollbackSourceVersionId = ref<string | null>(null)
+const editorScrollTop = ref(0)
 const rollbackOptions = computed(() =>
   props.historyRecords.flatMap((record) => {
     const targetId = record.commitId ?? record.sourceVersionId
@@ -38,6 +40,12 @@ const rollbackOptions = computed(() =>
     }
   }),
 )
+const lineCount = computed(() => Math.max(1, model.value.split('\n').length))
+
+function handleEditorScroll(event: Event): void {
+  const target = event.target as HTMLTextAreaElement | null
+  editorScrollTop.value = target?.scrollTop ?? 0
+}
 
 function requestManualRollback(): void {
   if (!rollbackSourceVersionId.value) return
@@ -82,7 +90,10 @@ function requestSave(): void {
         <i v-else class="fa-solid fa-floppy-disk" aria-hidden="true" />
       </button>
     </header>
-    <textarea v-if="!previewMode" v-model="model" class="vfs-editor"></textarea>
+    <div v-if="!previewMode" class="vfs-line-numbered-editor">
+      <LineNumberGutter :line-count="lineCount" :scroll-top="editorScrollTop" />
+      <textarea v-model="model" class="vfs-editor" @scroll="handleEditorScroll"></textarea>
+    </div>
     <div v-else class="vfs-editor-preview-pane">
       <ReaderScreen :html="model" />
     </div>
@@ -150,6 +161,14 @@ function requestSave(): void {
   padding: 6px 10px;
 }
 
+.vfs-line-numbered-editor {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+}
+
 .vfs-editor {
   flex: 1 1 auto;
   height: 100%;
@@ -168,8 +187,10 @@ function requestSave(): void {
 }
 
 .vfs-editor-preview-pane {
+  display: flex;
   flex: 1 1 auto;
   min-height: 0;
-  overflow: auto;
+  min-width: 0;
+  overflow: hidden;
 }
 </style>
