@@ -269,10 +269,13 @@ function renderOneFile(snapshot: VfsSnapshot, path: string, mode: RenderMode): s
 }
 
 /**
- * Build the macro string for the current snapshot + config. Empty string if `workTree` is null.
+ * Build the macro string for the current snapshot + config.
+ *
+ * WHY: `chat.workTree` may be persisted `null` after legacy rejection while UI uses
+ * `ensureWorkTreeConfig` defaults — normalizing here keeps `{{VIRTUAL_WORK_TREE}}` identical to
+ * file-manager lamps (SPEC: single source of truth).
  */
 export function renderVirtualWorkTree(snapshot: VfsSnapshot, workTree: WorkTreeConfig | null): string {
-  if (!workTree) return ''
   const normalized = ensureWorkTreeConfig(workTree)
   const modes = buildRenderModes(snapshot, normalized)
   const order = buildEmissionOrder(snapshot, normalized, modes)

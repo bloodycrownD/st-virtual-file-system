@@ -116,7 +116,11 @@ export interface VfsChatMetadata {
    * is set to true to make the operation idempotent per chat.
    */
   templateInitialized: boolean
-  /** When null, `{{VIRTUAL_WORK_TREE}}` renders an empty string. */
+  /**
+   * Persisted v2 work tree; `null` means “not yet written / legacy rejected at parse”.
+   * Runtime renders macros using the same defaults as UI (`ensureWorkTreeConfig`), so `null` does
+   * not imply an empty `{{VIRTUAL_WORK_TREE}}` when files exist under default root rules.
+   */
   workTree: WorkTreeConfig | null
 }
 

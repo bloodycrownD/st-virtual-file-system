@@ -109,9 +109,15 @@ describe('parseWorkTreeConfig + serializeWorkTreeConfig', () => {
 })
 
 describe('resolveWorkTreeFileRowState / renderVirtualWorkTree', () => {
-  it('returns empty string when workTree is null', () => {
-    const snapshot = createSnapshot([createDir('root', '/', '', [])])
-    expect(renderVirtualWorkTree(snapshot, null)).toBe('')
+  it('treats null workTree like createDefaultWorkTreeConfig() so macro matches UI defaults', () => {
+    const empty = createSnapshot([createDir('root', '/', '', [])])
+    expect(renderVirtualWorkTree(empty, null)).toBe(renderVirtualWorkTree(empty, createDefaultWorkTreeConfig()))
+
+    const root = createDir('root', '/', '', ['f'])
+    const f = createFile('f', '/a.txt', 'a.txt', 'hello', 10, 'root')
+    const withFile = createSnapshot([root, f])
+    expect(renderVirtualWorkTree(withFile, null)).toBe(renderVirtualWorkTree(withFile, createDefaultWorkTreeConfig()))
+    expect(renderVirtualWorkTree(withFile, null)).toContain('path="/a.txt"')
   })
 
   it('explicit-include stays full when parent directory rule is disabled', () => {
