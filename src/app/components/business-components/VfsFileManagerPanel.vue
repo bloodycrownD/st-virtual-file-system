@@ -17,6 +17,11 @@ export interface VfsBrowserEntity {
   /** Optional row-status hints: directory rows mean *rule enabled*, not file inclusion. */
   statusHintTitle?: string
   statusHintAria?: string
+  /** Muted right-rail badge (work-tree inclusion / directory rule); FA class string includes `fa-solid`. */
+  rowBadgeIconClass?: string
+  rowBadgeLabel?: string
+  rowBadgeTitle?: string
+  rowBadgeAria?: string
   ctime?: number
   mtime?: number
 }
@@ -85,8 +90,20 @@ function handleRowDoubleClick(entry: VfsBrowserEntity): void {
       <li v-for="entry in entries" :key="entry.path" class="vfs-fm-row" :data-path="entry.path">
         <!-- Intent: directory single-click navigates, file double-click opens unified "open" action. -->
         <button type="button" class="vfs-fm-item" @click="handleRowClick(entry)" @dblclick="handleRowDoubleClick(entry)">
-          <span class="vfs-fm-kind">{{ entry.kind === 'directory' ? '📁' : '📄' }}</span>
-          <span class="vfs-fm-name">{{ entry.name }}</span>
+          <span class="vfs-fm-item-main">
+            <span class="vfs-fm-kind">{{ entry.kind === 'directory' ? '📁' : '📄' }}</span>
+            <span class="vfs-fm-name">{{ entry.name }}</span>
+          </span>
+          <span
+            v-if="entry.rowBadgeLabel"
+            class="vfs-fm-row-badge"
+            data-testid="vfs-fm-row-badge"
+            :title="entry.rowBadgeTitle"
+            :aria-label="entry.rowBadgeAria ?? entry.rowBadgeTitle ?? entry.rowBadgeLabel"
+          >
+            <i v-if="entry.rowBadgeIconClass" :class="entry.rowBadgeIconClass" aria-hidden="true" />
+            <span class="vfs-fm-row-badge-label">{{ entry.rowBadgeLabel }}</span>
+          </span>
         </button>
         <div class="vfs-fm-row-actions" @click.stop>
           <!-- WHY: fixed status slot keeps kebab hit area stable across state toggles. -->
@@ -222,15 +239,49 @@ function handleRowDoubleClick(entry: VfsBrowserEntity): void {
 }
 
 .vfs-fm-item {
+  /* WHY: `min-width:0` lets the name ellipsis win inside a flex row; badge stays `flex-shrink:0`. */
+  flex: 1 1 auto;
+  min-width: 0;
   width: 100%;
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 10px;
   text-align: left;
   padding: 8px 10px;
   border-radius: 8px;
   border: 1px solid rgba(255, 255, 255, 0.12);
   background: rgba(0, 0, 0, 0.18);
+}
+
+.vfs-fm-item-main {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.vfs-fm-row-badge {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  white-space: nowrap;
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 11px;
+  line-height: 1.2;
+}
+
+.vfs-fm-row-badge i {
+  font-size: 12px;
+  line-height: 1;
+  opacity: 0.95;
+}
+
+.vfs-fm-row-badge-label {
+  font-size: 12px;
 }
 
 .vfs-fm-row-actions {
@@ -275,6 +326,7 @@ function handleRowDoubleClick(entry: VfsBrowserEntity): void {
 
 .vfs-fm-name {
   flex: 1 1 auto;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

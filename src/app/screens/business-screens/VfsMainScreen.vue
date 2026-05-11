@@ -47,7 +47,11 @@ import {
   type WorkTreeFileInclusionMode,
   ensureWorkTreeConfig,
 } from '@/domain/work-tree/work-tree.types'
-import { isFileIncludedInWorkTree, renderVirtualWorkTree } from '@/domain/work-tree/work-tree-engine'
+import {
+  getWorkTreeFileInclusionMode,
+  isFileIncludedInWorkTree,
+  renderVirtualWorkTree,
+} from '@/domain/work-tree/work-tree-engine'
 import { mapVfsMutationError, toVfsErrorToast } from '@/app/utils/vfsErrorMapper'
 import { createEmptyVfsSnapshot, serializeVfsSnapshot } from '@/infra/persistence/vfs-snapshot.schema'
 
@@ -234,6 +238,55 @@ function isEntityRowLit(entity: VfsBrowserEntity): boolean {
   if (entity.kind === 'file') return isFileIncludedInWorkTree(currentSnapshot.value, config, entity.path)
   if (entity.path === ROOT_PATH) return true
   return config.directoryRuleEnabledByPath[entity.path] === true
+}
+
+/** FA icons + copy fixed in SPEC/prd — keep in sync with `getWorkTreeFileInclusionMode` / `directoryRuleEnabledByPath`. */
+function workTreeFileRowBadge(mode: WorkTreeFileInclusionMode): Pick<
+  VfsBrowserEntity,
+  'rowBadgeIconClass' | 'rowBadgeLabel' | 'rowBadgeTitle' | 'rowBadgeAria'
+> {
+  if (mode === 'explicit-include') {
+    return {
+      rowBadgeIconClass: 'fa-solid fa-bookmark',
+      rowBadgeLabel: '纳入',
+      rowBadgeTitle: '纳入方式：显式纳入工作树',
+      rowBadgeAria: '纳入方式：显式纳入工作树',
+    }
+  }
+  if (mode === 'explicit-exclude') {
+    return {
+      rowBadgeIconClass: 'fa-solid fa-ban',
+      rowBadgeLabel: '排除',
+      rowBadgeTitle: '纳入方式：显式排除，不纳入工作树',
+      rowBadgeAria: '纳入方式：显式排除，不纳入工作树',
+    }
+  }
+  return {
+    rowBadgeIconClass: 'fa-solid fa-sitemap',
+    rowBadgeLabel: '随目录',
+    rowBadgeTitle: '纳入方式：随父目录规则（由当前目录纳入规则决定）',
+    rowBadgeAria: '纳入方式：随父目录规则（由当前目录纳入规则决定）',
+  }
+}
+
+function directoryRuleRowBadge(ruleOn: boolean): Pick<
+  VfsBrowserEntity,
+  'rowBadgeIconClass' | 'rowBadgeLabel' | 'rowBadgeTitle' | 'rowBadgeAria'
+> {
+  if (ruleOn) {
+    return {
+      rowBadgeIconClass: 'fa-solid fa-toggle-on',
+      rowBadgeLabel: '规则·开',
+      rowBadgeTitle: '目录纳入规则：已启用',
+      rowBadgeAria: '目录纳入规则：已启用',
+    }
+  }
+  return {
+    rowBadgeIconClass: 'fa-solid fa-toggle-off',
+    rowBadgeLabel: '规则·关',
+    rowBadgeTitle: '目录纳入规则：未启用',
+    rowBadgeAria: '目录纳入规则：未启用',
+  }
 }
 
 function readFileContentFromSnapshot(snapshot: VfsSnapshot, path: string): string {
@@ -507,11 +560,14 @@ const directoryEntries = computed(() => {
   return listDirectoryEntries(currentSnapshot.value, currentDirectoryPath.value, cfg).map((entry) => {
     const lit = isEntityRowLit(entry)
     if (entry.kind === 'file') {
+      // WHY: badge reads sparse `fileInclusionByPath` via engine export so keys match `normalizePath` + defaults.
+      const mode = getWorkTreeFileInclusionMode(cfg, entry.path)
       return {
         ...entry,
         enabled: lit,
         statusHintTitle: lit ? '已纳入工作树' : '未纳入工作树',
         statusHintAria: lit ? '状态：已纳入工作树' : '状态：未纳入工作树',
+        ...workTreeFileRowBadge(mode),
       }
     }
     const ruleOn = entry.path === ROOT_PATH || cfg.directoryRuleEnabledByPath[entry.path] === true
@@ -520,6 +576,7 @@ const directoryEntries = computed(() => {
       enabled: ruleOn,
       statusHintTitle: ruleOn ? '目录纳入规则：已启用' : '目录纳入规则：未启用',
       statusHintAria: ruleOn ? '状态：目录纳入规则已启用' : '状态：目录纳入规则未启用',
+      ...directoryRuleRowBadge(ruleOn),
     }
   })
 })
