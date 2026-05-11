@@ -90,6 +90,7 @@ function requestSave(): void {
         <i v-else class="fa-solid fa-floppy-disk" aria-hidden="true" />
       </button>
     </header>
+    <!-- WHY: line numbers map to logical source lines; rendered preview layout does not match those lines. -->
     <div v-if="!previewMode" class="vfs-line-numbered-editor">
       <LineNumberGutter :line-count="lineCount" :scroll-top="editorScrollTop" />
       <textarea v-model="model" class="vfs-editor" @scroll="handleEditorScroll"></textarea>
@@ -187,10 +188,9 @@ function requestSave(): void {
 }
 
 .vfs-editor-preview-pane {
-  display: flex;
   flex: 1 1 auto;
   min-height: 0;
   min-width: 0;
-  overflow: hidden;
+  overflow: auto;
 }
 </style>

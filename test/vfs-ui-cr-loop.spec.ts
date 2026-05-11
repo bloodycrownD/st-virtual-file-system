@@ -1160,14 +1160,14 @@ describe('vfs ui cr loop fixes', () => {
     expect(updatedText.replace('更新:', '').trim()).not.toBe('—')
   })
 
-  it('keeps metadata visibility parity in viewer flow while line numbers remain available', async () => {
+  it('keeps metadata visibility parity: preview hides gutter, source edit shows gutter', async () => {
     const wrapper = mountTracked(VfsMainScreen)
     await selectDocsFile(wrapper)
     await triggerEntityAction(wrapper, 'open', 'docs.md')
     await nextTick()
 
     expect(wrapper.find('[data-testid="vfs-preview-meta"]').exists()).toBe(true)
-    expect(getGutterLineTexts(wrapper)).toEqual(['1'])
+    expect(getGutterLineTexts(wrapper)).toEqual([])
 
     await wrapper.get('[data-testid="editor-preview-toggle"]').trigger('click')
     await nextTick()

@@ -27,6 +27,21 @@ describe('vfs line numbers', () => {
     expect(getGutterLines(wrapper).map((line) => line.text())).toEqual(['1', '2', '3'])
   })
 
+  it('hides line numbers in editor preview mode', () => {
+    const wrapper = mount(EditorScreen, {
+      props: {
+        modelValue: 'alpha\nbeta',
+        previewMode: true,
+        showHistoryControls: false,
+        'onUpdate:modelValue': vi.fn(),
+        'onUpdate:previewMode': vi.fn(),
+      },
+    })
+
+    expect(wrapper.find('[data-testid="vfs-line-number-gutter"]').exists()).toBe(false)
+    expect(wrapper.find('.vfs-reader').exists()).toBe(true)
+  })
+
   it('recomputes editor line numbers after content changes', async () => {
     const wrapper = mount(EditorScreen, {
       props: {
@@ -63,25 +78,18 @@ describe('vfs line numbers', () => {
     expect(gutterContent.attributes('style')).toContain('translateY(-120px)')
   })
 
-  it('shows reader line numbers and syncs on scroll', async () => {
+  it('does not render a line gutter in reader preview', () => {
     const wrapper = mount(ReaderScreen, {
       props: {
         html: 'alpha\nbeta\ngamma',
       },
-      attachTo: document.body,
     })
 
-    expect(getGutterLines(wrapper).map((line) => line.text())).toEqual(['1', '2', '3'])
-
-    const reader = wrapper.find('.vfs-reader')
-    ;(reader.element as HTMLElement).scrollTop = 80
-    await reader.trigger('scroll')
-
-    const gutterContent = wrapper.find('.vfs-line-number-gutter__content')
-    expect(gutterContent.attributes('style')).toContain('translateY(-80px)')
+    expect(wrapper.find('[data-testid="vfs-line-number-gutter"]').exists()).toBe(false)
+    expect(wrapper.find('.vfs-reader').exists()).toBe(true)
   })
 
-  it('refreshes line numbers when slideshow page changes', async () => {
+  it('does not render line gutters in slideshow reader pages', async () => {
     const wrapper = mount(SlideshowScreen, {
       props: {
         pages: [
@@ -92,11 +100,12 @@ describe('vfs line numbers', () => {
       },
     })
 
-    expect(getGutterLines(wrapper).map((line) => line.text())).toEqual(['1'])
+    expect(wrapper.find('[data-testid="vfs-line-number-gutter"]').exists()).toBe(false)
 
     await wrapper.setProps({ pageIndex: 1 })
 
-    expect(getGutterLines(wrapper).map((line) => line.text())).toEqual(['1', '2', '3'])
+    expect(wrapper.find('[data-testid="vfs-line-number-gutter"]').exists()).toBe(false)
+    expect(wrapper.find('.vfs-reader').exists()).toBe(true)
   })
 
   it('keeps numbering correct for 500+ logical lines', () => {

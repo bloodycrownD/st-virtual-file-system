@@ -23,9 +23,9 @@ const lineNumbers = computed(() => Array.from({ length: normalizedLineCount.valu
 
 <style scoped>
 .vfs-line-number-gutter {
-  flex: 0 0 56px;
-  width: 56px;
-  min-width: 56px;
+  flex: 0 0 34px;
+  width: 34px;
+  min-width: 34px;
   overflow: hidden;
   user-select: none;
   text-align: right;
@@ -35,13 +35,13 @@ const lineNumbers = computed(() => Array.from({ length: normalizedLineCount.valu
 }
 
 .vfs-line-number-gutter__content {
-  padding: 0 10px 0 8px;
+  padding: 0 4px 0 2px;
   will-change: transform;
 }
 
 .vfs-line-number-gutter__line {
   display: block;
   line-height: 1.72;
-  font-size: 14px;
+  font-size: 12px;
 }
 </style>
