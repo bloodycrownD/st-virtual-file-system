@@ -157,8 +157,8 @@ export function resolveWorkTreeFileRowState(
 }
 
 export function isFileIncludedInWorkTree(snapshot: VfsSnapshot, config: WorkTreeConfig | null, filePath: string): boolean {
-  if (!config) return false
-  return resolveWorkTreeFileRowState(snapshot, config, filePath).included
+  // WHY: align with `renderVirtualWorkTree` — persisted `workTree` may be `null` while UI/macros use defaults.
+  return resolveWorkTreeFileRowState(snapshot, ensureWorkTreeConfig(config), filePath).included
 }
 
 type RenderMode = WorkTreeFileRenderMode
