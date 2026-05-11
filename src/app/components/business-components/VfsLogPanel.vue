@@ -82,18 +82,41 @@ watch(
 <template>
   <section class="vfs-log-panel">
     <header class="vfs-log-panel-header">
-      <button type="button" :disabled="isLoading" @click="requestManualRefresh">Refresh Logs</button>
-      <span>{{ status }}</span>
-      <span>Page {{ pagination.currentPage }} / {{ pagination.totalPages }}</span>
+      <button type="button" class="menu_button vfs-log-refresh-button" :disabled="isLoading" @click="requestManualRefresh">
+        {{ isLoading ? 'Refreshing...' : 'Refresh Logs' }}
+      </button>
+      <div class="vfs-log-panel-status">
+        <span class="vfs-log-status-label">Status</span>
+        <span class="vfs-log-status-pill">{{ status }}</span>
+      </div>
+      <span class="vfs-log-page-text">Page {{ pagination.currentPage }} / {{ pagination.totalPages }}</span>
     </header>
-    <ul>
-      <li v-for="item in logs" :key="item.id">{{ item.message }}</li>
-    </ul>
-    <footer>
-      <button type="button" :disabled="pagination.currentPage <= 1" @click="refreshLogs(pagination.currentPage - 1)">Prev</button>
+    <div class="vfs-log-content-area">
+      <p v-if="status === 'refreshing'" class="vfs-log-content-state vfs-log-content-refreshing">Refreshing logs...</p>
+      <p v-else-if="status === 'failed'" class="vfs-log-content-state vfs-log-content-failed">
+        Failed to refresh logs. Try again.
+      </p>
+      <ul v-else-if="logs.length" class="vfs-log-list">
+        <li v-for="item in logs" :key="item.id" class="vfs-log-item">{{ item.message }}</li>
+      </ul>
+      <p v-else-if="status === 'succeeded'" class="vfs-log-content-state vfs-log-content-no-data">
+        No logs found for this page.
+      </p>
+      <p v-else class="vfs-log-content-state vfs-log-empty">No logs yet. Refresh to load server logs.</p>
+    </div>
+    <footer class="vfs-log-panel-pager">
       <button
         type="button"
-        :disabled="pagination.currentPage >= pagination.totalPages || totalItems === 0"
+        class="menu_button"
+        :disabled="pagination.currentPage <= 1 || isLoading"
+        @click="refreshLogs(pagination.currentPage - 1)"
+      >
+        Prev
+      </button>
+      <button
+        type="button"
+        class="menu_button"
+        :disabled="pagination.currentPage >= pagination.totalPages || totalItems === 0 || isLoading"
         @click="refreshLogs(pagination.currentPage + 1)"
       >
         Next
@@ -103,6 +126,11 @@ watch(
 </template>
 
 <style scoped>
+.vfs-log-panel {
+  display: grid;
+  gap: 10px;
+}
+
 .vfs-log-panel-header {
   display: flex;
   align-items: center;
@@ -111,5 +139,92 @@ watch(
   white-space: nowrap;
   overflow-x: auto;
   margin-bottom: 8px;
+}
+
+.vfs-log-refresh-button {
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.vfs-log-panel-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.vfs-log-status-label {
+  opacity: 0.8;
+  font-size: 12px;
+}
+
+.vfs-log-status-pill {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.vfs-log-page-text {
+  opacity: 0.82;
+  font-size: 12px;
+}
+
+.vfs-log-list {
+  margin: 0;
+  padding: 10px;
+  list-style: none;
+  max-height: 260px;
+  overflow: auto;
+  display: grid;
+  gap: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.vfs-log-content-area {
+  min-height: 56px;
+}
+
+.vfs-log-content-state {
+  margin: 0;
+  padding: 12px;
+  border-radius: 10px;
+}
+
+.vfs-log-content-refreshing {
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.04);
+  opacity: 0.88;
+}
+
+.vfs-log-content-failed {
+  border: 1px solid rgba(255, 128, 128, 0.42);
+  background: rgba(255, 64, 64, 0.11);
+}
+
+.vfs-log-content-no-data {
+  border: 1px dashed rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.02);
+  opacity: 0.84;
+}
+
+.vfs-log-item {
+  margin: 0;
+  line-height: 1.45;
+  word-break: break-word;
+  white-space: pre-wrap;
+}
+
+.vfs-log-empty {
+  border: 1px dashed rgba(255, 255, 255, 0.2);
+  opacity: 0.82;
+}
+
+.vfs-log-panel-pager {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
 }
 </style>

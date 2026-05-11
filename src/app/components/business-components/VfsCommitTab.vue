@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { useVfsBatchRollbackAction } from '@/app/composables/components-composables/useVfsRollbackActions'
+import { useVfsBatchRollbackAction, useVfsRollbackAction } from '@/app/composables/components-composables/useVfsRollbackActions'
 import type { ChatVfsVersionEntry } from '@/infra/persistence/vfs-chat-metadata.schema'
 
 const props = defineProps<{
@@ -10,10 +10,14 @@ const props = defineProps<{
 const selectedIds = ref<Set<string>>(new Set())
 const isRollingBack = ref(false)
 const feedback = ref<'idle' | 'rollingBack' | 'succeeded' | 'failed'>('idle')
+const rollingSingleCommitId = ref<string | null>(null)
 const emits = defineEmits<{
-  rollbackStatus: [
-    payload: { kind: 'batch'; status: 'rollingBack' | 'succeeded' | 'failed'; sourceVersionIds: string[] },
-  ]
+  rollbackStatus: [payload: {
+    kind: 'single' | 'batch'
+    status: 'rollingBack' | 'succeeded' | 'failed'
+    sourceVersionId?: string
+    sourceVersionIds?: string[]
+  }]
 }>()
 
 const orderedCommits = computed(() =>
@@ -70,13 +74,37 @@ async function rollbackBatchToSelected(): Promise<void> {
     isRollingBack.value = false
   }
 }
+
+async function rollbackSingleCommit(commitId: string): Promise<void> {
+  if (isRollingBack.value) return
+  isRollingBack.value = true
+  rollingSingleCommitId.value = commitId
+  emits('rollbackStatus', { kind: 'single', status: 'rollingBack', sourceVersionId: commitId })
+  try {
+    const ok = await useVfsRollbackAction(commitId)
+    emits('rollbackStatus', { kind: 'single', status: ok ? 'succeeded' : 'failed', sourceVersionId: commitId })
+  } finally {
+    isRollingBack.value = false
+    rollingSingleCommitId.value = null
+  }
+}
 </script>
 
 <template>
   <section class="vfs-commit-tab">
     <header class="vfs-commit-tab-header">
       <p class="vfs-commit-tab-hint">选择提交记录后执行批量回滚</p>
-      <button type="button" :disabled="isRollingBack || orderedSelectedIds.length === 0" @click="rollbackBatchToSelected">
+      <button
+        type="button"
+        class="menu_button vfs-commit-rollback-button"
+        :class="{
+          'is-success': feedback === 'succeeded',
+          'is-failed': feedback === 'failed',
+          'is-busy': isRollingBack,
+        }"
+        :disabled="isRollingBack || orderedSelectedIds.length === 0"
+        @click="rollbackBatchToSelected"
+      >
         {{
           isRollingBack
             ? '批量回滚进行中...'
@@ -91,20 +119,30 @@ async function rollbackBatchToSelected(): Promise<void> {
 
     <ul v-if="orderedCommits.length" class="vfs-commit-list">
       <li v-for="item in orderedCommits" :key="item.id" class="vfs-commit-item">
-        <label class="vfs-commit-row">
-          <input
-            type="checkbox"
-            :checked="isSelected(item.id)"
-            :disabled="isRollingBack"
-            @change="toggleSelected(item.id)"
-          />
-          <span class="vfs-commit-meta">
-            <span class="vfs-commit-summary">{{ displaySummary(item) }}</span>
-            <span class="vfs-commit-sub">
-              {{ displaySubline(item) }} · {{ item.id }}
+        <div class="vfs-commit-row">
+          <label class="vfs-commit-select">
+            <input
+              type="checkbox"
+              :checked="isSelected(item.id)"
+              :disabled="isRollingBack"
+              @change="toggleSelected(item.id)"
+            />
+            <span class="vfs-commit-meta">
+              <span class="vfs-commit-summary">{{ displaySummary(item) }}</span>
+              <span class="vfs-commit-sub">
+                {{ displaySubline(item) }} · {{ item.id }}
+              </span>
             </span>
-          </span>
-        </label>
+          </label>
+          <button
+            type="button"
+            class="menu_button vfs-commit-single-rollback-button"
+            :disabled="isRollingBack"
+            @click="void rollbackSingleCommit(item.id)"
+          >
+            {{ rollingSingleCommitId === item.id ? '回滚中...' : '回滚' }}
+          </button>
+        </div>
       </li>
     </ul>
 
@@ -113,6 +151,11 @@ async function rollbackBatchToSelected(): Promise<void> {
 </template>
 
 <style scoped>
+.vfs-commit-tab {
+  display: grid;
+  gap: 10px;
+}
+
 .vfs-commit-tab-header {
   display: flex;
   align-items: center;
@@ -122,6 +165,27 @@ async function rollbackBatchToSelected(): Promise<void> {
   margin-bottom: 8px;
   overflow-x: auto;
   min-width: 0;
+}
+
+.vfs-commit-rollback-button {
+  white-space: nowrap;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.vfs-commit-rollback-button:hover:enabled {
+  border-color: rgba(255, 255, 255, 0.35);
+}
+
+.vfs-commit-rollback-button.is-success {
+  border-color: rgba(95, 211, 138, 0.45);
+}
+
+.vfs-commit-rollback-button.is-failed {
+  border-color: rgba(255, 112, 112, 0.55);
+}
+
+.vfs-commit-rollback-button.is-busy {
+  cursor: progress;
 }
 .vfs-commit-tab-hint {
   margin: 0;
@@ -140,8 +204,27 @@ async function rollbackBatchToSelected(): Promise<void> {
 }
 .vfs-commit-row {
   display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.vfs-commit-select {
+  display: flex;
   align-items: flex-start;
   gap: 10px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.vfs-commit-single-rollback-button {
+  white-space: nowrap;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  flex: 0 0 auto;
 }
 .vfs-commit-meta {
   display: flex;
@@ -151,9 +234,14 @@ async function rollbackBatchToSelected(): Promise<void> {
 .vfs-commit-sub {
   opacity: 0.75;
   font-size: 12px;
+  word-break: break-word;
 }
 .vfs-commit-empty {
   margin: 0;
   opacity: 0.75;
+  padding: 12px;
+  border: 1px dashed rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.03);
 }
 </style>
