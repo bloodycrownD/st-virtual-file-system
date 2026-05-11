@@ -1,13 +1,14 @@
 /**
  * @file Pure work-tree rendering for `{{VIRTUAL_WORK_TREE}}`.
  *
- * Inputs: a persisted `VfsSnapshot` plus chat `WorkTreeConfig`. No I/O; decoding uses the same
+ * Inputs: a persisted `VfsSnapshot` plus chat `WorkTreeConfig` (v2). No I/O; decoding uses the same
  * deflate/plain codec as runtime VFS so macro output matches tool-written files.
  */
 import type { VfsSnapshot, VfsDirectoryNodeSnapshot, VfsFileNodeSnapshot, VfsNodeSnapshot } from '@/domain/vfs/types'
-import { normalizePath, basename as vfsBasename } from '@/domain/vfs/path-utils'
+import { normalizePath, basename as vfsBasename, dirname, ROOT_PATH } from '@/domain/vfs/path-utils'
 import { DeflateContentCodec } from '@/infra/serialization/deflate-codec'
-import type { DirectoryRule, WorkTreeConfig } from '@/domain/work-tree/work-tree.types'
+import type { DirectoryRule, WorkTreeConfig, WorkTreeFileInclusionMode } from '@/domain/work-tree/work-tree.types'
+import { DEFAULT_ROOT_DIRECTORY_RULE, ensureWorkTreeConfig } from '@/domain/work-tree/work-tree.types'
 
 const codec = new DeflateContentCodec()
 
@@ -59,7 +60,6 @@ function sortFiles(files: VfsFileNodeSnapshot[], rule: DirectoryRule): VfsFileNo
     let c = 0
     if (typeof va === 'number' && typeof vb === 'number') c = va === vb ? 0 : va < vb ? -1 : 1
     else c = String(va).localeCompare(String(vb))
-    // Deterministic tie-breaker: should only trigger on equal timestamps/names.
     if (c === 0) c = a.path.localeCompare(b.path)
     return c * dir
   })
@@ -101,73 +101,95 @@ function frontMatterDisplayLines(content: string): string[] | null {
   return slice
 }
 
-type RenderMode = 'full' | 'filename' | 'frontmatter'
+export type WorkTreeFileRenderMode = 'full' | 'filename' | 'frontmatter'
+
+export interface WorkTreeFileRowState {
+  included: boolean
+  /** Meaningful when `included` is true (UI may still read for edge tooling). */
+  renderMode: WorkTreeFileRenderMode
+}
+
+function getFileInclusionMode(config: WorkTreeConfig, filePath: string): WorkTreeFileInclusionMode {
+  return config.fileInclusionByPath[filePath] ?? 'follow-parent'
+}
+
+function effectiveDirectoryRule(config: WorkTreeConfig, directoryPath: string): DirectoryRule {
+  return { ...DEFAULT_ROOT_DIRECTORY_RULE, ...config.directoryRuleByPath[directoryPath] }
+}
+
+/**
+ * Single source of truth for macro + UI lamp: inclusion + render mode for one file.
+ */
+export function resolveWorkTreeFileRowState(
+  snapshot: VfsSnapshot,
+  config: WorkTreeConfig,
+  filePath: string,
+): WorkTreeFileRowState {
+  const path = normalizePath(filePath)
+  const node = getNodeByPath(snapshot, path)
+  if (!node || node.type !== 'file') return { included: false, renderMode: 'full' }
+
+  const normalized = ensureWorkTreeConfig(config)
+  const mode = getFileInclusionMode(normalized, path)
+
+  if (mode === 'explicit-exclude') return { included: false, renderMode: 'full' }
+  if (mode === 'explicit-include') return { included: true, renderMode: 'full' }
+
+  const parentPath = dirname(path)
+  const parentEnabled =
+    parentPath === ROOT_PATH ? true : normalized.directoryRuleEnabledByPath[parentPath] === true
+  if (!parentEnabled) return { included: false, renderMode: 'full' }
+
+  const rule = effectiveDirectoryRule(normalized, parentPath)
+  const allChildren = directChildFiles(snapshot, parentPath)
+  const followPool = allChildren.filter((f) => getFileInclusionMode(normalized, f.path) === 'follow-parent')
+  const sorted = sortFiles(followPool, rule)
+  const priorityPaths = pickHeadTailPaths(sorted, rule.headCount, rule.tailCount)
+
+  if (priorityPaths.has(path)) return { included: true, renderMode: 'full' }
+  if (rule.fill === 'omit') return { included: false, renderMode: 'full' }
+  if (rule.fill === 'filename') return { included: true, renderMode: 'filename' }
+  if (rule.fill === 'frontmatter') {
+    if (!isMarkdownFile(path)) return { included: false, renderMode: 'full' }
+    return { included: true, renderMode: 'frontmatter' }
+  }
+  return { included: false, renderMode: 'full' }
+}
+
+export function isFileIncludedInWorkTree(snapshot: VfsSnapshot, config: WorkTreeConfig | null, filePath: string): boolean {
+  if (!config) return false
+  return resolveWorkTreeFileRowState(snapshot, config, filePath).included
+}
+
+type RenderMode = WorkTreeFileRenderMode
 
 function buildRenderModes(snapshot: VfsSnapshot, config: WorkTreeConfig): Map<string, RenderMode> {
   const modes = new Map<string, RenderMode>()
-
-  for (const raw of config.selectedFiles) {
-    try {
-      const p = normalizePath(raw)
-      if (getNodeByPath(snapshot, p)?.type === 'file') modes.set(p, 'full')
-    } catch {
-      /* skip invalid path */
-    }
+  const normalized = ensureWorkTreeConfig(config)
+  for (const node of Object.values(snapshot.nodes)) {
+    if (node.type !== 'file') continue
+    const st = resolveWorkTreeFileRowState(snapshot, normalized, node.path)
+    if (st.included) modes.set(node.path, st.renderMode)
   }
-
-  for (const [dirRaw, enabled] of Object.entries(config.directoryRulesEnabled)) {
-    if (!enabled) continue
-    let dirNorm: string
-    try {
-      dirNorm = normalizePath(dirRaw)
-    } catch {
-      continue
-    }
-    if (getNodeByPath(snapshot, dirNorm)?.type !== 'directory') continue
-
-    const rule = config.directoryOverrides[dirNorm] ?? config.defaultRule
-    const files = directChildFiles(snapshot, dirNorm)
-    if (files.length === 0) continue
-
-    const sorted = sortFiles(files, rule)
-    const priorityPaths = pickHeadTailPaths(sorted, rule.headCount, rule.tailCount)
-
-    for (const f of sorted) {
-      if (!priorityPaths.has(f.path)) continue
-      if (!modes.has(f.path)) modes.set(f.path, 'full')
-    }
-
-    for (const f of sorted) {
-      if (priorityPaths.has(f.path)) continue
-      if (modes.has(f.path)) continue
-      if (rule.fill === 'omit') continue
-      if (rule.fill === 'filename') {
-        modes.set(f.path, 'filename')
-        continue
-      }
-      if (rule.fill === 'frontmatter') {
-        if (isMarkdownFile(f.path)) modes.set(f.path, 'frontmatter')
-      }
-    }
-  }
-
   return modes
 }
 
 function buildEmissionOrder(snapshot: VfsSnapshot, config: WorkTreeConfig, modes: Map<string, RenderMode>): string[] {
+  const normalized = ensureWorkTreeConfig(config)
   const root = snapshot.nodes[snapshot.rootId]
   if (!root || root.type !== 'directory') return []
   const out: string[] = []
 
-  const defaultNameRule: DirectoryRule = {
-    ...config.defaultRule,
-    sortField: 'name',
-    sortDirection: 'asc',
+  const listRuleForDirectory = (dirPath: string): DirectoryRule => {
+    if (dirPath === ROOT_PATH) return effectiveDirectoryRule(normalized, ROOT_PATH)
+    if (normalized.directoryRuleEnabledByPath[dirPath] !== true) {
+      return { ...DEFAULT_ROOT_DIRECTORY_RULE, sortField: 'name', sortDirection: 'asc' }
+    }
+    return effectiveDirectoryRule(normalized, dirPath)
   }
 
   const sortNodeValue = (node: VfsNodeSnapshot, field: DirectoryRule['sortField']): string | number => {
     if (field === 'name') return node.name
-    // Directories don't have `ctime`; for ordering we reuse `mtime` when users select created/updated-like fields.
     if (node.type === 'file') {
       return field === 'ctime' ? node.ctime : node.mtime
     }
@@ -187,8 +209,7 @@ function buildEmissionOrder(snapshot: VfsSnapshot, config: WorkTreeConfig, modes
 
   const visit = (dir: VfsDirectoryNodeSnapshot): void => {
     const dirPath = dir.path
-    const enabled = config.directoryRulesEnabled[dirPath] === true
-    const rule = enabled ? (config.directoryOverrides[dirPath] ?? config.defaultRule) : defaultNameRule
+    const rule = listRuleForDirectory(dirPath)
 
     const children: VfsNodeSnapshot[] = dir.children
       .map((id) => snapshot.nodes[id])
@@ -213,6 +234,11 @@ function numberedBody(lines: string[]): string {
   return lines.map((line, i) => `${i + 1}|${line}`).join('\n')
 }
 
+function frontMatterParseFailureLine(path: string): string {
+  // WHY: product-stable downgrade string for md + frontmatter render mode when YAML delimiters fail.
+  return `文件名${vfsBasename(path)}，FrontMatter解析失败`
+}
+
 function renderOneFile(snapshot: VfsSnapshot, path: string, mode: RenderMode): string | null {
   const node = getNodeByPath(snapshot, path)
   if (!node || node.type !== 'file') return null
@@ -232,8 +258,8 @@ function renderOneFile(snapshot: VfsSnapshot, path: string, mode: RenderMode): s
   if (mode === 'frontmatter') {
     if (!isMarkdownFile(path)) return null
     const fmLines = frontMatterDisplayLines(text)
-    if (!fmLines) return null
-    const body = numberedBody(fmLines)
+    const bodyLines = fmLines ?? [frontMatterParseFailureLine(path)]
+    const body = numberedBody(bodyLines)
     return `<file path="${pathAttr}" updatedAt="${updatedAt}" createdAt="${createdAt}" updatedBy="${updatedBy}">\n${body}\n</file>`
   }
 
@@ -247,8 +273,9 @@ function renderOneFile(snapshot: VfsSnapshot, path: string, mode: RenderMode): s
  */
 export function renderVirtualWorkTree(snapshot: VfsSnapshot, workTree: WorkTreeConfig | null): string {
   if (!workTree) return ''
-  const modes = buildRenderModes(snapshot, workTree)
-  const order = buildEmissionOrder(snapshot, workTree, modes)
+  const normalized = ensureWorkTreeConfig(workTree)
+  const modes = buildRenderModes(snapshot, normalized)
+  const order = buildEmissionOrder(snapshot, normalized, modes)
   const blocks: string[] = []
   for (const p of order) {
     const mode = modes.get(p)
