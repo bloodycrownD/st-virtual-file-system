@@ -3,10 +3,12 @@ import type { VfsDirectoryNodeSnapshot, VfsFileNodeSnapshot, VfsSnapshot } from 
 import type { WorkTreeConfig } from '@/domain/work-tree/work-tree.types'
 import {
   createDefaultWorkTreeConfig,
+  ensureWorkTreeConfig,
   parseWorkTreeConfig,
   serializeWorkTreeConfig,
 } from '@/domain/work-tree/work-tree.types'
 import {
+  getWorkTreeFileInclusionMode,
   isFileIncludedInWorkTree,
   renderVirtualWorkTree,
   resolveWorkTreeFileRowState,
@@ -105,6 +107,15 @@ describe('parseWorkTreeConfig + serializeWorkTreeConfig', () => {
   it('ensure default root head is 1000', () => {
     const d = createDefaultWorkTreeConfig()
     expect(d.directoryRuleByPath['/']?.headCount).toBe(1000)
+  })
+})
+
+describe('getWorkTreeFileInclusionMode', () => {
+  it('defaults sparse entries to follow-parent and reads explicit-include after write (UT-B3)', () => {
+    const cfg = baseWorkTree({ fileInclusionByPath: {} })
+    expect(getWorkTreeFileInclusionMode(ensureWorkTreeConfig(cfg), '/a.txt')).toBe('follow-parent')
+    const withInclude = baseWorkTree({ fileInclusionByPath: { '/a.txt': 'explicit-include' } })
+    expect(getWorkTreeFileInclusionMode(ensureWorkTreeConfig(withInclude), '/a.txt')).toBe('explicit-include')
   })
 })
 

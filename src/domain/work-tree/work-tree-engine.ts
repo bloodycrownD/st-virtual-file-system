@@ -109,8 +109,21 @@ export interface WorkTreeFileRowState {
   renderMode: WorkTreeFileRenderMode
 }
 
-function getFileInclusionMode(config: WorkTreeConfig, filePath: string): WorkTreeFileInclusionMode {
-  return config.fileInclusionByPath[filePath] ?? 'follow-parent'
+function getFileInclusionMode(config: WorkTreeConfig, normalizedFilePath: string): WorkTreeFileInclusionMode {
+  // WHY: single lookup helper for sparse `fileInclusionByPath` — callers must pass a `normalizePath` key to match persistence.
+  return config.fileInclusionByPath[normalizedFilePath] ?? 'follow-parent'
+}
+
+/**
+ * UI-only read of a file's persisted inclusion mode key (`explicit-*` / sparse default `follow-parent`).
+ *
+ * Uses `ensureWorkTreeConfig` + `normalizePath` + the same sparse map semantics as `resolveWorkTreeFileRowState`
+ * so badges cannot drift from macro/lamp logic. Does not evaluate parent directory rules or snapshot inclusion.
+ */
+export function getWorkTreeFileInclusionMode(config: WorkTreeConfig | null, filePath: string): WorkTreeFileInclusionMode {
+  const normalized = ensureWorkTreeConfig(config)
+  const path = normalizePath(filePath)
+  return getFileInclusionMode(normalized, path)
 }
 
 function effectiveDirectoryRule(config: WorkTreeConfig, directoryPath: string): DirectoryRule {
