@@ -22,20 +22,23 @@ const lineNumbers = computed(() => Array.from({ length: normalizedLineCount.valu
 </template>
 
 <style scoped>
+/* WHY: VS Code–like gutter — muted numbers only, no tinted strip or divider (avoids a “line number bar”). */
 .vfs-line-number-gutter {
-  flex: 0 0 34px;
-  width: 34px;
-  min-width: 34px;
+  flex: 0 0 28px;
+  width: 28px;
+  min-width: 28px;
   overflow: hidden;
   user-select: none;
   text-align: right;
-  color: rgba(255, 255, 255, 0.45);
-  border-right: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.03);
+  color: rgba(255, 255, 255, 0.32);
+  background: transparent;
+  border: none;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+  font-variant-numeric: tabular-nums;
 }
 
 .vfs-line-number-gutter__content {
-  padding: 0 4px 0 2px;
+  padding: 0 8px 0 0;
   will-change: transform;
 }
 
