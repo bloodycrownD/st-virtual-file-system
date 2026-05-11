@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import VfsCommitTab from '@/app/components/business-components/VfsCommitTab.vue'
-import VfsHistoryPanel from '@/app/components/business-components/VfsHistoryPanel.vue'
 import { VFS_ERROR_CODES } from '@/app/constants/vfsErrorCodes'
 import { createVfsHistoryStateMachine } from '@/app/composables/screens-composables/useVfsHistoryStateMachine'
 import { vfsPersistenceStore } from '@/app/stores/vfs-store-singleton'
@@ -76,7 +75,6 @@ function onRollbackStatus(payload: {
       <span class="vfs-history-status-pill">{{ statusLabel }}</span>
     </div>
     <VfsCommitTab :commits="commits" @rollback-status="onRollbackStatus" />
-    <VfsHistoryPanel @rollback-status="onRollbackStatus" />
   </section>
 </template>
 

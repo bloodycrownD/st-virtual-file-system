@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { useVfsBatchRollbackAction } from '@/app/composables/components-composables/useVfsRollbackActions'
+import { useVfsBatchRollbackAction, useVfsRollbackAction } from '@/app/composables/components-composables/useVfsRollbackActions'
 import type { ChatVfsVersionEntry } from '@/infra/persistence/vfs-chat-metadata.schema'
 
 const props = defineProps<{
@@ -10,10 +10,14 @@ const props = defineProps<{
 const selectedIds = ref<Set<string>>(new Set())
 const isRollingBack = ref(false)
 const feedback = ref<'idle' | 'rollingBack' | 'succeeded' | 'failed'>('idle')
+const rollingSingleCommitId = ref<string | null>(null)
 const emits = defineEmits<{
-  rollbackStatus: [
-    payload: { kind: 'batch'; status: 'rollingBack' | 'succeeded' | 'failed'; sourceVersionIds: string[] },
-  ]
+  rollbackStatus: [payload: {
+    kind: 'single' | 'batch'
+    status: 'rollingBack' | 'succeeded' | 'failed'
+    sourceVersionId?: string
+    sourceVersionIds?: string[]
+  }]
 }>()
 
 const orderedCommits = computed(() =>
@@ -70,6 +74,20 @@ async function rollbackBatchToSelected(): Promise<void> {
     isRollingBack.value = false
   }
 }
+
+async function rollbackSingleCommit(commitId: string): Promise<void> {
+  if (isRollingBack.value) return
+  isRollingBack.value = true
+  rollingSingleCommitId.value = commitId
+  emits('rollbackStatus', { kind: 'single', status: 'rollingBack', sourceVersionId: commitId })
+  try {
+    const ok = await useVfsRollbackAction(commitId)
+    emits('rollbackStatus', { kind: 'single', status: ok ? 'succeeded' : 'failed', sourceVersionId: commitId })
+  } finally {
+    isRollingBack.value = false
+    rollingSingleCommitId.value = null
+  }
+}
 </script>
 
 <template>
@@ -101,20 +119,30 @@ async function rollbackBatchToSelected(): Promise<void> {
 
     <ul v-if="orderedCommits.length" class="vfs-commit-list">
       <li v-for="item in orderedCommits" :key="item.id" class="vfs-commit-item">
-        <label class="vfs-commit-row">
-          <input
-            type="checkbox"
-            :checked="isSelected(item.id)"
-            :disabled="isRollingBack"
-            @change="toggleSelected(item.id)"
-          />
-          <span class="vfs-commit-meta">
-            <span class="vfs-commit-summary">{{ displaySummary(item) }}</span>
-            <span class="vfs-commit-sub">
-              {{ displaySubline(item) }} · {{ item.id }}
+        <div class="vfs-commit-row">
+          <label class="vfs-commit-select">
+            <input
+              type="checkbox"
+              :checked="isSelected(item.id)"
+              :disabled="isRollingBack"
+              @change="toggleSelected(item.id)"
+            />
+            <span class="vfs-commit-meta">
+              <span class="vfs-commit-summary">{{ displaySummary(item) }}</span>
+              <span class="vfs-commit-sub">
+                {{ displaySubline(item) }} · {{ item.id }}
+              </span>
             </span>
-          </span>
-        </label>
+          </label>
+          <button
+            type="button"
+            class="menu_button vfs-commit-single-rollback-button"
+            :disabled="isRollingBack"
+            @click="void rollbackSingleCommit(item.id)"
+          >
+            {{ rollingSingleCommitId === item.id ? '回滚中...' : '回滚' }}
+          </button>
+        </div>
       </li>
     </ul>
 
@@ -176,12 +204,27 @@ async function rollbackBatchToSelected(): Promise<void> {
 }
 .vfs-commit-row {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
+  justify-content: space-between;
   gap: 10px;
   padding: 8px 10px;
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 10px;
   background: rgba(255, 255, 255, 0.04);
+}
+
+.vfs-commit-select {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.vfs-commit-single-rollback-button {
+  white-space: nowrap;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  flex: 0 0 auto;
 }
 .vfs-commit-meta {
   display: flex;
