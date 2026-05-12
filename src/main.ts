@@ -12,8 +12,7 @@
  *
  * 1) **Persistence store first**: loads extension/global + chat/session state so subsequent services
  *    can read/write snapshots safely.
- * 2) **Version/template services**: template initialization depends on versioning, and may populate
- *    an initial snapshot for the current chat.
+ * 2) **Snapshot/template services**: template initialization may populate an initial snapshot for the current chat.
  * 3) **Runtime + message handling**: only after state/services exist do we wire the message pipeline
  *    to SillyTavern's event source.
  *
@@ -24,12 +23,11 @@ import { createApp } from 'vue'
 import App from './App.vue'
 import '@/styles/st-vfs-dialog.css'
 import '@/styles/st-vfs-entry.css'
-import { initVfsPersistenceStore, registerVfsChatReloadHook, vfsPersistenceStore } from '@/app/stores/vfs-store-singleton'
+import { initVfsPersistenceStore, registerVfsChatReloadHook, vfsPersistenceStore, vfsSnapshotService } from '@/app/stores/vfs-store-singleton'
 import { createMessageController } from '@/app/controllers/message-controller'
 import { createMessagePipeline } from '@/app/services/message/message-pipeline'
 import { createStMessageEventAdapter } from '@/infra/sillytarvern/events/st-event-adapter'
 import { ToolDispatcher } from '@/app/services/virtual-tools/tool-dispatcher'
-import { ChatVfsVersionService } from '@/app/services/vfs-version/chat-vfs-version-service'
 import { ChatVfsLogService } from '@/app/services/vfs-log/chat-vfs-log-service'
 import { ChatVfsRuntime } from '@/app/services/vfs-runtime/chat-vfs-runtime'
 import { ExtensionVfsTemplateService } from '@/app/services/vfs-runtime/extension-vfs-template-service'
@@ -56,12 +54,11 @@ initVfsPersistenceStore()
 // - version + template services (template init depends on version service)
 // - ST prompt macros read the same store snapshot (sync handlers)
 // - runtime + handler wired into message pipeline and ST event source
-const versionService = new ChatVfsVersionService(vfsPersistenceStore)
 const templateService = new ExtensionVfsTemplateService(vfsPersistenceStore)
 templateService.initializeChatFromTemplateIfNeeded()
 registerVfsChatReloadHook(templateService.initializeChatFromTemplateIfNeeded.bind(templateService))
 registerVfsMacros(vfsPersistenceStore, templateService.initializeChatFromTemplateIfNeeded.bind(templateService))
-const runtime = new ChatVfsRuntime(vfsPersistenceStore, new ToolDispatcher(), versionService, templateService)
+const runtime = new ChatVfsRuntime(vfsPersistenceStore, new ToolDispatcher(), vfsSnapshotService, templateService)
 const logs = new ChatVfsLogService(vfsPersistenceStore)
 const messageHandler = new VirtualToolMessageHandler(runtime, logs)
 const controller = createMessageController(createMessagePipeline(messageHandler))

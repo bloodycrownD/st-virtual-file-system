@@ -60,14 +60,18 @@ export class ChatVfsLogService {
    * which is a close-enough budget for typical client-side JSON persistence constraints.
    */
   private trimByBytes(entries: ChatVfsLogEntry[], maxBytes: number): ChatVfsLogEntry[] {
-    const queue = [...entries]
-    const sizeOf = (entry: ChatVfsLogEntry): number => JSON.stringify(entry).length
-    let total = queue.reduce((sum, item) => sum + sizeOf(item), 0)
-    // FIFO 淘汰：优先保留最近日志，牺牲最旧记录。
-    while (queue.length > 0 && total > maxBytes) {
-      const first = queue.shift()
-      if (first) total -= sizeOf(first)
-    }
-    return queue
+    return trimChatVfsLogsByBytes(entries, maxBytes)
   }
+}
+
+export function trimChatVfsLogsByBytes(entries: ChatVfsLogEntry[], maxBytes: number): ChatVfsLogEntry[] {
+  const queue = [...entries]
+  const sizeOf = (entry: ChatVfsLogEntry): number => JSON.stringify(entry).length
+  let total = queue.reduce((sum, item) => sum + sizeOf(item), 0)
+  // FIFO 淘汰：优先保留最近日志，牺牲最旧记录。
+  while (queue.length > 0 && total > maxBytes) {
+    const first = queue.shift()
+    if (first) total -= sizeOf(first)
+  }
+  return queue
 }

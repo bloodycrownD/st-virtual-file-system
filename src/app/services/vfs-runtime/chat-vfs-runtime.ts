@@ -3,8 +3,18 @@ import { DeflateContentCodec } from '@/infra/serialization/deflate-codec'
 import type { VfsPersistenceStore } from '@/app/stores/vfs-persistence-store'
 import type { ToolDispatcher, ToolBatchExecutionResult } from '@/app/services/virtual-tools/tool-dispatcher'
 import type { ToolCallEnvelope } from '@/app/services/virtual-tools/tool-contracts'
-import type { ChatVfsVersionService } from '@/app/services/vfs-version/chat-vfs-version-service'
 import type { ExtensionVfsTemplateService } from '@/app/services/vfs-runtime/extension-vfs-template-service'
+import type { ChatVfsSnapshotService } from '@/app/services/vfs-snapshot/chat-vfs-snapshot-service'
+import type { ChatVfsLogEntry } from '@/infra/persistence/vfs-chat-metadata.schema'
+import { serializeVfsSnapshot } from '@/infra/persistence/vfs-snapshot.schema'
+import { trimChatVfsLogsByBytes } from '@/app/services/vfs-log/chat-vfs-log-service'
+
+export interface ToolBatchLogContext {
+  chatId: string
+  messageId: string
+  startedAt: number
+  batchId: string
+}
 
 /**
  * Chat VFS runtime for executing virtual tool calls against the per-chat VFS.
@@ -18,18 +28,17 @@ import type { ExtensionVfsTemplateService } from '@/app/services/vfs-runtime/ext
  *   (and only if) the entire batch succeeds. If any call fails, the working copy is discarded,
  *   resulting in a rollback to the previously persisted snapshot.
  *
- * This design ensures the persisted chat VFS never reflects a partially-applied tool batch.
- *
- * ## Commit metadata
- * After a successful batch, this runtime also records a commit in `ChatVfsVersionService`
- * with `source = 'tool'` (via `commitByToolBatch`) so downstream UI/diagnostics can attribute
- * changes to **tool execution** rather than manual/system updates.
+ * ## Snapshot manifests (pre-batch)
+ * After a successful batch, the runtime records a path manifest derived from the **pre-batch**
+ * tree for all structurally changed paths, then trims the snapshot FIFO (`snapshotMaxCount`).
+ * When `logContext` is provided, the batch success log line is written in the **same** `updateChat`
+ * so `snapshotId` stays aligned with persisted manifests under normal log retention.
  */
 export class ChatVfsRuntime {
   constructor(
     private readonly store: VfsPersistenceStore,
     private readonly dispatcher: ToolDispatcher,
-    private readonly versionService: ChatVfsVersionService,
+    private readonly snapshotService: ChatVfsSnapshotService,
     private readonly templateService?: ExtensionVfsTemplateService,
   ) {}
 
@@ -39,60 +48,57 @@ export class ChatVfsRuntime {
    * - Initializes the chat snapshot from an extension template once (idempotent) if configured.
    * - Runs the entire envelope against a working-copy `VfsCore`.
    * - On failure: returns the dispatcher result and **does not** persist any VFS changes.
-   * - On success: persists the new snapshot as a single write, then records a `'tool'` commit.
-   *
-   * @param envelope Tool-call envelope to execute as an atomic batch.
-   * @returns The batch execution result from the tool dispatcher.
+   * - On success: persists snapshot + optional pre-batch manifest + optional batch log in one write.
    */
-  executeBatch(envelope: ToolCallEnvelope): ToolBatchExecutionResult {
-    // 首次触达 chat VFS 时尝试模板初始化（幂等）。
+  executeBatch(
+    envelope: ToolCallEnvelope,
+    logContext?: ToolBatchLogContext,
+  ): ToolBatchExecutionResult & { snapshotId?: string } {
     this.templateService?.initializeChatFromTemplateIfNeeded()
     const state = this.store.getState()
     const working = new VfsCore(new DeflateContentCodec())
     working.importSnapshot(state.chat.chatVfsSnapshot)
-    // before/after 用于后续版本摘要（当前简化为 '*' 级别）。
-    const before = JSON.stringify(working.exportSnapshot())
+    const beforeSnap = serializeVfsSnapshot(working.exportSnapshot())
     const result = this.dispatcher.executeEnvelope(envelope, working)
-    // 失败时直接丢弃工作副本，不触发持久化，即完成回滚。
     if (!result.ok) {
       return result
     }
     const afterSnapshot = working.exportSnapshot()
-    const changedFiles = this.diffChangedPaths(before, JSON.stringify(afterSnapshot))
-    // Apply only after all tool calls succeed to preserve transactional semantics.
-    this.store.updateChat((draft) => ({ ...draft, chatVfsSnapshot: afterSnapshot }))
-    this.versionService.commitByToolBatch(`tool-batch (${envelope.calls.length} calls)`, changedFiles)
-    return result
+    const record = this.snapshotService.buildToolBatchPreRecord(beforeSnap, afterSnapshot)
+    const maxBytes = this.store.getState().extension.logMaxBytes
+    let snapshotId: string | undefined
+    this.store.updateChat((draft) => {
+      const snapshots = record
+        ? this.snapshotService.mergeIntoChatSnapshots(draft.chatVfsSnapshots, record)
+        : draft.chatVfsSnapshots
+      snapshotId = record?.id
+      let logs = draft.chatVfsLogs
+      if (logContext) {
+        const batchEntry: ChatVfsLogEntry = {
+          id: `log-${Date.now()}`,
+          timestamp: Date.now(),
+          chatId: logContext.chatId,
+          messageId: logContext.messageId,
+          batchId: logContext.batchId,
+          toolName: 'batch',
+          status: 'success',
+          durationMs: Date.now() - logContext.startedAt,
+          argsSummary: `calls=${envelope.calls.length}`,
+          ...(snapshotId ? { snapshotId } : {}),
+        }
+        logs = trimChatVfsLogsByBytes([...draft.chatVfsLogs, batchEntry], maxBytes)
+      }
+      return {
+        ...draft,
+        chatVfsSnapshot: afterSnapshot,
+        chatVfsSnapshots: snapshots,
+        chatVfsLogs: logs,
+      }
+    })
+    return { ...result, snapshotId }
   }
 
-  /**
-   * Whether virtual tool-call execution is enabled at the extension level.
-   *
-   * Note: this does not check per-chat state; it reflects the global extension toggle.
-   */
   isVirtualToolCallEnabled(): boolean {
     return this.store.getState().extension.virtualToolCallEnabled
-  }
-
-  /**
-   * Record a manual commit entry for the current chat.
-   *
-   * This is used for changes initiated by the user/UI (e.g. explicit “save”, template overwrite
-   * checkpoints, or other non-tool operations) so history can distinguish manual actions from
-   * tool batches and system events.
-   */
-  commitManualSave(summary: string, changedFiles: string[]): void {
-    this.versionService.commitByManualSave(summary, changedFiles)
-  }
-
-  /**
-   * Compute changed-path hints between two snapshots.
-   *
-   * Current implementation is intentionally coarse-grained (`'*'`) to avoid the cost and
-   * complexity of a deep VFS diff at runtime; consumers should treat `'*'` as “unknown or many”.
-   */
-  private diffChangedPaths(before: string, after: string): string[] {
-    if (before === after) return []
-    return ['*']
   }
 }

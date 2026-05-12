@@ -140,8 +140,14 @@ export class VirtualToolMessageHandler {
           }),
         }
       }
-      // 进入运行时执行（含原子事务语义：成功才落盘）。
-      const batch = this.runtime.executeBatch(envelope)
+      const batchId = `batch-${Date.now()}`
+      // 进入运行时执行（含原子事务语义：成功才落盘）；成功路径在同一次 `updateChat` 写入 batch 日志 + `snapshotId`。
+      const batch = this.runtime.executeBatch(envelope, {
+        chatId: input.chatId,
+        messageId: input.messageId,
+        startedAt,
+        batchId,
+      })
       const payload = {
         ok: batch.ok,
         calls: envelope.calls.map((call) => ({ tool: call.tool, argsSummary: summarizeArgs(call.args ?? {}) })),
@@ -149,20 +155,22 @@ export class VirtualToolMessageHandler {
         errorCode: batch.errorCode,
         errorMessage: batch.errorMessage,
       }
-      this.logs.append({
-        id: `log-${Date.now()}`,
-        timestamp: Date.now(),
-        chatId: input.chatId,
-        messageId: input.messageId,
-        batchId: `batch-${Date.now()}`,
-        toolName: 'batch',
-        status: batch.ok ? 'success' : batch.errorCode === 'BATCH_TIMEOUT' ? 'timeout' : 'failed',
-        durationMs: Date.now() - startedAt,
-        argsSummary: `calls=${envelope.calls.length}`,
-        errorCode: batch.errorCode,
-        errorMessage: batch.errorMessage,
-      })
-      this.logPerToolExecution(input, envelope, batch)
+      if (!batch.ok) {
+        this.logs.append({
+          id: `log-${Date.now()}`,
+          timestamp: Date.now(),
+          chatId: input.chatId,
+          messageId: input.messageId,
+          batchId,
+          toolName: 'batch',
+          status: batch.errorCode === 'BATCH_TIMEOUT' ? 'timeout' : 'failed',
+          durationMs: Date.now() - startedAt,
+          argsSummary: `calls=${envelope.calls.length}`,
+          errorCode: batch.errorCode,
+          errorMessage: batch.errorMessage,
+        })
+      }
+      this.logPerToolExecution(input, envelope, batch, batchId)
       return { handled: true, messageText: replaceCallWithResult(input.messageText, callBlock, payload) }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error)
@@ -208,6 +216,7 @@ export class VirtualToolMessageHandler {
     input: { chatId: string; messageId: string },
     envelope: ToolCallEnvelope,
     batch: { ok: boolean; results: Array<{ tool: string; data?: unknown }>; errorCode?: string; errorMessage?: string },
+    batchId: string,
   ): void {
     // 工具级日志用于快速定位“批次里是哪一步失败/截断”，与 batch 总日志互补。
     const now = Date.now()
@@ -219,7 +228,7 @@ export class VirtualToolMessageHandler {
           timestamp: now,
           chatId: input.chatId,
           messageId: input.messageId,
-          batchId: `batch-${now}`,
+          batchId,
           toolName: result.tool,
           status: 'success',
           durationMs: 0,
@@ -234,7 +243,7 @@ export class VirtualToolMessageHandler {
             timestamp: now,
             chatId: input.chatId,
             messageId: input.messageId,
-            batchId: `batch-${now}`,
+            batchId,
             toolName: result.tool,
             status: 'success',
             durationMs: 0,
@@ -251,7 +260,7 @@ export class VirtualToolMessageHandler {
           timestamp: now,
           chatId: input.chatId,
           messageId: input.messageId,
-          batchId: `batch-${now}`,
+          batchId,
           toolName: call.tool,
           status: batch.errorCode === 'BATCH_TIMEOUT' ? 'timeout' : 'failed',
           durationMs: 0,

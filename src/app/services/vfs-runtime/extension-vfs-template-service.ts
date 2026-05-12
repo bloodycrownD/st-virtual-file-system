@@ -63,9 +63,8 @@ export class ExtensionVfsTemplateService {
   /**
    * Overwrite the current chat snapshot with the extension template.
    *
-   * This is intentionally treated as a **manual** operation: it writes two manual commits
-   * around the overwrite so a user can later understand and undo the change by selecting the
-   * pre-overwrite checkpoint.
+   * This is intentionally treated as a **manual** operation: it clears chat-scoped logs and
+   * snapshot manifests so the chat matches a fresh template-derived baseline.
    */
   overwriteChatWithTemplate(): void {
     const state = this.store.getState()
@@ -74,10 +73,10 @@ export class ExtensionVfsTemplateService {
     const nextWorkTree = ensureWorkTreeConfig(state.extension.workTreeTemplate)
     this.store.updateChat((draft) => ({
       ...draft,
-      // WHY: overwrite is semantic re-initialization, so logs/version history must be reset with content.
+      // WHY: overwrite is semantic re-initialization, so logs + snapshot manifests must reset with content.
       chatVfsSnapshot: this.cloneSnapshot(templateSnapshot),
       chatVfsLogs: [],
-      chatVfsVersions: [],
+      chatVfsSnapshots: [],
       templateInitialized: true,
       // WHY: chat work tree must follow template v2 (or default) — never keep pre-overwrite legacy config.
       workTree: nextWorkTree,

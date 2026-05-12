@@ -18,10 +18,15 @@
  */
 import { createVfsPersistenceStore } from '@/app/stores/vfs-persistence-store'
 import { createStContextAdapter } from '@/infra/persistence/st-context-adapter'
+import { DeflateContentCodec } from '@/infra/serialization/deflate-codec'
+import { ChatVfsSnapshotService } from '@/app/services/vfs-snapshot/chat-vfs-snapshot-service'
 
 const EXTENSION_NAME = 'st-virtual-file-system'
 
 export const vfsPersistenceStore = createVfsPersistenceStore(createStContextAdapter(EXTENSION_NAME))
+
+const vfsCodec = new DeflateContentCodec()
+export const vfsSnapshotService = new ChatVfsSnapshotService(vfsPersistenceStore, vfsCodec)
 
 let isInitialized = false
 let onChatReloadHook: (() => void) | null = null
