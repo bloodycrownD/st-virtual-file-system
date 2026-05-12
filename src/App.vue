@@ -1,5 +1,5 @@
 <!--
-  扩展「设置页」UI：纯展示 + 一个开关。
+  扩展「设置页」UI：启用开关、快照保留条数等。
   数据来自 vfsPersistenceStore（extensionSettings）；消息事件管线在下方按需启动/停止。
 -->
 <script setup lang="ts">
@@ -12,6 +12,8 @@ import { useVfsPopupLifecycle } from '@/app/composables/screens-composables/useV
 
 /** 与 checkbox 双向绑定；勾选状态变化时在 handleToggle 里写回 store */
 const enabled = ref(true)
+/** 快照库 FIFO 上限（`snapshotMaxCount`，扩展设置） */
+const snapshotMaxCount = ref(10)
 /** store.subscribe 返回的取消函数，组件卸载时调用，防止内存泄漏 */
 let unsubscribe: (() => void) | null = null
 
@@ -29,9 +31,11 @@ onMounted(() => {
   /** 注册 MESSAGE_RECEIVED / EDITED / DELETED 等（不注册 CHAT_CHANGED，交给上面） */
   messageEventAdapter.start()
   enabled.value = vfsPersistenceStore.getState().extension.enabled
-  /** 别处若改了 extension.enabled，勾选框仍能同步（简单订阅模型） */
+  snapshotMaxCount.value = vfsPersistenceStore.getState().extension.snapshotMaxCount
+  /** 别处若改了 extension，表单仍能同步（简单订阅模型） */
   unsubscribe = vfsPersistenceStore.subscribe((state) => {
     enabled.value = state.extension.enabled
+    snapshotMaxCount.value = state.extension.snapshotMaxCount
   })
 })
 
@@ -45,6 +49,14 @@ onUnmounted(() => {
 /** v-model + @change：把 UI 勾选结果持久化到 extensionSettings */
 const handleToggle = () => {
   vfsPersistenceStore.setExtensionEnabled(enabled.value)
+}
+
+const handleSnapshotMaxCountChange = () => {
+  const n = Number(snapshotMaxCount.value)
+  if (!Number.isFinite(n)) return
+  const clamped = Math.min(500, Math.max(1, Math.floor(n)))
+  snapshotMaxCount.value = clamped
+  vfsPersistenceStore.updateExtension((draft) => ({ ...draft, snapshotMaxCount: clamped }))
 }
 
 const openTemplateManager = () => {
@@ -66,6 +78,17 @@ const openTemplateManager = () => {
           <label class="checkbox_label">
             <input v-model="enabled" type="checkbox" @change="handleToggle" />
             <span>启用虚拟文件系统</span>
+          </label>
+          <label class="vfs-field">
+            <span class="vfs-field-label">快照保留条数（FIFO，1–500）</span>
+            <input
+              v-model.number="snapshotMaxCount"
+              class="vfs-number-input"
+              type="number"
+              min="1"
+              max="500"
+              @change="handleSnapshotMaxCountChange"
+            />
           </label>
           <div class="vfs-actions">
             <button type="button" class="menu_button" @click="openTemplateManager">模板管理</button>
@@ -91,6 +114,22 @@ const openTemplateManager = () => {
 
 .vfs-panel {
   padding: 10px;
+}
+
+.vfs-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.vfs-field-label {
+  font-size: 0.95em;
+  opacity: 0.9;
+}
+
+.vfs-number-input {
+  max-width: 120px;
 }
 
 .vfs-actions {
