@@ -6,6 +6,7 @@ import VfsActionConfirmDialog from '@/app/components/business-components/VfsActi
 import VfsActionInputDialog from '@/app/components/business-components/VfsActionInputDialog.vue'
 import VfsCreateEntityModal from '@/app/components/business-components/VfsCreateEntityModal.vue'
 import VfsFileManagerPanel from '@/app/components/business-components/VfsFileManagerPanel.vue'
+import VfsListboxField from '@/app/components/pure-components/VfsListboxField.vue'
 import VfsHistoryScreen from '@/app/screens/business-screens/VfsHistoryScreen.vue'
 import VfsMainScreen from '@/app/screens/business-screens/VfsMainScreen.vue'
 import ReaderScreen from '@/app/screens/pure-screens/ReaderScreen.vue'
@@ -376,7 +377,7 @@ describe('vfs ui cr loop fixes', () => {
     await triggerEntityAction(wrapper, 'open', 'template.md')
     expect(wrapper.find('.vfs-editor-screen').exists()).toBe(true)
     expect(wrapper.text()).not.toContain('History')
-    expect(wrapper.find('[data-testid="editor-snapshot-select"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="editor-snapshot-listbox-trigger"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="editor-history-rollback-submit"]').exists()).toBe(false)
   })
 
@@ -422,17 +423,26 @@ describe('vfs ui cr loop fixes', () => {
     expect(store.records.value[1]?.snapshotId).toBe('v1')
   })
 
-  it('shows header snapshot select in chat editor and wires rollback to selected id', async () => {
+  it('shows header snapshot listbox in chat editor left group and wires rollback to selected id', async () => {
     const wrapper = mountTracked(VfsMainScreen)
     await selectDocsFile(wrapper)
     await triggerEntityAction(wrapper, 'open', 'docs.md')
     await ensureEditorSourceMode(wrapper)
 
-    const select = wrapper.get('[data-testid="editor-snapshot-select"]')
-    expect(select.element.closest('.vfs-preview-chrome-actions')).not.toBeNull()
-    expect(select.findAll('option').length).toBeGreaterThan(1)
+    expect(wrapper.find('select[data-testid="editor-snapshot-select"]').exists()).toBe(false)
+    const left = wrapper.get('[data-testid="vfs-preview-top-bar-left"]')
+    expect(left.find('[data-testid="vfs-preview-back"]').exists()).toBe(true)
 
-    await select.setValue('snap-seed-1')
+    const trigger = wrapper.get('[data-testid="editor-snapshot-listbox-trigger"]')
+    expect(left.element.contains(trigger.element)).toBe(true)
+
+    const listbox = wrapper.findComponent(VfsListboxField)
+    expect(listbox.exists()).toBe(true)
+    expect(listbox.props('options')?.length ?? 0).toBeGreaterThan(0)
+
+    await listbox.vm.$emit('update:modelValue', 'snap-seed-1')
+    await nextTick()
+
     await wrapper.get('[data-testid="editor-history-rollback-submit"]').trigger('click')
     await flushPromises()
     await nextTick()
@@ -624,7 +634,9 @@ describe('vfs ui cr loop fixes', () => {
     await ensureEditorSourceMode(wrapper)
     await wrapper.get('textarea.vfs-editor').setValue('pending save')
     await wrapper.get('[data-testid="editor-save-submit"]').trigger('click')
-    await wrapper.get('[data-testid="editor-snapshot-select"]').setValue('snap-seed-1')
+    const listbox = wrapper.findComponent(VfsListboxField)
+    await listbox.vm.$emit('update:modelValue', 'snap-seed-1')
+    await nextTick()
     await wrapper.get('[data-testid="editor-history-rollback-submit"]').trigger('click')
 
     expect(useVfsSnapshotRollbackMock).toHaveBeenCalledTimes(1)
@@ -1078,7 +1090,9 @@ describe('vfs ui cr loop fixes', () => {
       return true
     })
 
-    await wrapper.get('[data-testid="editor-snapshot-select"]').setValue('snap-seed-1')
+    const listbox = wrapper.findComponent(VfsListboxField)
+    await listbox.vm.$emit('update:modelValue', 'snap-seed-1')
+    await nextTick()
     await wrapper.get('[data-testid="editor-history-rollback-submit"]').trigger('click')
     await flushPromises()
     await nextTick()

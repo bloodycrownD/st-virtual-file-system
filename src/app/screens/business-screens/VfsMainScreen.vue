@@ -3,6 +3,7 @@ import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import VfsActionMenu from '@/app/components/business-components/VfsActionMenu.vue'
 import VfsActionConfirmDialog from '@/app/components/business-components/VfsActionConfirmDialog.vue'
 import VfsActionInputDialog from '@/app/components/business-components/VfsActionInputDialog.vue'
+import VfsListboxField from '@/app/components/pure-components/VfsListboxField.vue'
 import VfsUnsavedEditorDialog from '@/app/components/business-components/VfsUnsavedEditorDialog.vue'
 import {
   createVfsCommitHistoryStore,
@@ -129,7 +130,7 @@ const inputDialogError = ref('')
 
 const readerHtml = computed(() => editorContent.value)
 const editorHistoryRecords = computed<VfsCommitHistoryRecord[]>(() => history.records.value)
-/** Header rollback control: bound to `editor-snapshot-select`; cleared when history list no longer contains the id. */
+/** Header rollback control: bound to editor snapshot listbox; cleared when history list no longer contains the id. */
 const editorRollbackSnapshotId = ref('')
 const isTemplateScope = computed(() => props.scope === 'template')
 const resolvedTabs = computed<VfsScreenTab[]>(() => {
@@ -619,6 +620,15 @@ function formatEditorSnapshotOptionLabel(record: VfsCommitHistoryRecord): string
     record.actionType === 'tool-batch-pre' ? '工具前' : record.actionType === 'manual' ? '保存前' : String(record.actionType)
   return `${when} · ${fileLabel} · ${kindHint} · 还原点`
 }
+
+const editorSnapshotListboxOptions = computed(() =>
+  editorHistoryRecords.value
+    .filter((record): record is VfsCommitHistoryRecord & { snapshotId: string } => Boolean(record.snapshotId))
+    .map((record) => ({
+      value: record.snapshotId,
+      label: formatEditorSnapshotOptionLabel(record),
+    })),
+)
 
 watch(
   [editorHistoryRecords, mode, activeContextPath],
@@ -1180,53 +1190,27 @@ async function handleEditorSaveRequested(): Promise<void> {
       <div v-else-if="isPreviewStage" class="vfs-preview-stack" data-testid="vfs-preview-stack">
         <section class="vfs-preview-body">
           <header class="vfs-preview-top-bar">
-            <button
-              type="button"
-              class="menu_button vfs-preview-back-button"
-              data-testid="vfs-preview-back"
-              aria-label="返回"
-              title="返回"
-              @click="restoreViewerOriginOrFallbackToList"
-            >
-              <i class="fa-solid fa-arrow-left" aria-hidden="true" />
-            </button>
-            <p
-              v-if="currentViewerFileTitle"
-              class="vfs-preview-file-title"
-              :title="currentViewerFileTitle"
-              data-testid="viewer-file-title"
-            >
-              {{ currentViewerFileTitle }}
-            </p>
-            <div class="vfs-preview-chrome-actions">
+            <div class="vfs-preview-top-bar__left" data-testid="vfs-preview-top-bar-left">
               <button
                 type="button"
-                class="menu_button vfs-preview-chrome-button"
-                data-testid="editor-preview-toggle"
-                :title="editorPreviewMode ? '查看源码' : '预览渲染'"
-                :aria-label="editorPreviewMode ? '查看源码' : '预览渲染'"
-                :disabled="!activeContextPath"
-                @click="editorPreviewMode = !editorPreviewMode"
+                class="menu_button vfs-preview-back-button"
+                data-testid="vfs-preview-back"
+                aria-label="返回"
+                title="返回"
+                @click="restoreViewerOriginOrFallbackToList"
               >
-                <i :class="editorPreviewMode ? 'fa-solid fa-code' : 'fa-solid fa-eye'" aria-hidden="true" />
+                <i class="fa-solid fa-arrow-left" aria-hidden="true" />
               </button>
               <template v-if="mode === 'editor' && !isTemplateScope">
-                <select
+                <VfsListboxField
                   v-model="editorRollbackSnapshotId"
-                  class="vfs-preview-chrome-select"
-                  data-testid="editor-snapshot-select"
-                  aria-label="选择快照还原点"
+                  class="vfs-preview-snapshot-listbox"
+                  :options="editorSnapshotListboxOptions"
+                  placeholder="选择还原点…"
                   :disabled="!activeContextPath || editorHistoryRecords.length === 0"
-                >
-                  <option value="">选择还原点…</option>
-                  <option
-                    v-for="record in editorHistoryRecords"
-                    :key="record.snapshotId ?? record.time"
-                    :value="record.snapshotId"
-                  >
-                    {{ formatEditorSnapshotOptionLabel(record) }}
-                  </option>
-                </select>
+                  ariaLabel="选择快照还原点"
+                  data-testid="editor-snapshot-listbox-trigger"
+                />
                 <button
                   type="button"
                   class="menu_button vfs-preview-chrome-button"
@@ -1245,6 +1229,29 @@ async function handleEditorSaveRequested(): Promise<void> {
                   <span v-else>回滚</span>
                 </button>
               </template>
+            </div>
+            <div class="vfs-preview-top-bar__title">
+              <p
+                v-if="currentViewerFileTitle"
+                class="vfs-preview-file-title"
+                :title="currentViewerFileTitle"
+                data-testid="viewer-file-title"
+              >
+                {{ currentViewerFileTitle }}
+              </p>
+            </div>
+            <div class="vfs-preview-chrome-actions">
+              <button
+                type="button"
+                class="menu_button vfs-preview-chrome-button"
+                data-testid="editor-preview-toggle"
+                :title="editorPreviewMode ? '查看源码' : '预览渲染'"
+                :aria-label="editorPreviewMode ? '查看源码' : '预览渲染'"
+                :disabled="!activeContextPath"
+                @click="editorPreviewMode = !editorPreviewMode"
+              >
+                <i :class="editorPreviewMode ? 'fa-solid fa-code' : 'fa-solid fa-eye'" aria-hidden="true" />
+              </button>
               <button
                 data-testid="editor-save-submit"
                 type="button"
@@ -1401,9 +1408,29 @@ async function handleEditorSaveRequested(): Promise<void> {
   position: relative;
 }
 
+.vfs-preview-top-bar__left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+  flex-shrink: 0;
+}
+
+.vfs-preview-top-bar__title {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.vfs-preview-snapshot-listbox {
+  width: auto;
+  min-width: 10.5rem;
+  max-width: min(42vw, 22rem);
+}
+
 .vfs-preview-chrome-actions {
   margin-left: auto;
   display: inline-flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
   min-width: 0;
@@ -1418,16 +1445,15 @@ async function handleEditorSaveRequested(): Promise<void> {
   padding: 6px 10px;
 }
 
-.vfs-preview-chrome-select {
-  min-width: 10.5rem;
-  max-width: min(42vw, 22rem);
-  min-height: 2.25rem;
-  padding: 4px 8px;
-  border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  background: rgba(0, 0, 0, 0.18);
-  color: inherit;
-  font: inherit;
+.vfs-preview-file-title {
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0.92;
+  font-weight: 700;
+  font-size: 1.08rem;
   line-height: 1.2;
 }
 
@@ -1471,23 +1497,6 @@ async function handleEditorSaveRequested(): Promise<void> {
   min-width: 2.25rem;
   min-height: 2.25rem;
   padding: 6px 10px;
-}
-
-.vfs-preview-file-title {
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-  margin: 0;
-  max-width: min(60%, 480px);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  text-align: center;
-  pointer-events: none;
-  opacity: 0.92;
-  font-weight: 700;
-  font-size: 1.08rem;
-  line-height: 1.2;
 }
 
 .vfs-preview-meta {
