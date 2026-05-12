@@ -1,54 +1,30 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import LineNumberGutter from '@/app/components/pure-components/LineNumberGutter.vue'
-import type { VfsCommitHistoryRecord } from '@/app/composables/components-composables/useVfsCommitHistory'
 import ReaderScreen from '@/app/screens/pure-screens/ReaderScreen.vue'
 
 const model = defineModel<string>({ required: true })
 const previewMode = defineModel<boolean>('previewMode', { default: false })
 const props = withDefaults(
   defineProps<{
-    historyRecords?: VfsCommitHistoryRecord[]
     saveInProgress?: boolean
-    rollbackInProgress?: boolean
-    showHistoryControls?: boolean
     /** When false, preview/save live in the parent preview chrome (e.g. VfsMainScreen top bar). */
     embedToolbar?: boolean
   }>(),
   {
-    historyRecords: () => [],
     saveInProgress: false,
-    rollbackInProgress: false,
-    showHistoryControls: true,
     embedToolbar: true,
   },
 )
 const emits = defineEmits<{
-  manualRollbackRequested: [payload: { snapshotId: string }]
   saveRequested: []
 }>()
-const rollbackSnapshotId = ref<string | null>(null)
 const editorScrollTop = ref(0)
-const rollbackOptions = computed(() =>
-  props.historyRecords.flatMap((record) => {
-    if (!record.snapshotId) return []
-    return {
-      key: `${record.time}-${record.scope}-${record.snapshotId}`,
-      label: `${record.time} · ${record.actionType} · ${record.scope}`,
-      snapshotId: record.snapshotId,
-    }
-  }),
-)
 const lineCount = computed(() => Math.max(1, model.value.split('\n').length))
 
 function handleEditorScroll(event: Event): void {
   const target = event.target as HTMLTextAreaElement | null
   editorScrollTop.value = target?.scrollTop ?? 0
-}
-
-function requestManualRollback(): void {
-  if (!rollbackSnapshotId.value) return
-  emits('manualRollbackRequested', { snapshotId: rollbackSnapshotId.value })
 }
 
 function requestSave(): void {
@@ -97,39 +73,6 @@ function requestSave(): void {
     <div v-else class="vfs-editor-preview-pane">
       <ReaderScreen :html="model" />
     </div>
-    <aside v-if="props.showHistoryControls" class="vfs-editor-history-panel">
-      <h4>History</h4>
-      <ul>
-        <li v-for="record in props.historyRecords" :key="`${record.time}-${record.snapshotId}`">
-          <span>{{ record.time }}</span>
-          <span>{{ record.operator }}</span>
-          <span>{{ record.actionType }}</span>
-          <span>{{ record.scope }}</span>
-          <span>{{ record.snapshotId }}</span>
-        </li>
-      </ul>
-      <fieldset class="vfs-editor-history-select" data-testid="editor-history-rollback-list">
-        <legend>选择快照回滚</legend>
-        <label v-for="option in rollbackOptions" :key="option.key">
-          <input
-            :checked="rollbackSnapshotId === option.snapshotId"
-            type="radio"
-            name="editor-rollback-snapshot"
-            :value="option.snapshotId"
-            @change="rollbackSnapshotId = option.snapshotId"
-          />
-          <span>{{ option.label }}</span>
-        </label>
-      </fieldset>
-      <button
-        data-testid="editor-history-rollback-submit"
-        type="button"
-        :disabled="!rollbackSnapshotId"
-        @click="requestManualRollback"
-      >
-        {{ props.rollbackInProgress ? 'Rolling back...' : 'Rollback' }}
-      </button>
-    </aside>
   </section>
 </template>
 

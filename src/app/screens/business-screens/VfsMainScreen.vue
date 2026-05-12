@@ -33,7 +33,7 @@ import { VFS_ERROR_CODES } from '@/app/constants/vfsErrorCodes'
 import { vfsPersistenceStore, vfsSnapshotService } from '@/app/stores/vfs-store-singleton'
 import type { VfsSnapshot } from '@/domain/vfs/types'
 import type { VfsBrowserEntity } from '@/app/components/business-components/VfsFileManagerPanel.vue'
-import { dirname, normalizePath, ROOT_PATH } from '@/domain/vfs/path-utils'
+import { basename, dirname, normalizePath, ROOT_PATH } from '@/domain/vfs/path-utils'
 import { DeflateContentCodec } from '@/infra/serialization/deflate-codec'
 import { VfsCore } from '@/domain/vfs/vfs-core'
 import {
@@ -129,6 +129,8 @@ const inputDialogError = ref('')
 
 const readerHtml = computed(() => editorContent.value)
 const editorHistoryRecords = computed<VfsCommitHistoryRecord[]>(() => history.records.value)
+/** Header rollback control: bound to `editor-snapshot-select`; cleared when history list no longer contains the id. */
+const editorRollbackSnapshotId = ref('')
 const isTemplateScope = computed(() => props.scope === 'template')
 const resolvedTabs = computed<VfsScreenTab[]>(() => {
   if (isTemplateScope.value) return ['files']
@@ -597,6 +599,39 @@ function formatShortDateTime(timestamp?: number): string {
 }
 const currentViewerCreatedAtText = computed(() => formatShortDateTime(currentViewerFileNode.value?.ctime))
 const currentViewerUpdatedAtText = computed(() => formatShortDateTime(currentViewerFileNode.value?.mtime))
+
+function formatEditorSnapshotOptionLabel(record: VfsCommitHistoryRecord): string {
+  const parsed = Date.parse(record.time)
+  const when = Number.isFinite(parsed)
+    ? new Date(parsed).toLocaleString('zh-CN', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false,
+      })
+    : record.time
+  const path = typeof record.scope === 'string' ? record.scope : ''
+  const fileLabel = path ? basename(path) : '—'
+  const kindHint =
+    record.actionType === 'tool-batch-pre' ? '工具前' : record.actionType === 'manual' ? '保存前' : String(record.actionType)
+  return `${when} · ${fileLabel} · ${kindHint} · 还原点`
+}
+
+watch(
+  [editorHistoryRecords, mode, activeContextPath],
+  () => {
+    const ids = new Set(
+      editorHistoryRecords.value.map((row) => row.snapshotId).filter((id): id is string => Boolean(id)),
+    )
+    if (editorRollbackSnapshotId.value && !ids.has(editorRollbackSnapshotId.value)) {
+      editorRollbackSnapshotId.value = ''
+    }
+  },
+  { deep: true },
+)
 const shouldShowPreviewMetadata = computed(() => {
   if (!currentViewerFileNode.value) return false
   // WHY: source-edit mode should stay focused on editing only; metadata belongs to rendered preview experience.
@@ -628,6 +663,8 @@ function loadViewerFileAt(index: number): void {
   isDirty.value = false
   editorPreviewMode.value = true
   requestModeChange('editor')
+  // WHY: `history` is derived from persisted snapshots + `activeContextPath`; refresh so header select matches store without waiting for save/rollback.
+  refreshAuthoritativeState()
 }
 
 function initializeViewer(
@@ -1052,28 +1089,6 @@ async function handleEditorSnapshotRollback(payload: { snapshotId: string }): Pr
   })
 }
 
-async function handleManualSnapshotRequested(): Promise<void> {
-  if (isTemplateScope.value) return
-  const targetPath = activeContextPath.value
-  if (!targetPath) {
-    toastr.error('没有可快照的文件路径')
-    return
-  }
-  const node = getNodeByPath(currentSnapshot.value, targetPath)
-  if (!node || node.type !== 'file') {
-    toastr.error('仅支持对文件打快照')
-    return
-  }
-  try {
-    vfsSnapshotService.persistManualSnapshotForPath(targetPath)
-    refreshAuthoritativeState()
-    toastr.success('已创建快照')
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error)
-    toastr.error(message)
-  }
-}
-
 async function handleEditorSaveRequested(): Promise<void> {
   const scope = selectedEntity.value?.path ?? '/'
   await withWriteScopeGuard(scope, 'save', async () => {
@@ -1090,8 +1105,14 @@ async function handleEditorSaveRequested(): Promise<void> {
       return
     }
     try {
-      // WHY: save writes editor content into the active scope snapshot (template/chat) before side effects.
-      applySnapshotMutation((core) => core.writeFile(targetPath, editorContent.value))
+      if (isTemplateScope.value) {
+        // WHY: template scope has no `chatVfsSnapshots`; keep the existing single-bucket write path.
+        applySnapshotMutation((core) => core.writeFile(targetPath, editorContent.value))
+      } else {
+        // WHY: one `updateChat` commits pre-save manifest + file bytes so rollback metadata cannot drift from disk state.
+        vfsSnapshotService.persistChatFileSaveWithPreSnapshot(targetPath, editorContent.value)
+        currentSnapshot.value = vfsPersistenceStore.getState().chat.chatVfsSnapshot
+      }
     } catch (error) {
       const mapped = mapVfsMutationError(error, VFS_ERROR_CODES.SAVE_FAILED)
       historyMachine.dispatch({
@@ -1189,18 +1210,41 @@ async function handleEditorSaveRequested(): Promise<void> {
               >
                 <i :class="editorPreviewMode ? 'fa-solid fa-code' : 'fa-solid fa-eye'" aria-hidden="true" />
               </button>
-              <button
-                v-if="!isTemplateScope"
-                type="button"
-                class="menu_button vfs-preview-chrome-button"
-                data-testid="editor-manual-snapshot"
-                title="保存当前文件快照"
-                aria-label="保存当前文件快照"
-                :disabled="!activeContextPath"
-                @click="void handleManualSnapshotRequested()"
-              >
-                <i class="fa-solid fa-camera" aria-hidden="true" />
-              </button>
+              <template v-if="mode === 'editor' && !isTemplateScope">
+                <select
+                  v-model="editorRollbackSnapshotId"
+                  class="vfs-preview-chrome-select"
+                  data-testid="editor-snapshot-select"
+                  aria-label="选择快照还原点"
+                  :disabled="!activeContextPath || editorHistoryRecords.length === 0"
+                >
+                  <option value="">选择还原点…</option>
+                  <option
+                    v-for="record in editorHistoryRecords"
+                    :key="record.snapshotId ?? record.time"
+                    :value="record.snapshotId"
+                  >
+                    {{ formatEditorSnapshotOptionLabel(record) }}
+                  </option>
+                </select>
+                <button
+                  type="button"
+                  class="menu_button vfs-preview-chrome-button"
+                  data-testid="editor-history-rollback-submit"
+                  title="回滚到所选还原点"
+                  aria-label="回滚到所选还原点"
+                  :disabled="!editorRollbackSnapshotId || rollbackInProgress"
+                  :aria-busy="rollbackInProgress ? 'true' : undefined"
+                  @click="void handleEditorSnapshotRollback({ snapshotId: editorRollbackSnapshotId })"
+                >
+                  <i
+                    v-if="rollbackInProgress"
+                    class="fa-solid fa-spinner fa-spin"
+                    aria-hidden="true"
+                  />
+                  <span v-else>回滚</span>
+                </button>
+              </template>
               <button
                 data-testid="editor-save-submit"
                 type="button"
@@ -1260,13 +1304,9 @@ async function handleEditorSaveRequested(): Promise<void> {
                 :key="`editor-${viewRefreshToken}`"
                 v-model="editorContent"
                 v-model:preview-mode="editorPreviewMode"
-                :history-records="editorHistoryRecords"
                 :save-in-progress="saveInProgress"
-                :rollback-in-progress="rollbackInProgress"
-                :show-history-controls="!isTemplateScope"
                 :embed-toolbar="false"
                 @update:model-value="isDirty = true"
-                @manual-rollback-requested="handleEditorSnapshotRollback"
               />
             </div>
             <SlideshowScreen
@@ -1354,7 +1394,7 @@ async function handleEditorSaveRequested(): Promise<void> {
 
 .vfs-preview-top-bar {
   display: flex;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
   flex: 0 0 auto;
@@ -1376,6 +1416,19 @@ async function handleEditorSaveRequested(): Promise<void> {
   min-width: 2.25rem;
   min-height: 2.25rem;
   padding: 6px 10px;
+}
+
+.vfs-preview-chrome-select {
+  min-width: 10.5rem;
+  max-width: min(42vw, 22rem);
+  min-height: 2.25rem;
+  padding: 4px 8px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(0, 0, 0, 0.18);
+  color: inherit;
+  font: inherit;
+  line-height: 1.2;
 }
 
 .vfs-preview-body > :not(.vfs-preview-top-bar) {

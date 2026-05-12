@@ -18,7 +18,6 @@ describe('vfs line numbers', () => {
       props: {
         modelValue: '# a\nb\nc',
         previewMode: false,
-        showHistoryControls: false,
         'onUpdate:modelValue': vi.fn(),
         'onUpdate:previewMode': vi.fn(),
       },
@@ -32,7 +31,6 @@ describe('vfs line numbers', () => {
       props: {
         modelValue: 'alpha\nbeta',
         previewMode: true,
-        showHistoryControls: false,
         'onUpdate:modelValue': vi.fn(),
         'onUpdate:previewMode': vi.fn(),
       },
@@ -47,7 +45,6 @@ describe('vfs line numbers', () => {
       props: {
         modelValue: 'a\nb',
         previewMode: false,
-        showHistoryControls: false,
         'onUpdate:modelValue': vi.fn(),
         'onUpdate:previewMode': vi.fn(),
       },
@@ -63,7 +60,6 @@ describe('vfs line numbers', () => {
       props: {
         modelValue: Array.from({ length: 20 }, (_, index) => `line-${index + 1}`).join('\n'),
         previewMode: false,
-        showHistoryControls: false,
         'onUpdate:modelValue': vi.fn(),
         'onUpdate:previewMode': vi.fn(),
       },
@@ -114,7 +110,6 @@ describe('vfs line numbers', () => {
       props: {
         modelValue: content,
         previewMode: false,
-        showHistoryControls: false,
         'onUpdate:modelValue': vi.fn(),
         'onUpdate:previewMode': vi.fn(),
       },

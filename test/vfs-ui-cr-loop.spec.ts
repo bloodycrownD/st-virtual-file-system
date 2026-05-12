@@ -8,7 +8,6 @@ import VfsCreateEntityModal from '@/app/components/business-components/VfsCreate
 import VfsFileManagerPanel from '@/app/components/business-components/VfsFileManagerPanel.vue'
 import VfsHistoryScreen from '@/app/screens/business-screens/VfsHistoryScreen.vue'
 import VfsMainScreen from '@/app/screens/business-screens/VfsMainScreen.vue'
-import EditorScreen from '@/app/screens/pure-screens/EditorScreen.vue'
 import ReaderScreen from '@/app/screens/pure-screens/ReaderScreen.vue'
 import VfsHistoryPanel from '@/app/components/business-components/VfsHistoryPanel.vue'
 import { createVfsCommitHistoryStore } from '@/app/composables/components-composables/useVfsCommitHistory'
@@ -16,6 +15,7 @@ import { VFS_POPUP_BEFORE_CLOSE } from '@/app/composables/components-composables
 import { vfsPersistenceStore } from '@/app/stores/vfs-store-singleton'
 import { DeflateContentCodec } from '@/infra/serialization/deflate-codec'
 import { buildManifestEntriesFromBefore } from '@/domain/vfs-snapshot/vfs-snapshot-manifest'
+import type { VfsSnapshot } from '@/domain/vfs/types'
 
 const dispatchSpy = vi.fn()
 const useVfsSnapshotRollbackMock = vi.fn<(snapshotId: string) => Promise<boolean>>()
@@ -376,7 +376,7 @@ describe('vfs ui cr loop fixes', () => {
     await triggerEntityAction(wrapper, 'open', 'template.md')
     expect(wrapper.find('.vfs-editor-screen').exists()).toBe(true)
     expect(wrapper.text()).not.toContain('History')
-    expect(wrapper.find('[data-testid="editor-history-rollback-list"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="editor-snapshot-select"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="editor-history-rollback-submit"]').exists()).toBe(false)
   })
 
@@ -422,49 +422,22 @@ describe('vfs ui cr loop fixes', () => {
     expect(store.records.value[1]?.snapshotId).toBe('v1')
   })
 
-  it('shows editor history panel and emits manual rollback with source version', async () => {
-    const wrapper = mountTracked(EditorScreen, {
-      props: {
-        modelValue: 'draft',
-        historyRecords: [
-          {
-            time: '2026-05-08T11:00:00.000Z',
-            operator: 'assistant',
-            actionType: 'save',
-            scope: '/docs/a.md',
-            snapshotId: 'v42',
-          },
-        ],
-      },
-    })
+  it('shows header snapshot select in chat editor and wires rollback to selected id', async () => {
+    const wrapper = mountTracked(VfsMainScreen)
+    await selectDocsFile(wrapper)
+    await triggerEntityAction(wrapper, 'open', 'docs.md')
+    await ensureEditorSourceMode(wrapper)
 
-    expect(wrapper.text()).toContain('v42')
-    await wrapper.get('[data-testid="editor-history-rollback-list"] input[type="radio"]').setValue(true)
+    const select = wrapper.get('[data-testid="editor-snapshot-select"]')
+    expect(select.element.closest('.vfs-preview-chrome-actions')).not.toBeNull()
+    expect(select.findAll('option').length).toBeGreaterThan(1)
+
+    await select.setValue('snap-seed-1')
     await wrapper.get('[data-testid="editor-history-rollback-submit"]').trigger('click')
+    await flushPromises()
+    await nextTick()
 
-    expect(wrapper.emitted('manualRollbackRequested')?.[0]).toEqual([{ snapshotId: 'v42' }])
-  })
-
-  it('maps manual rollback selection to valid commit snapshot ids', async () => {
-    const wrapper = mountTracked(EditorScreen, {
-      props: {
-        modelValue: 'draft',
-        historyRecords: [
-          {
-            snapshotId: 'commit-raw-1',
-            time: '2026-05-08T12:00:00.000Z',
-            operator: 'assistant',
-            actionType: 'manual',
-            scope: '/docs/a.md',
-          },
-        ],
-      },
-    })
-
-    await wrapper.get('[data-testid="editor-history-rollback-list"] input[type="radio"]').setValue(true)
-    await wrapper.get('[data-testid="editor-history-rollback-submit"]').trigger('click')
-
-    expect(wrapper.emitted('manualRollbackRequested')?.[0]).toEqual([{ snapshotId: 'commit-raw-1' }])
+    expect(useVfsSnapshotRollbackMock).toHaveBeenCalledWith('snap-seed-1')
   })
 
   it('switches between mobile and desktop layout modes', async () => {
@@ -548,17 +521,19 @@ describe('vfs ui cr loop fixes', () => {
     await selectDocsFile(wrapper)
     await triggerEntityAction(wrapper, 'open', 'docs.md')
     await ensureEditorSourceMode(wrapper)
+    const beforeSnapshots = vfsPersistenceStore.getState().chat.chatVfsSnapshots.length
     await wrapper.get('textarea.vfs-editor').setValue('new content')
     await wrapper.get('[data-testid="editor-save-submit"]').trigger('click')
     await Promise.resolve()
     await wrapper.vm.$nextTick()
 
     const snapshot = vfsPersistenceStore.getState().chat.chatVfsSnapshot
+    expect(vfsPersistenceStore.getState().chat.chatVfsSnapshots.length).toBe(beforeSnapshots + 1)
     expect(decodeFileFromSnapshot(snapshot, '/docs/docs.md')).toBe('new content')
     expect(dispatchSpy).toHaveBeenCalledWith({ type: 'SAVE_REQUEST' })
     expect(dispatchSpy).toHaveBeenCalledWith({ type: 'SAVE_SUCCESS' })
     expect(toastrSuccessMock).toHaveBeenCalledWith('已保存')
-    expect(wrapper.text()).toContain('/docs/docs.md')
+    expect(wrapper.get('[data-testid="viewer-file-title"]').text()).toContain('docs.md')
 
     await wrapper.get('[data-testid="vfs-preview-back"]').trigger('click')
     await selectDocsFile(wrapper)
@@ -649,10 +624,7 @@ describe('vfs ui cr loop fixes', () => {
     await ensureEditorSourceMode(wrapper)
     await wrapper.get('textarea.vfs-editor').setValue('pending save')
     await wrapper.get('[data-testid="editor-save-submit"]').trigger('click')
-    const radio = wrapper.find('[data-testid="editor-history-rollback-list"] input[type="radio"]')
-    if (radio.exists()) {
-      await radio.setValue(true)
-    }
+    await wrapper.get('[data-testid="editor-snapshot-select"]').setValue('snap-seed-1')
     await wrapper.get('[data-testid="editor-history-rollback-submit"]').trigger('click')
 
     expect(useVfsSnapshotRollbackMock).toHaveBeenCalledTimes(1)
@@ -1106,8 +1078,7 @@ describe('vfs ui cr loop fixes', () => {
       return true
     })
 
-    const rollbackRadio = wrapper.get('input[name="editor-rollback-snapshot"]')
-    await rollbackRadio.setValue()
+    await wrapper.get('[data-testid="editor-snapshot-select"]').setValue('snap-seed-1')
     await wrapper.get('[data-testid="editor-history-rollback-submit"]').trigger('click')
     await flushPromises()
     await nextTick()
