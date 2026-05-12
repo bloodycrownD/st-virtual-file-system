@@ -53,7 +53,7 @@ vi.mock('@/app/stores/vfs-store-singleton', () => ({
   },
 }))
 
-describe('VFS history/logs UI optimization baseline', () => {
+describe('VFS history screen + VfsLogPanel component baseline', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     ;(globalThis as { toastr: { error: (message: string) => void } }).toastr = { error: vi.fn() }

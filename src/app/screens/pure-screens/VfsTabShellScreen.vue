@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 
-const ALL_TABS = ['files', 'history', 'logs', 'worktree'] as const
+/** WHY: Server-side paginated logs (`VfsLogPanel`) are not a top-level tab — chat execution logs live under `history`. */
+const ALL_TABS = ['files', 'history', 'worktree'] as const
 type VfsTab = (typeof ALL_TABS)[number]
 const activeTab = ref<VfsTab>('files')
 const TAB_LABELS: Record<VfsTab, string> = {
   files: '文件管理',
   /** WHY: `history` slot renders chat execution logs + snapshot rollback — not legacy commit records. */
   history: '执行与回滚',
-  logs: '日志',
   worktree: '工作树',
 }
 const props = defineProps<{

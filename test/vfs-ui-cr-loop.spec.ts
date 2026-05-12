@@ -12,14 +12,13 @@ import EditorScreen from '@/app/screens/pure-screens/EditorScreen.vue'
 import ReaderScreen from '@/app/screens/pure-screens/ReaderScreen.vue'
 import VfsHistoryPanel from '@/app/components/business-components/VfsHistoryPanel.vue'
 import { createVfsCommitHistoryStore } from '@/app/composables/components-composables/useVfsCommitHistory'
-import { VFS_LOG_REFRESH_AUTO, VFS_POPUP_BEFORE_CLOSE } from '@/app/composables/components-composables/useVfsMessageHooks'
+import { VFS_POPUP_BEFORE_CLOSE } from '@/app/composables/components-composables/useVfsMessageHooks'
 import { vfsPersistenceStore } from '@/app/stores/vfs-store-singleton'
 import { DeflateContentCodec } from '@/infra/serialization/deflate-codec'
 import { buildManifestEntriesFromBefore } from '@/domain/vfs-snapshot/vfs-snapshot-manifest'
 
 const dispatchSpy = vi.fn()
 const useVfsSnapshotRollbackMock = vi.fn<(snapshotId: string) => Promise<boolean>>()
-const fetchLogsMock = vi.fn(async () => ({ items: [], total: 0 }))
 let toastrErrorMock: ReturnType<typeof vi.fn>
 let toastrSuccessMock: ReturnType<typeof vi.fn>
 
@@ -171,17 +170,12 @@ vi.mock('@/app/composables/components-composables/useVfsSnapshotRollback', () =>
   useVfsSnapshotRollback: (snapshotId: string) => useVfsSnapshotRollbackMock(snapshotId),
 }))
 
-vi.mock('@/app/services/vfs/logService', () => ({
-  fetchLogs: (...args: unknown[]) => fetchLogsMock(...args),
-}))
-
 describe('vfs ui cr loop fixes', () => {
   beforeEach(() => {
     window.innerWidth = 1366
     dispatchSpy.mockReset()
     useVfsSnapshotRollbackMock.mockReset()
     useVfsSnapshotRollbackMock.mockResolvedValue(true)
-    fetchLogsMock.mockClear()
     toastrErrorMock = vi.fn()
     toastrSuccessMock = vi.fn()
     ;(globalThis as { toastr: { error: (message: string) => void; success: (message: string) => void } }).toastr = {
@@ -1523,56 +1517,4 @@ describe('vfs ui cr loop fixes', () => {
     expect(lastMessage).toContain('Path already exists')
   })
 
-  it('does not auto-fetch logs on tab enter (manual by default)', async () => {
-    const wrapper = mountTracked(VfsMainScreen)
-    await wrapper.get('.vfs-tabs button:nth-of-type(3)').trigger('click')
-    await Promise.resolve()
-    await wrapper.vm.$nextTick()
-
-    expect(fetchLogsMock).toHaveBeenCalledTimes(0)
-  })
-
-  it('triggers one auto log refresh when message event fires while Tab3 is open', async () => {
-    const wrapper = mountTracked(VfsMainScreen)
-    await wrapper.get('.vfs-tabs button:nth-of-type(3)').trigger('click')
-    await Promise.resolve()
-    await wrapper.vm.$nextTick()
-
-    window.dispatchEvent(new CustomEvent(VFS_LOG_REFRESH_AUTO))
-    await Promise.resolve()
-    await wrapper.vm.$nextTick()
-
-    expect(fetchLogsMock).toHaveBeenCalledTimes(1)
-  })
-
-  it('does not lose auto log refresh when message event fires while Tab3 is not active', async () => {
-    const wrapper = mountTracked(VfsMainScreen)
-
-    // Fire auto-refresh while still on Tab1 (files).
-    window.dispatchEvent(new CustomEvent(VFS_LOG_REFRESH_AUTO))
-    await Promise.resolve()
-    await wrapper.vm.$nextTick()
-    expect(fetchLogsMock).toHaveBeenCalledTimes(0)
-
-    // Opening Tab3 should consume the pending refresh exactly once.
-    await wrapper.get('.vfs-tabs button:nth-of-type(3)').trigger('click')
-    await Promise.resolve()
-    await wrapper.vm.$nextTick()
-    expect(fetchLogsMock).toHaveBeenCalledTimes(1)
-  })
-
-  it('coalesces multiple inactive-tab auto refresh events into a single pending refresh', async () => {
-    const wrapper = mountTracked(VfsMainScreen)
-
-    window.dispatchEvent(new CustomEvent(VFS_LOG_REFRESH_AUTO))
-    window.dispatchEvent(new CustomEvent(VFS_LOG_REFRESH_AUTO))
-    await Promise.resolve()
-    await wrapper.vm.$nextTick()
-    expect(fetchLogsMock).toHaveBeenCalledTimes(0)
-
-    await wrapper.get('.vfs-tabs button:nth-of-type(3)').trigger('click')
-    await Promise.resolve()
-    await wrapper.vm.$nextTick()
-    expect(fetchLogsMock).toHaveBeenCalledTimes(1)
-  })
 })

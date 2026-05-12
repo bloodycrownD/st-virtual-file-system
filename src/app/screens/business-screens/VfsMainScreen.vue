@@ -16,10 +16,8 @@ import {
 } from '@/app/composables/components-composables/useVfsFileManagerModel'
 import VfsFileManagerPanel from '@/app/components/business-components/VfsFileManagerPanel.vue'
 import VfsCreateEntityModal from '@/app/components/business-components/VfsCreateEntityModal.vue'
-import VfsLogPanel from '@/app/components/business-components/VfsLogPanel.vue'
 import {
   useVfsMessageHooks,
-  VFS_LOG_REFRESH_AUTO,
   VFS_POPUP_BEFORE_CLOSE,
   VFS_STATE_REFRESH_REQUIRED,
 } from '@/app/composables/components-composables/useVfsMessageHooks'
@@ -54,7 +52,7 @@ import { mapVfsMutationError, toVfsErrorToast } from '@/app/utils/vfsErrorMapper
 import { createEmptyVfsSnapshot, serializeVfsSnapshot } from '@/infra/persistence/vfs-snapshot.schema'
 
 type VfsScreenScope = 'chat' | 'template'
-type VfsScreenTab = 'files' | 'history' | 'logs' | 'worktree'
+type VfsScreenTab = 'files' | 'history' | 'worktree'
 type ViewerOriginKind = 'file-open' | 'dir-slideshow'
 type ViewerOriginContext = {
   kind: ViewerOriginKind
@@ -73,7 +71,7 @@ const props = withDefaults(
   }>(),
   {
     scope: 'chat',
-    tabs: () => ['files', 'history', 'logs', 'worktree'],
+    tabs: () => ['files', 'history', 'worktree'],
   },
 )
 
@@ -145,8 +143,6 @@ function readSnapshotFromStore(): VfsSnapshot {
 const currentSnapshot = ref<VfsSnapshot>(readSnapshotFromStore())
 const renderedWorkTreeText = computed(() => renderVirtualWorkTree(currentSnapshot.value, currentWorkTree.value))
 
-const logRefreshToken = ref(0)
-const logAutoRefreshPending = ref(false)
 let disposeMessageHooks: (() => void) | null = null
 
 const updateLayout = () => {
@@ -477,22 +473,8 @@ function onUnsavedEditorDialogCancel(): void {
   pendingEditorLeave.value = null
 }
 
-function onLogRefreshAutoRequested(): void {
-  // WHY: logs are manual by default, but message events must not "lose" a refresh request
-  // when Tab3 isn't active. We coalesce to a single pending refresh until the logs tab is opened.
-  if (activeTab.value === 'logs') {
-    logRefreshToken.value += 1
-    return
-  }
-  logAutoRefreshPending.value = true
-}
-
 function handleTabChanged(nextTab: VfsScreenTab): void {
   activeTab.value = nextTab
-  if (nextTab === 'logs' && logAutoRefreshPending.value) {
-    logAutoRefreshPending.value = false
-    logRefreshToken.value += 1
-  }
 }
 
 function overwriteCurrentChatWithTemplate(): void {
@@ -515,7 +497,6 @@ onMounted(() => {
   window.addEventListener(VFS_POPUP_BEFORE_CLOSE, handlePopupBeforeClose)
   if (!isTemplateScope.value) {
     window.addEventListener(VFS_STATE_REFRESH_REQUIRED, refreshAllViews)
-    window.addEventListener(VFS_LOG_REFRESH_AUTO, onLogRefreshAutoRequested)
   }
   window.addEventListener('resize', updateLayout)
   if (!isTemplateScope.value) disposeMessageHooks = useVfsMessageHooks()
@@ -526,7 +507,6 @@ onUnmounted(() => {
   window.removeEventListener(VFS_POPUP_BEFORE_CLOSE, handlePopupBeforeClose)
   if (!isTemplateScope.value) {
     window.removeEventListener(VFS_STATE_REFRESH_REQUIRED, refreshAllViews)
-    window.removeEventListener(VFS_LOG_REFRESH_AUTO, onLogRefreshAutoRequested)
   }
   window.removeEventListener('resize', updateLayout)
   disposeMessageHooks?.()
@@ -1310,7 +1290,6 @@ async function handleEditorSaveRequested(): Promise<void> {
 
     <VfsHistoryScreen v-else-if="slotTab === 'history'" :key="`history-${viewRefreshToken}`" />
     <WorkTreeScreen v-else-if="slotTab === 'worktree'" :text="renderedWorkTreeText" />
-    <VfsLogPanel v-else :refresh-token="logRefreshToken" />
     <VfsCreateEntityModal
       :open="createModalOpen"
       :kind="createKind"
