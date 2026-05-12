@@ -6,7 +6,8 @@ type VfsTab = (typeof ALL_TABS)[number]
 const activeTab = ref<VfsTab>('files')
 const TAB_LABELS: Record<VfsTab, string> = {
   files: '文件管理',
-  history: '提交记录',
+  /** WHY: `history` slot renders chat execution logs + snapshot rollback — not legacy commit records. */
+  history: '执行与回滚',
   logs: '日志',
   worktree: '工作树',
 }
