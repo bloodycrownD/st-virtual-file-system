@@ -22,6 +22,8 @@
  * additional stages (parse/validate/execute/commit) are implemented.
  */
 import type { StMessageEventKind } from '@/infra/sillytarvern/events/st-event-types'
+import { resolveVirtualToolMessageTextWithSource } from './resolve-virtual-tool-message-text'
+import { logVtPipeline } from './vfs-virtual-tool-pipeline-diag'
 import type { VirtualToolMessageHandler } from './virtual-tool-message-handler'
 
 /** Named pipeline stages for future phased execution/telemetry. */
@@ -67,23 +69,59 @@ export function createMessagePipeline(handler?: VirtualToolMessageHandler): Mess
     ) {
       return { ok: true, eventKind: input.kind }
     }
+    const messageIndex = typeof input.args[0] === 'number' ? input.args[0] : -1
+    logVtPipeline('pipeline-enter', { kind: input.kind, messageIndex })
     if (typeof SillyTavern === 'undefined') {
       return { ok: false, eventKind: input.kind, phase: 'parse', error: new Error('SillyTavern context unavailable') }
     }
     const context = SillyTavern.getContext() as { chat?: Array<Record<string, unknown>>; chatId?: string | number }
-    const messageIndex = typeof input.args[0] === 'number' ? input.args[0] : -1
     const chat = Array.isArray(context.chat) ? context.chat : []
     const record = messageIndex >= 0 ? chat[messageIndex] : undefined
-    const currentText =
-      (record && typeof record.mes === 'string' ? record.mes : undefined) ??
-      (record && typeof record.message === 'string' ? record.message : undefined) ??
-      (typeof input.args[1] === 'string' ? input.args[1] : undefined)
-    if (!currentText) return { ok: true, eventKind: input.kind }
+    const { text: currentText, textSource } = resolveVirtualToolMessageTextWithSource(input.kind, record, input.args)
+    const args1 = input.args[1]
+    const textLen = typeof currentText === 'string' ? currentText.length : 0
+    const hasVirtualToolCall = typeof currentText === 'string' && currentText.includes('<virtual-tool-call>')
+    logVtPipeline('pipeline-text', {
+      kind: input.kind,
+      messageIndex,
+      textSource,
+      textLen,
+      hasVirtualToolCall,
+      args1Type: typeof args1,
+      args1Len: typeof args1 === 'string' ? args1.length : undefined,
+    })
+    if (!currentText) {
+      logVtPipeline('pipeline-skip', {
+        kind: input.kind,
+        messageIndex,
+        skipReason: 'no-text',
+        textSource,
+        textLen: 0,
+        hasVirtualToolCall: false,
+      })
+      return { ok: true, eventKind: input.kind }
+    }
     const chatId = context.chatId ? String(context.chatId) : 'unknown-chat'
+    logVtPipeline('pipeline-before-handler', {
+      kind: input.kind,
+      messageIndex,
+      enteredHandler: true,
+      hasVirtualToolCall,
+      textSource,
+      textLen,
+    })
     const result = handler.process({
       chatId,
       messageId: String(messageIndex),
       messageText: currentText,
+    })
+    logVtPipeline('pipeline-after-handler', {
+      kind: input.kind,
+      messageIndex,
+      handled: result.handled,
+      hasVirtualToolCall,
+      textSource,
+      textLen,
     })
     if (result.handled && record) {
       // Mirror to both keys because ST variants use either `mes` or `message`.

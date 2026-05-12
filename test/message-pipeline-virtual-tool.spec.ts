@@ -6,6 +6,7 @@ describe('message-pipeline virtual-tool delegation', () => {
   const originalSillyTavern = (globalThis as { SillyTavern?: unknown }).SillyTavern
 
   afterEach(() => {
+    vi.restoreAllMocks()
     if (originalSillyTavern !== undefined) {
       ;(globalThis as { SillyTavern?: unknown }).SillyTavern = originalSillyTavern
     } else {
@@ -25,6 +26,32 @@ describe('message-pipeline virtual-tool delegation', () => {
     }
     pipeline.run({ kind: 'MESSAGE_UPDATED', args: [0] })
     expect(process).toHaveBeenCalledTimes(1)
+  })
+
+  it('logs vt pipeline diagnostics with textSource and handled', () => {
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+    const process = vi.fn(() => ({ handled: true, messageText: 'done' }))
+    const handler = { process } as unknown as VirtualToolMessageHandler
+    const pipeline = createMessagePipeline(handler)
+    ;(globalThis as { SillyTavern: { getContext: () => unknown } }).SillyTavern = {
+      getContext: () => ({
+        chatId: 'chat-1',
+        chat: [{ mes: 'stale' }],
+      }),
+    }
+    const fresh = '<virtual-tool-call>{}</virtual-tool-call>'
+    pipeline.run({ kind: 'MESSAGE_UPDATED', args: [0, fresh] })
+
+    const vtCalls = logSpy.mock.calls.filter((c) => String(c[0]).includes('[st-vfs][vt-msg]'))
+    expect(vtCalls.length).toBeGreaterThan(0)
+    const payloads = vtCalls.map((c) => c[2] as Record<string, unknown>)
+    expect(payloads.some((p) => p.textSource === 'args[1]')).toBe(true)
+    expect(payloads.some((p) => p.handled === true)).toBe(true)
+    expect(process).toHaveBeenCalledWith(
+      expect.objectContaining({
+        messageText: fresh,
+      }),
+    )
   })
 
   it('does not invoke handler.process for MESSAGE_DELETED', () => {
