@@ -1,107 +1,150 @@
-# VFS 编辑器保存 / 虚拟工具时机 / 回滚 UI 优化 技术规格（SPEC）
+# VFS 编辑器保存 / 虚拟工具时机 / 回滚 UI — 技术规格（SPEC）
 
-## 设计目标
+## 文档范围与状态
 
-- 对齐 [`prd.md`](./prd.md)：修复「编辑保存后虚拟工具不执行、刷新才执行」；chat 编辑器 **保存即快照**（去掉独立「保存快照」）；将快照选择与回滚 **并入预览 header 工具行**，并统一视觉与可读标签。
-- 基于当前代码事实：不凭空假设 SillyTavern 事件名，但在本仓库内将 **MESSAGE_UPDATED** 与 **MESSAGE_EDITED** 在管道层对齐为同一类「可携带消息正文变更」事件；依赖既有 `VirtualToolMessageHandler` 的 `chatId:messageId` 锁避免并发双跑。
+| 文档 | 路径 |
+|------|------|
+| 主需求 PRD | [`prd.md`](./prd.md) |
+| 第二轮变更 PRD | [`features/editor-snapshot-toolbar-and-pipeline-diagnostics/prd.md`](./features/editor-snapshot-toolbar-and-pipeline-diagnostics/prd.md) |
 
----
+**第一轮（已实现，代码基线）**
 
-## Bug 根因分析（虚拟工具）
+- **`message-pipeline.ts`**：已将 `MESSAGE_UPDATED` 与 `MESSAGE_RECEIVED` / `MESSAGE_EDITED` 一并纳入虚拟工具委托（见文件头注释与第 63–67 行 kind 门闸）。
+- **`ChatVfsSnapshotService.persistChatFileSaveWithPreSnapshot`**：chat 保存单事务写入快照 + 文件。
+- **`VfsMainScreen.vue`**：编辑器 header 右侧 `vfs-preview-chrome-actions` 内含原生 `<select>`（`data-testid="editor-snapshot-select"`）+ 回滚；已移除 `EditorScreen` 侧栏历史区与独立「保存快照」相机按钮。
+- **`EditorScreen.vue`**：仅编辑/预览/行号，无 History aside。
 
-### 现状链路
-
-1. `main.ts` 将 `VirtualToolMessageHandler` 接入 `createMessagePipeline`，经 `createMessageController` + `createStMessageEventAdapter().start()` 订阅 ST `eventSource`。
-2. `st-event-adapter.ts`：当 `event_types.MESSAGE_EDITED` 与 `MESSAGE_UPDATED` **不是同一字符串** 时，会分别注册两个监听；`MESSAGE_EDITED` → `onMessageEdited` → `pipeline.run({ kind: 'MESSAGE_EDITED' })`；`MESSAGE_UPDATED` → `onMessageUpdated` → `pipeline.run({ kind: 'MESSAGE_UPDATED' })`。
-3. **`message-pipeline.ts` 第 61–63 行**仅当 `kind === 'MESSAGE_RECEIVED' || kind === 'MESSAGE_EDITED'` 时才调用 `handler.process`；对 **`MESSAGE_UPDATED` 直接 return**，不读消息、不执行虚拟工具。
-4. 用户「保存编辑后的消息」若在当前 SillyTavern 版本只派发 **`MESSAGE_UPDATED`**（或与 `MESSAGE_EDITED` 不同名、且保存路径未触发 `MESSAGE_EDITED`），则扩展**完全跳过**虚拟工具管道；整页刷新后重新加载聊天，可能走 `MESSAGE_RECEIVED` 或其它路径，因而表现为「刷新后才生效」。
-
-### 结论
-
-- **主因**：管道层对 `MESSAGE_UPDATED` 的**显式排除**，与适配器仍向管道投递该 kind 的行为不一致。
-- **并发**：`VirtualToolMessageHandler` 已对 `chatId:messageId` 加锁（见 `virtual-tool-message-handler.ts` 注释），在 `EDITED` 与 `UPDATED` 短时间双发时，第二条可安全 `handled: false`，满足「至多执行一次」。
-
-### 次要风险（实现时注意，不阻塞本迭代默认范围）
-
-- 若某 ST 版本在 `UPDATED` 回调时 **`context.chat[i].mes` 尚未写入新文本**，而仅 `args[1]` 携带新正文，则当前管道**优先读 record**（`message-pipeline.ts` 第 71–74 行）可能读到旧文本。本迭代以「先打通 UPDATED 路径」为主；若单测或实测仍复现，再在管道内为 `MESSAGE_UPDATED` 增加「args 优先」或「取较新」策略并补测（见风险节）。
+**第二轮（本 SPEC 的实现对象）**  
+对齐变更 PRD：顶栏**左组**放置快照 listbox + 回滚；**替换原生 `<select>`** 为共享 listbox；**始终 console 诊断**并视情况修正**编辑类事件**下的正文选取顺序（`record.mes` vs `args[1]`）。
 
 ---
 
-## 总体方案
+## 设计目标（第二轮）
 
-### A. 虚拟工具：`MESSAGE_UPDATED` 与 `MESSAGE_EDITED` 等价处理
+1. **布局**：快照选择 + 回滚与 **`vfs-preview-back-button`** 同组左对齐；**`vfs-preview-file-title`** 不被遮挡，中间区域 `min-width:0` + `ellipsis` 保持可读。
+2. **组件**：快照选择使用与 **`VfsActionInputDialog`** 中 `type === 'select'` 一致的 **combobox + listbox** 交互的**共享组件**；编辑器场景禁止原生 `<select>`。
+3. **可观测性 + 正确性**：在**生产构建**也通过 `console` 输出结构化诊断（前缀统一，如 **`[st-vfs][vt-msg]`**）；并落实**编辑类 kind**（`MESSAGE_EDITED` / `MESSAGE_UPDATED`）下更可靠的**消息正文来源**策略，解决「仍读陈旧 `record.mes`、工具块不执行」类问题（与变更 PRD 一致）。
 
-- 在 **`message-pipeline.ts`** 将虚拟工具委托条件扩展为：`MESSAGE_RECEIVED || MESSAGE_EDITED || MESSAGE_UPDATED`。
-- 更新该文件头部 **Current behavior** 注释，避免文档与代码再次漂移。
-- **不**改 `st-event-adapter` 的注册策略（保持对「两常量同值」的去重），避免重复注册同名事件。
+---
 
-### B. Chat 编辑器：保存 = 预写快照 + 写文件（单次持久化）
+## 现状与代码约束（探索结论）
 
-- **产品**：每次成功保存均生成一条可回滚快照（PRD 已定）；与已移除的「相机」手动快照语义一致：**锚点为保存前的该文件路径状态**。
-- **实现**：在 **`ChatVfsSnapshotService`** 增加一次性方法（命名示例）`persistChatFileSaveWithPreSnapshot(path, content)`（或等价私有辅助 + 单处 `updateChat`）：
-  - 在**同一** `vfsPersistenceStore.updateChat` 回调内：
-    1. 读取 `draft.chatVfsSnapshot` 作为 `before`；
-    2. 用现有 `buildManualRecordForPath(before, path)` 生成 manifest 记录（`kind` 维持 **`'manual'`**，与既有 schema 一致，避免无意义枚举膨胀）；
-    3. 用 `VfsCore` `importSnapshot` → `writeFile` → `exportSnapshot` 得到新树；
-    4. 写回 `draft.chatVfsSnapshot`，并将记录 `mergeIntoChatSnapshots(draft.chatVfsSnapshots, record)`。
-  - **禁止**先 `persistManualSnapshotForPath` 再 `applySnapshotMutation` 的两段式默认路径，以免中间失败造成「快照与文件不一致」窗口（对齐 PRD「不应静默分裂」）。
-- **`VfsMainScreen.vue` `handleEditorSaveRequested`**：在 `!isTemplateScope` 时调用上述新方法替代「仅 `applySnapshotMutation`」；模板域仍走原 `applySnapshotMutation`（无 `chatVfsSnapshots`）。
-- **删除**：`handleManualSnapshotRequested`、header 相机按钮（`data-testid="editor-manual-snapshot"`）、以及对 `vfsSnapshotService.persistManualSnapshotForPath` 的该路径调用（若其它处仍需要可保留服务方法供内部复用）。
+### 预览顶栏（`VfsMainScreen.vue`）
 
-### C. 回滚 UI：迁入 header，下拉 + 按钮
+- 当前结构为：`header.vfs-preview-top-bar` → **返回** → **`p.vfs-preview-file-title`**（`flex` 默认参与分配）→ **`div.vfs-preview-chrome-actions`**（`margin-left: auto`）。
+- 快照 `<select>` 与回滚按钮放在 **`chrome-actions` 内靠前位置**（约 1213–1247 行），与预览/保存等同一右组；`select` 有 `max-width: min(42vw, 22rem)`（`.vfs-preview-chrome-select`），在窄宽度或长标题时仍可能与标题**争用水平空间**，符合用户反馈「遮挡标题」。
 
-- **`VfsMainScreen.vue`** 预览 chrome（`vfs-preview-chrome-actions`）在 **`mode === 'editor' && !isTemplateScope`** 时追加：
-  - **`<select>`**（或带 `role="combobox"` 的轻量封装）：`v-model` 绑定当前选中 `snapshotId`；`option` 的 `value` 为 `snapshotId`，展示文案由格式化函数生成（见下）。
-  - **「回滚」按钮**：`class` 与现有 `menu_button vfs-preview-chrome-button` 一致；`disabled` 逻辑：未选中、或 `rollbackInProgress`；`aria-busy` 与保存按钮一致模式。
-  - 点击回滚：调用现有 `handleEditorSnapshotRollback({ snapshotId })`（内部已 `useVfsSnapshotRollback` + `refreshAuthoritativeState`）。
-- **`EditorScreen.vue`**：
-  - 移除底部 **`aside`「History」** 整块（列表 + `fieldset` 单选 + Rollback），避免与 PRD冲突。
-  - 将 **`show-history-controls` / `history-records`** 等仅服务该 aside 的 props 与相关 emit 删除或收敛（若 `embedToolbar: true` 的独立工具栏场景仍需保存按钮，可保留 `saveRequested` 与精简 toolbar；当前仓库仅 `VfsMainScreen` 以 `embed-toolbar="false"` 引用，以实现为准**删繁就简**）。
-  - 移除 `@manual-rollback-requested` 在 `VfsMainScreen` 上的监听（改由 header 直调 `handleEditorSnapshotRollback`）。
-- **下拉展示格式**：避免 `时间 + kind + 路径` 无分隔拼接；建议 `toLocaleString('zh-CN', { hour12: false })` + 固定后缀 **「还原点」**，或 `HH:mm:ss` + 文件名 `basename(path)`（数据来自 `editorHistoryRecords` / 或直接从 `chatVfsSnapshots` 过滤当前 `activeContextPath` 的项）。**不在 UI 强调** `manual` / `tool-batch-pre` 英文区分（与 PRD「保存与快照合一」一致）；若需区分工具批次与保存，可用极短中文后缀「工具前」「保存前」映射 `kind`（可选，实现阶段择优）。
+### 自定义 listbox 参考实现
 
-### D. 样式
+- **`VfsActionInputDialog.vue`**（约 88–172、256–305 行）：`openSelectKey`、`toggleListbox`、`onSelectTriggerKeydown`（Arrow/Enter/Escape/Tab）、`onClickOutside`、`role="combobox"` / `role="listbox"` / `aria-expanded` / `aria-activedescendant`、`.vfs-action-input-dialog__listbox-*` 样式。这是本轮抽取的**事实来源**。
 
-- 为 header 内 `<select>` 增加 scoped 类（如 `vfs-preview-chrome-select`）：`min-width`、`max-width`、`height`、背景/边框与 `vfs-preview-chrome-button` 所在行一致（参考同文件已有 `.vfs-preview-chrome-*`）。
-- `flex-wrap: wrap` 已存在于父级时，保证窄屏下 **select 整组 + 回滚按钮** 可折行但不与标题重叠（必要时给 chrome 容器 `flex-wrap: wrap` + `justify-content: flex-end`）。
+### 消息管道（`message-pipeline.ts`）
+
+- 正文 `currentText` 顺序为：`record.mes` → `record.message` → **`args[1]`**（第 77–80 行）。若 SillyTavern 在**保存瞬间**先触发回调、**后**写回 `chat[i].mes`，则 `record.mes` 可能仍为旧串，**不会回落到 `args[1]`**（因 `??` 仅在左侧为 `null`/`undefined` 时继续）。这与「已接 UPDATED 仍不生效」现象一致，第二轮需在 **EDITED/UPDATED** 上调整选取策略并打日志证实。
+
+### 适配器（`st-event-adapter.ts`）
+
+- `MESSAGE_EDITED` 与 `MESSAGE_UPDATED` 为不同字符串时各注册一条监听；同值时去重为一次 `onMessageEdited`。诊断日志应在 **`start()`** 末尾输出一次 **`et.MESSAGE_*` 解析到的实际字符串**（避免每次消息刷屏），并在**每条消息处理**日志中写逻辑 `kind`（`onMessageUpdated` → `MESSAGE_UPDATED`）。
+
+---
+
+## 总体方案（第二轮）
+
+### 1. 顶栏三段布局
+
+将 `vfs-preview-top-bar` 拆为三个子容器（类名实现阶段可微调）：
+
+| 区域 | 内容 | CSS 要点 |
+|------|------|----------|
+| **左组** | 返回 + 快照 listbox + 回滚 | `display:flex; align-items:center; gap; flex:0 0 auto; flex-shrink:0` |
+| **中组** | `vfs-preview-file-title` | `flex:1 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis`；与左组 `gap` 分离 |
+| **右组** | 原 `vfs-preview-chrome-actions` 内**其余**按钮（预览切换、保存、幻灯片 prev/next） | 保留 `margin-left:auto` **仅作用于右组**，或右组整体 `margin-left:auto`，左+中先占位 |
+
+从右组 **移除** 快照 `<select>` 与回滚按钮 DOM；在左组新增挂载点（如 `vfs-preview-top-bar__snapshot`）。
+
+### 2. 共享 Listbox 组件
+
+- **新建**（建议路径）：`src/app/components/pure-components/VfsListboxField.vue`（或 `business-components`，以与现有对话框样式复用为准）。
+- **API（建议）**：`modelValue: string`；`options: Array<{ label: string; value: string }>`；`placeholder?: string`；`disabled?: boolean`；`ariaLabel: string`；`teleportToBody?: boolean`（默认 `false`；header 内嵌即可）；`dataTestid?: string`（触发器，如 `editor-snapshot-listbox-trigger`）；弹出层可用 `data-testid` 后缀 `-listbox`。
+- **行为**：对齐 `VfsActionInputDialog` 的键盘与点击外部关闭；样式可抽 scss 变量或复制并改名为 `vfs-listbox-field__*` 以免与对话框内边距冲突。
+- **重构 `VfsActionInputDialog`**：**优先**用新组件替换内联 listbox 分支（减少双份逻辑）；若一次改动风险高，允许先 **仅 `VfsMainScreen` 接入**，对话框在跟进提交中替换（须在 SPEC「变更点清单」标注为 Partial 完成条件）。
+
+### 3. 消息正文选取 + 诊断日志
+
+#### 3.1 正文选取（编辑类事件）
+
+- 新增纯函数（建议）：`src/app/services/message/resolve-virtual-tool-message-text.ts` — `export function resolveVirtualToolMessageText(kind, record, args): string | undefined`。
+- **规则**：
+  - `MESSAGE_RECEIVED`：**保持现状**（`mes` → `message` → `args[1]`）。
+  - `MESSAGE_EDITED` / `MESSAGE_UPDATED`：若 `typeof args[1] === 'string' && args[1].length > 0`，**优先** `args[1]`；否则回退 `mes` → `message`。
+- **`message-pipeline.ts`**：`currentText` 改为调用该函数；单元测试覆盖「`mes` 旧、`args[1]` 新 → 应用新串」。
+
+#### 3.2 诊断日志（始终 console）
+
+- 新增薄模块（建议）：`src/app/services/message/vfs-virtual-tool-pipeline-diag.ts`，导出 `logVtPipeline(event: string, payload: Record<string, unknown>)`，内部 **`console.log('[st-vfs][vt-msg]', event, payload)`**（或单行 JSON），**禁止**默认打印完整 `messageText`；允许字段：`kind`、`stEvent`（若上层传入）、`messageIndex`、`textSource`（`'args[1]'` \| `'mes'` \| `'message'` \| `'none'`）、`textLen`、`hasVirtualToolCall`、`enteredHandler`、`handled`、`skipReason?`。
+- **调用点**：
+  - `message-pipeline.ts`：`processMessage` 入口（kind、index）、选取正文后（textSource、摘要字段）、`handler.process` 返回后（handled）。
+  - `st-event-adapter.ts`：`start()` 完成注册后 **一次性** `logVtPipeline('adapter-start', { registeredEditEvents: [...], received: et.MESSAGE_RECEIVED, ... })`（仅字符串常量，不含闭包敏感信息）。
+  - `VirtualToolMessageHandler.process`（可选但推荐）：在 `handled:false` 的早退路径打 `skipReason`（`lock`、`no-call`、`multi-result`、`disabled`），便于与管道日志串联。
 
 ---
 
 ## 最终项目结构
 
-无新增包目录；变更集中在：
+```text
+src/app/
+  components/
+    pure-components/
+      VfsListboxField.vue          # 新建（或等价命名）
+    business-components/
+      VfsActionInputDialog.vue      # 改为复用 VfsListboxField（优先）
+  services/
+    message/
+      message-pipeline.ts           # 改：resolve 文本 + 诊断
+      resolve-virtual-tool-message-text.ts  # 新建
+      vfs-virtual-tool-pipeline-diag.ts       # 新建
+  screens/business-screens/
+    VfsMainScreen.vue               # 改：顶栏三段 + 接入 listbox
+  infra/sillytarvern/events/
+    st-event-adapter.ts             # 改：adapter-start 诊断
+  .../virtual-tool-message-handler.ts  # 改（可选）：skip 诊断
 
-- `src/app/services/message/message-pipeline.ts`
-- `src/app/services/vfs-snapshot/chat-vfs-snapshot-service.ts`
-- `src/app/screens/business-screens/VfsMainScreen.vue`
-- `src/app/screens/pure-screens/EditorScreen.vue`
-- `test/`：管道单测、`chat-vfs-snapshot-service.spec.ts` 或 `vfs-ui-cr-loop.spec.ts` 选择性增补
+test/
+  resolve-virtual-tool-message-text.spec.ts  # 新建
+  message-pipeline-virtual-tool.spec.ts       # 增补选取顺序 + log spy
+  vfs-listbox-field.spec.ts                  # 新建（最小交互）
+  vfs-ui-cr-loop.spec.ts                      # 更新 testid / DOM 路径
+  （如存在）VfsActionInputDialog 相关测例更新
+```
 
 ---
 
 ## 变更点清单
 
-| 区域 | 文件 | 变更摘要 |
-|------|------|----------|
-| 管道 | `message-pipeline.ts` | `MESSAGE_UPDATED` 与 `RECEIVED`/`EDITED` 一样进入 `handler.process`；注释同步 |
-| 快照服务 | `chat-vfs-snapshot-service.ts` | 新增单事务「保存前 manifest + 写文件」API；内部复用 `buildManualRecordForPath` + `mergeIntoChatSnapshots` |
-| 主屏 | `VfsMainScreen.vue` | chat 保存走新 API；header 增加 select+回滚；删相机与手动快照处理；`EditorScreen` 去历史 props/事件 |
-| 编辑器纯屏 | `EditorScreen.vue` | 移除 History aside 及相关 props/computed；保留编辑/预览/行号核心 |
-| 类型/常量 | 无强制变更 | `ChatVfsSnapshotKind` 可继续仅 `manual` \| `tool-batch-pre` |
-| 测试 | `message-controller` / 新 vitest | `pipeline.run({ kind: 'MESSAGE_UPDATED', args: [...] })` 应触发 mock handler；快照+保存单测；更新 UI 测中对 `editor-history-rollback-list` 的断言（见下） |
+| 文件 | 变更 |
+|------|------|
+| `VfsMainScreen.vue` | 顶栏 DOM/CSS 三段；快照用 `VfsListboxField`；移除 `<select>`；`data-testid` 与测试对齐 |
+| `VfsListboxField.vue` | **新建** listbox |
+| `VfsActionInputDialog.vue` | **优先**内联 select 改为 `VfsListboxField` |
+| `resolve-virtual-tool-message-text.ts` | **新建** |
+| `vfs-virtual-tool-pipeline-diag.ts` | **新建** |
+| `message-pipeline.ts` | 接入 resolve + diag |
+| `st-event-adapter.ts` | `adapter-start` 一次性 diag |
+| `virtual-tool-message-handler.ts` | 可选 skip diag |
+| `test/*` | 见测试策略 |
 
 ---
 
 ## 详细实现步骤
 
-1. **message-pipeline**：扩展 kind 判断；补 DEV `console.debug` 若保留则包含 UPDATED。
-2. **Vitest**：`VirtualToolMessageHandler` 用 mock，`createMessagePipeline(handler).run({ kind: 'MESSAGE_UPDATED', args: [0, '<virtual-tool-call>...'] })` 断言 `process` 被调用（或消息被替换）。可放在新文件 `test/message-pipeline-virtual-tool.spec.ts` 或扩展现有 `message-controller.test.ts`。
-3. **ChatVfsSnapshotService**：实现 `persistChatFileSaveWithPreSnapshot(path, content)`（需 `ContentCodec` — 与构造处一致，可用现有 `this.codec`）；单测：给定初始 snapshot + path，调用后 `chatVfsSnapshots` 增 1、`chatVfsSnapshot` 内容更新，且 manifest 对应该 path 的保存前内容。
-4. **VfsMainScreen**：`handleEditorSaveRequested` 分支：`isTemplateScope` → 保持 `applySnapshotMutation`；否则 → 新服务方法，然后 `savedContent` / `isDirty` / `historyMachine` 与现有一致；`refreshAllViews()` 仍调用。
-5. **模板**：删除手动快照 UI 与函数。
-6. **EditorScreen**：删除 aside 与 `rollbackOptions` / `rollbackSnapshotId` 等；若 props 删减导致 `embedToolbar: true` 分支不完整，可同步删模板内冗余按钮或保留最小保存（按仓库实际引用情况收尾）。
-7. **Header**：`editorRollbackSnapshotId` ref；`watch([editorHistoryRecords, mode], ...)` 在列表变化时清空非法选中；`select` `data-testid="editor-snapshot-select"`、`button data-testid="editor-history-rollback-submit"` **保留**以便测试改查 header。
-8. **文档字符串**：`virtual-tool-message-handler.ts` 顶部可补一句「UPDATED 与 EDITED 同属编辑类事件」。
+1. **diag 模块**：实现 `logVtPipeline`，约定字段集合；禁止完整正文。
+2. **resolve 模块**：实现并单测 `MESSAGE_EDITED`/`UPDATED` + `args[1]` 优先。
+3. **message-pipeline**：替换 `currentText` 计算；插入 diag；保留 `SillyTavern` 未定义错误路径。
+4. **st-event-adapter**：`start()` 末尾打印已注册的 `MESSAGE_*` 字符串映射（数组形式即可）。
+5. **VfsListboxField**：实现 + 样式 + `data-testid`；从 `VfsActionInputDialog` 抽取/替换。
+6. **VfsMainScreen**：左组插入 listbox + 回滚；右组删除二者；调整 class；`.vfs-preview-chrome-actions` 的 `flex-wrap` 可按评审建议设为 `wrap` 以改善极窄屏。
+7. **VirtualToolMessageHandler**（可选）：`skipReason` 日志。
+8. **全量测试与 build**。
 
 ---
 
@@ -109,13 +152,11 @@
 
 ### 测试用例
 
-1. **管道**：`MESSAGE_UPDATED` + 合法 args / mock `getContext().chat` → `handler.process` 调用 1 次（或与 EDITED 相同断言）。
-2. **管道负例**：`MESSAGE_DELETED` 仍不调用 handler（回归）。
-3. **快照服务**：单次 `updateChat` 后快照条数 +1、文件内容等于新 `content`；`snapshotMaxCount` 下 FIFO（可复用现有 `chat-vfs-snapshot-service.spec.ts` 风格）。
-4. **UI（`vfs-ui-cr-loop.spec.ts`）**：
-   - 原 `editor-history-rollback-list` 在 `EditorScreen` 内 **不存在** → 改为断言 **`editor-snapshot-select`** 在 **header** 存在（mount 后进入 editor 模式）。
-   - `hides history ... template mode`：模板下仍无快照控件；chat 下有 select。
-5. **（可选）E2E**：若已有 `virtual-tool-cr-fixes.spec.ts` 覆盖 handler，可追加「UPDATED kind」路径的单元测试即可，无需浏览器 E2E。
+1. **`resolve-virtual-tool-message-text.spec.ts`**：`EDITED` + `mes` 旧 + `args[1]` 含 `<virtual-tool-call>` → 返回 `args[1]`；`RECEIVED` 仍优先 `mes`。
+2. **`message-pipeline-virtual-tool.spec.ts`**：spy `console.log`，断言含 `[st-vfs][vt-msg]`、`handled`、`textSource`；mock handler。
+3. **`VfsListboxField` / 对话框**：打开、选一项、`modelValue` 更新、Escape 关闭（新文件或扩展现有组件测）。
+4. **`vfs-ui-cr-loop.spec.ts`**：进入 editor 后，快照控件为 **listbox trigger**（新 `data-testid`）；**不存在** `select[data-testid="editor-snapshot-select"]`；断言触发器在**返回按钮**所在左组容器内（可通过 `wrapper.get('[data-testid="vfs-preview-back"]')` 的 `element.parentElement` 包含关系或给左组加 `data-testid="vfs-preview-top-bar-left"` 辅助断言）。
+5. **回归**：`npm test`、`npm run build`。
 
 ---
 
@@ -123,22 +164,20 @@
 
 | 风险 | 缓解 |
 |------|------|
-| ST 在 UPDATED 时 `record.mes` 滞后 | 单测模拟双形状；必要时后续迭代为 UPDATED 优先读 `args[1]` |
-| 单事务保存 API 与 `VfsCore.writeFile` 选项不一致 | 与现 `applySnapshotMutation` 使用相同 `writeFile` 选项（`updatedBy` 等）对齐 |
-| UI 测试依赖旧 DOM | 按上表更新 `data-testid` 与查找路径 |
+| 某 ST 版本 `args[1]` 不是正文 | 日志中带 `typeof args[1]` 与长度；必要时再收窄「仅当包含 `<virtual-tool-call>` 时 args 优先」 |
+| Listbox 在窄 header 溢出 | `max-width` + `min-width:0` 中组标题；左组 `max-width` 可选 cap |
+| 对话框重构引入回归 | 分提交：先新组件 + MainScreen，再对话框替换；每步跑测 |
 
-**回滚**：Git revert 本迭代提交；无持久化 schema 变更（`kind` 仍用 `manual`）。
+**回滚**：按提交 revert；无 schema 变更。
 
 ---
 
-## 评审结论（已定案）
+## 与主 PRD / 第一轮 SPEC 的关系
 
-- 虚拟工具：**管道层接纳 `MESSAGE_UPDATED`** 为本次 bug 修复核心。
-- 保存快照：**单事务** 写入 `chatVfsSnapshot` + `chatVfsSnapshots`；去掉独立「保存快照」入口。
-- UI：**快照下拉 + 回滚** 放在 `VfsMainScreen` 预览 header 与预览/保存按钮同一行；`EditorScreen` 不再承载历史侧栏。
+- 主 PRD 中「header 同行控件」已由第一轮满足；第二轮**细化**为「左组 + 自定义 listbox + 诊断与正文选取修正」，**不**推翻「保存即快照」「单事务」等已交付行为。
 
 ---
 
 **文档路径**：`docs/Iterations/VFS-Editor-Save-Snapshot-VirtualTool-And-Rollback-UI/spec.md`
 
-请确认本 `spec.md` 是否可作为实现依据；确认后再进入编码阶段。
+请确认本 `spec.md`（含第二轮范围）是否可作为实现与评审的唯一事实来源；确认后再进入编码。
