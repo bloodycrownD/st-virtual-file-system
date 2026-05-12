@@ -23,6 +23,11 @@
  */
 import type { StMessageEventKind } from '@/infra/sillytarvern/events/st-event-types'
 import { resolveVirtualToolMessageTextWithSource } from './resolve-virtual-tool-message-text'
+import {
+  resolveChatMessageTarget,
+  stableVirtualToolMessageIdFromRecord,
+  summarizeStMessageCallbackArgs0,
+} from './resolve-st-message-callback'
 import { logVtPipeline } from './vfs-virtual-tool-pipeline-diag'
 import type { VirtualToolMessageHandler } from './virtual-tool-message-handler'
 
@@ -54,7 +59,8 @@ export interface MessagePipeline {
 }
 
 /**
- * v2 stub: no parsing, validation, or persistence. Optional debug trace in dev builds.
+ * v2 stub: virtual-tool delegation + always-on `[st-vfs][vt-msg]` diagnostics (see `logVtPipeline`).
+ * DEV-only `console.debug` remains for local noise control; production observability uses `logVtPipeline`.
  */
 export function createMessagePipeline(handler?: VirtualToolMessageHandler): MessagePipeline {
   const processMessage = (input: MessagePipelineInput): PipelineResult => {
@@ -69,14 +75,18 @@ export function createMessagePipeline(handler?: VirtualToolMessageHandler): Mess
     ) {
       return { ok: true, eventKind: input.kind }
     }
-    const messageIndex = typeof input.args[0] === 'number' ? input.args[0] : -1
-    logVtPipeline('pipeline-enter', { kind: input.kind, messageIndex })
     if (typeof SillyTavern === 'undefined') {
       return { ok: false, eventKind: input.kind, phase: 'parse', error: new Error('SillyTavern context unavailable') }
     }
     const context = SillyTavern.getContext() as { chat?: Array<Record<string, unknown>>; chatId?: string | number }
     const chat = Array.isArray(context.chat) ? context.chat : []
-    const record = messageIndex >= 0 ? chat[messageIndex] : undefined
+    const { messageIndex, record } = resolveChatMessageTarget(input.args, chat)
+    logVtPipeline('pipeline-enter', {
+      kind: input.kind,
+      messageIndex,
+      argsLen: input.args.length,
+      args0Summary: summarizeStMessageCallbackArgs0(input.args[0]),
+    })
     const { text: currentText, textSource } = resolveVirtualToolMessageTextWithSource(input.kind, record, input.args)
     const args1 = input.args[1]
     const textLen = typeof currentText === 'string' ? currentText.length : 0
@@ -102,9 +112,12 @@ export function createMessagePipeline(handler?: VirtualToolMessageHandler): Mess
       return { ok: true, eventKind: input.kind }
     }
     const chatId = context.chatId ? String(context.chatId) : 'unknown-chat'
+    const messageIdForHandler =
+      messageIndex >= 0 ? String(messageIndex) : record ? stableVirtualToolMessageIdFromRecord(record) : '-1'
     logVtPipeline('pipeline-before-handler', {
       kind: input.kind,
       messageIndex,
+      messageIdForHandler,
       enteredHandler: true,
       hasVirtualToolCall,
       textSource,
@@ -112,12 +125,13 @@ export function createMessagePipeline(handler?: VirtualToolMessageHandler): Mess
     })
     const result = handler.process({
       chatId,
-      messageId: String(messageIndex),
+      messageId: messageIdForHandler,
       messageText: currentText,
     })
     logVtPipeline('pipeline-after-handler', {
       kind: input.kind,
       messageIndex,
+      messageIdForHandler,
       handled: result.handled,
       hasVirtualToolCall,
       textSource,

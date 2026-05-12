@@ -28,6 +28,27 @@ describe('message-pipeline virtual-tool delegation', () => {
     expect(process).toHaveBeenCalledTimes(1)
   })
 
+  it('invokes handler when ST passes message object as args[0] (no numeric index)', () => {
+    const process = vi.fn(() => ({ handled: true, messageText: 'patched' }))
+    const handler = { process } as unknown as VirtualToolMessageHandler
+    const pipeline = createMessagePipeline(handler)
+    const orphan = { mes: '<virtual-tool-call>{}</virtual-tool-call>' }
+    ;(globalThis as { SillyTavern: { getContext: () => unknown } }).SillyTavern = {
+      getContext: () => ({
+        chatId: 'chat-1',
+        chat: [{ mes: 'other' }],
+      }),
+    }
+    pipeline.run({ kind: 'MESSAGE_EDITED', args: [orphan] })
+    expect(process).toHaveBeenCalledTimes(1)
+    expect(process).toHaveBeenCalledWith(
+      expect.objectContaining({
+        messageText: '<virtual-tool-call>{}</virtual-tool-call>',
+      }),
+    )
+    expect(orphan.mes).toBe('patched')
+  })
+
   it('logs vt pipeline diagnostics with textSource and handled', () => {
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
     const process = vi.fn(() => ({ handled: true, messageText: 'done' }))
