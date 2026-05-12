@@ -59,6 +59,11 @@ export class VfsCore {
     this.reset()
   }
 
+  /** Expose codec for snapshot/manifest helpers that spin up temporary cores. */
+  getCodec(): ContentCodec {
+    return this.codec
+  }
+
   /**
    * Create a directory at `path`.
    *
