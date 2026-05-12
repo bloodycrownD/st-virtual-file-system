@@ -1,4 +1,5 @@
 import type { VfsSnapshot } from '@/domain/vfs/types'
+import type { ChatVfsSnapshotRecord, VfsPathSnapshotEntry } from '@/domain/vfs-snapshot/vfs-snapshot-types'
 import {
   createEmptyVfsSnapshot,
   parseVfsSnapshot,
@@ -6,6 +7,8 @@ import {
 } from '@/infra/persistence/vfs-snapshot.schema'
 import type { WorkTreeConfig } from '@/domain/work-tree/work-tree.types'
 import { parseWorkTreeConfig, serializeWorkTreeConfig } from '@/domain/work-tree/work-tree.types'
+
+export type { ChatVfsSnapshotRecord, VfsPathSnapshotEntry } from '@/domain/vfs-snapshot/vfs-snapshot-types'
 
 /**
  * Chat-level persistence schema for the VFS extension.
@@ -15,7 +18,7 @@ import { parseWorkTreeConfig, serializeWorkTreeConfig } from '@/domain/work-tree
  *
  * ## Chat vs extension persistence mapping
  * - **Chat metadata (this module)**: per-conversation state that changes when the user switches chats
- *   (e.g. `chatVfsSnapshot`, logs, and commit history).
+ *   (e.g. `chatVfsSnapshot`, logs, and snapshot manifest history).
  * - **Extension settings**: global configuration shared by all chats (see `vfs-extension-settings.schema.ts`).
  *
  * The parser functions are defensive: unknown or malformed shapes fall back to safe defaults so a
@@ -28,15 +31,6 @@ import { parseWorkTreeConfig, serializeWorkTreeConfig } from '@/domain/work-tree
  */
 export type VfsLogStatus = 'success' | 'failed' | 'timeout' | 'skipped'
 
-/** Commit origin classification used by version history. */
-export type VfsCommitSource = 'tool' | 'manual' | 'system'
-export type VfsCommitActionType = 'save' | 'rollback' | 'batch-rollback' | 'trace-rollback'
-
-export interface VfsSourceVersionRef {
-  id: string
-  reason: 'rollback-target' | 'batch-rollback-target' | 'trace-target'
-}
-
 /**
  * Structured log entry for a tool execution (or tool batch).
  *
@@ -48,45 +42,14 @@ export interface ChatVfsLogEntry {
   chatId: string
   messageId: string
   batchId: string
-  commitId?: string
   toolName: string
   status: VfsLogStatus
   durationMs: number
   argsSummary: string
   errorCode?: string
   errorMessage?: string
-}
-
-/**
- * Lightweight commit metadata entry for chat-scoped history.
- *
- * This is intentionally small: it records *what* happened and *who/what* initiated it (source),
- * without embedding full VFS snapshot payloads.
- */
-export interface ChatVfsVersionEntry {
-  id: string
-  /** Required by UI spec for timeline rendering. */
-  time: string
-  operator: string
-  actionType: VfsCommitActionType
-  scope: string
-  sourceVersion?: VfsSourceVersionRef
-  /**
-   * Optional multi-source provenance for batch operations.
-   * For batch rollback, `sourceVersion` points to the *applied* target (last snapshot),
-   * while `sourceVersions` can retain the full ordered selection for auditability.
-   */
-  sourceVersions?: VfsSourceVersionRef[]
-  /** Optional snapshot anchor for authoritative rollback application. */
-  snapshot?: VfsSnapshot
-  /**
-   * Backward-compatible fields for pre-schema records/UI branches.
-   * WHY: keep reads migration-safe while new writers move to spec fields.
-   */
-  timestamp?: number
-  source?: VfsCommitSource
-  summary?: string
-  changedFiles?: string[]
+  /** Reference into `chatVfsSnapshots[].id` when a pre-batch manifest exists for rollback. */
+  snapshotId?: string
 }
 
 /**
@@ -106,8 +69,11 @@ export interface VfsChatMetadata {
   chatVfsSnapshot: VfsSnapshot
   /** Chat-scoped diagnostic logs (subject to byte-based trimming). */
   chatVfsLogs: ChatVfsLogEntry[]
-  /** Append-only commit metadata list (tool/manual/system sources). */
-  chatVfsVersions: ChatVfsVersionEntry[]
+  /**
+   * Path manifest snapshots for rollback (FIFO-capped by extension `snapshotMaxCount`).
+   * WHY: separated from logs — logs only store `snapshotId`, not manifest payloads.
+   */
+  chatVfsSnapshots: ChatVfsSnapshotRecord[]
   /**
    * One-time initialization guard for template injection.
    *
@@ -129,9 +95,41 @@ const DEFAULT_CHAT_METADATA: VfsChatMetadata = {
   mounted: false,
   chatVfsSnapshot: createEmptyVfsSnapshot(),
   chatVfsLogs: [],
-  chatVfsVersions: [],
+  chatVfsSnapshots: [],
   templateInitialized: false,
   workTree: null,
+}
+
+function parsePathSnapshotEntry(raw: unknown): VfsPathSnapshotEntry | null {
+  if (!raw || typeof raw !== 'object') return null
+  const o = raw as Record<string, unknown>
+  const path = typeof o.path === 'string' ? o.path : ''
+  if (!path) return null
+  const presence = o.presence === 'absent' || o.presence === 'present' ? o.presence : null
+  if (!presence) return null
+  if (presence === 'absent') {
+    return { path, presence: 'absent' }
+  }
+  if (!o.subtree || typeof o.subtree !== 'object') return null
+  try {
+    const subtree = parseVfsSnapshot(o.subtree as VfsSnapshot)
+    return { path, presence: 'present', subtree }
+  } catch {
+    return null
+  }
+}
+
+function parseSnapshotRecord(raw: unknown): ChatVfsSnapshotRecord | null {
+  if (!raw || typeof raw !== 'object') return null
+  const o = raw as Record<string, unknown>
+  const id = typeof o.id === 'string' && o.id ? o.id : null
+  const time = typeof o.time === 'string' && o.time ? o.time : null
+  const kind = o.kind === 'manual' || o.kind === 'tool-batch-pre' ? o.kind : null
+  if (!id || !time || !kind) return null
+  const entriesRaw = Array.isArray(o.entries) ? o.entries : []
+  const entries = entriesRaw.map((e) => parsePathSnapshotEntry(e)).filter((e): e is VfsPathSnapshotEntry => !!e)
+  if (entries.length === 0) return null
+  return { id, time, kind, entries }
 }
 
 /**
@@ -139,6 +137,7 @@ const DEFAULT_CHAT_METADATA: VfsChatMetadata = {
  *
  * - Missing or invalid fields fall back to defaults.
  * - Snapshot parsing failures degrade to an **empty** snapshot (not null).
+ * - Legacy `chatVfsVersions` is ignored on read (complete migration; no dual-write).
  */
 export function parseVfsChatMetadata(raw: unknown): VfsChatMetadata {
   if (!raw || typeof raw !== 'object') {
@@ -149,7 +148,7 @@ export function parseVfsChatMetadata(raw: unknown): VfsChatMetadata {
     mounted?: unknown
     chatVfsSnapshot?: unknown
     chatVfsLogs?: unknown
-    chatVfsVersions?: unknown
+    chatVfsSnapshots?: unknown
     templateInitialized?: unknown
     workTree?: unknown
   }
@@ -164,69 +163,9 @@ export function parseVfsChatMetadata(raw: unknown): VfsChatMetadata {
   }
 
   const chatVfsLogs = Array.isArray(input.chatVfsLogs) ? (input.chatVfsLogs as ChatVfsLogEntry[]).filter(Boolean) : []
-  const toActionType = (value: unknown): VfsCommitActionType => {
-    if (value === 'save' || value === 'rollback' || value === 'batch-rollback' || value === 'trace-rollback') {
-      return value
-    }
-    return 'save'
-  }
 
-  const normalizeVersionEntry = (entry: unknown): ChatVfsVersionEntry | null => {
-    if (!entry || typeof entry !== 'object') return null
-    const rawEntry = entry as Record<string, unknown>
-    const timestamp =
-      typeof rawEntry.timestamp === 'number' && Number.isFinite(rawEntry.timestamp) ? rawEntry.timestamp : Date.now()
-    const time = typeof rawEntry.time === 'string' && rawEntry.time ? rawEntry.time : new Date(timestamp).toISOString()
-    const scopeFromLegacySummary = typeof rawEntry.summary === 'string' && rawEntry.summary ? rawEntry.summary : '*'
-    const actionType = toActionType(rawEntry.actionType)
-    const sourceVersionRaw =
-      rawEntry.sourceVersion && typeof rawEntry.sourceVersion === 'object'
-        ? (rawEntry.sourceVersion as Record<string, unknown>)
-        : null
-
-    const sourceVersion: VfsSourceVersionRef | undefined =
-      sourceVersionRaw && typeof sourceVersionRaw.id === 'string' && sourceVersionRaw.id
-        ? {
-            id: sourceVersionRaw.id,
-            reason:
-              sourceVersionRaw.reason === 'rollback-target' ||
-              sourceVersionRaw.reason === 'batch-rollback-target' ||
-              sourceVersionRaw.reason === 'trace-target'
-                ? sourceVersionRaw.reason
-                : ('rollback-target' as const),
-          }
-        : undefined
-    let snapshot: VfsSnapshot | undefined
-    if (rawEntry.snapshot && typeof rawEntry.snapshot === 'object') {
-      try {
-        snapshot = parseVfsSnapshot(rawEntry.snapshot as VfsSnapshot)
-      } catch {
-        snapshot = undefined
-      }
-    }
-
-    return {
-      id: typeof rawEntry.id === 'string' && rawEntry.id ? rawEntry.id : `commit-${timestamp}`,
-      time,
-      operator: typeof rawEntry.operator === 'string' && rawEntry.operator ? rawEntry.operator : 'system',
-      actionType,
-      scope: typeof rawEntry.scope === 'string' && rawEntry.scope ? rawEntry.scope : scopeFromLegacySummary,
-      sourceVersion,
-      snapshot,
-      timestamp,
-      source:
-        rawEntry.source === 'tool' || rawEntry.source === 'manual' || rawEntry.source === 'system'
-          ? rawEntry.source
-          : 'manual',
-      summary: typeof rawEntry.summary === 'string' ? rawEntry.summary : scopeFromLegacySummary,
-      changedFiles: Array.isArray(rawEntry.changedFiles)
-        ? (rawEntry.changedFiles.filter((item) => typeof item === 'string') as string[])
-        : [],
-    }
-  }
-
-  const chatVfsVersions = Array.isArray(input.chatVfsVersions)
-    ? input.chatVfsVersions.map((entry) => normalizeVersionEntry(entry)).filter((entry): entry is ChatVfsVersionEntry => !!entry)
+  const chatVfsSnapshots = Array.isArray(input.chatVfsSnapshots)
+    ? input.chatVfsSnapshots.map((row) => parseSnapshotRecord(row)).filter((row): row is ChatVfsSnapshotRecord => !!row)
     : []
 
   const workTree = parseWorkTreeConfig(input.workTree)
@@ -235,7 +174,7 @@ export function parseVfsChatMetadata(raw: unknown): VfsChatMetadata {
     mounted: typeof input.mounted === 'boolean' ? input.mounted : DEFAULT_CHAT_METADATA.mounted,
     chatVfsSnapshot,
     chatVfsLogs,
-    chatVfsVersions,
+    chatVfsSnapshots,
     templateInitialized:
       typeof input.templateInitialized === 'boolean'
         ? input.templateInitialized
@@ -249,13 +188,21 @@ export function parseVfsChatMetadata(raw: unknown): VfsChatMetadata {
  *
  * This should be used as the write shape to SillyTavern so persisted content remains stable and
  * schema-compatible (including future migrations/default backfills).
+ * WHY: `chatVfsVersions` is intentionally omitted — writers must not resurrect legacy commit storage.
  */
 export function serializeVfsChatMetadata(state: VfsChatMetadata): Record<string, unknown> {
   return {
     mounted: Boolean(state.mounted),
     chatVfsSnapshot: serializeVfsSnapshot(state.chatVfsSnapshot),
     chatVfsLogs: [...state.chatVfsLogs],
-    chatVfsVersions: [...state.chatVfsVersions],
+    chatVfsSnapshots: state.chatVfsSnapshots.map((rec) => ({
+      ...rec,
+      entries: rec.entries.map((e) =>
+        e.presence === 'present' && e.subtree
+          ? { path: e.path, presence: e.presence, subtree: serializeVfsSnapshot(e.subtree) }
+          : { path: e.path, presence: e.presence },
+      ),
+    })),
     templateInitialized: Boolean(state.templateInitialized),
     workTree: state.workTree ? serializeWorkTreeConfig(state.workTree) : null,
   }

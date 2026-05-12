@@ -20,6 +20,11 @@ import { parseWorkTreeConfig, serializeWorkTreeConfig } from '@/domain/work-tree
 export interface VfsExtensionSettings {
   enabled: boolean
   /**
+   * Maximum number of chat-scoped snapshot manifests to retain (FIFO eviction of oldest).
+   * WHY: independent from `logMaxBytes` — logs may be trimmed while snapshots remain addressable.
+   */
+  snapshotMaxCount: number
+  /**
    * Maximum size budget for the chat-scoped log list, in bytes (approximate).
    *
    * The log service enforces this by trimming the oldest entries first until the serialized log
@@ -51,6 +56,7 @@ export interface VfsExtensionSettings {
 /** Defaults used when no persisted settings exist (or when fields are missing/invalid). */
 const DEFAULT_SETTINGS: VfsExtensionSettings = {
   enabled: true,
+  snapshotMaxCount: 10,
   logMaxBytes: 1024 * 1024,
   virtualToolCallEnabled: true,
   extensionTemplateVfsSnapshot: null,
@@ -70,11 +76,19 @@ export function parseVfsExtensionSettings(raw: unknown): VfsExtensionSettings {
 
   const input = raw as {
     enabled?: unknown
+    snapshotMaxCount?: unknown
     logMaxBytes?: unknown
     virtualToolCallEnabled?: unknown
     extensionTemplateVfsSnapshot?: unknown
     workTreeTemplate?: unknown
   }
+  const snapshotMaxCount =
+    typeof input.snapshotMaxCount === 'number' &&
+    Number.isFinite(input.snapshotMaxCount) &&
+    input.snapshotMaxCount >= 1 &&
+    input.snapshotMaxCount <= 500
+      ? Math.floor(input.snapshotMaxCount)
+      : DEFAULT_SETTINGS.snapshotMaxCount
   const logMaxBytes =
     typeof input.logMaxBytes === 'number' && Number.isFinite(input.logMaxBytes) && input.logMaxBytes > 0
       ? Math.floor(input.logMaxBytes)
@@ -92,6 +106,7 @@ export function parseVfsExtensionSettings(raw: unknown): VfsExtensionSettings {
 
   return {
     enabled: typeof input.enabled === 'boolean' ? input.enabled : DEFAULT_SETTINGS.enabled,
+    snapshotMaxCount,
     logMaxBytes,
     virtualToolCallEnabled:
       typeof input.virtualToolCallEnabled === 'boolean'
@@ -111,6 +126,10 @@ export function parseVfsExtensionSettings(raw: unknown): VfsExtensionSettings {
 export function serializeVfsExtensionSettings(state: VfsExtensionSettings): Record<string, unknown> {
   return {
     enabled: Boolean(state.enabled),
+    snapshotMaxCount:
+      Number.isFinite(state.snapshotMaxCount) && state.snapshotMaxCount >= 1 && state.snapshotMaxCount <= 500
+        ? Math.floor(state.snapshotMaxCount)
+        : DEFAULT_SETTINGS.snapshotMaxCount,
     logMaxBytes:
       Number.isFinite(state.logMaxBytes) && state.logMaxBytes > 0
         ? Math.floor(state.logMaxBytes)

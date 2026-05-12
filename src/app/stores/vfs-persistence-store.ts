@@ -58,7 +58,7 @@ export interface VfsPersistenceStore {
   /**
    * Update chat metadata with an immutable updater and persist to chat metadata.
    *
-   * The updater receives a draft copy (including cloned arrays for logs/versions) to prevent
+   * The updater receives a draft copy (including cloned arrays for logs/snapshots) to prevent
    * accidental external mutation.
    */
   updateChat: (updater: (draft: VfsChatMetadata) => VfsChatMetadata) => void
@@ -90,7 +90,7 @@ export function createVfsPersistenceStore(adapter: StContextAdapter): VfsPersist
     chat: {
       ...state.chat,
       chatVfsLogs: [...state.chat.chatVfsLogs],
-      chatVfsVersions: [...state.chat.chatVfsVersions],
+      chatVfsSnapshots: [...state.chat.chatVfsSnapshots],
     },
   })
 
@@ -195,7 +195,7 @@ export function createVfsPersistenceStore(adapter: StContextAdapter): VfsPersist
       const next = updater({
         ...state.chat,
         chatVfsLogs: [...state.chat.chatVfsLogs],
-        chatVfsVersions: [...state.chat.chatVfsVersions],
+        chatVfsSnapshots: [...state.chat.chatVfsSnapshots],
       })
       state = { ...state, chat: next }
       adapter.writeChatRaw(serializeVfsChatMetadata(state.chat))
