@@ -54,6 +54,27 @@ export class ChatVfsSnapshotService {
     }
   }
 
+  /**
+   * Write `content` to `path` in chat VFS and append one `manual` rollback manifest, in a single `updateChat`.
+   * WHY: avoids a persisted window where the file changed without a matching snapshot row (PRD / spec).
+   */
+  persistChatFileSaveWithPreSnapshot(path: string, content: string): void {
+    this.store.updateChat((draft) => {
+      const before = draft.chatVfsSnapshot
+      const record = this.buildManualRecordForPath(before, path)
+      const core = new VfsCore(this.codec)
+      core.importSnapshot(before)
+      // WHY: match `VfsMainScreen.applySnapshotMutation` editor save — default `writeFile` options (`updatedBy: 'user'`, no `createParents`).
+      core.writeFile(path, content)
+      const nextSnapshot = core.exportSnapshot()
+      return {
+        ...draft,
+        chatVfsSnapshot: nextSnapshot,
+        chatVfsSnapshots: this.mergeIntoChatSnapshots(draft.chatVfsSnapshots, record),
+      }
+    })
+  }
+
   /** Persist a manual manifest for `path` against the current authoritative chat snapshot. */
   persistManualSnapshotForPath(path: string): string {
     const chat = this.store.getState().chat

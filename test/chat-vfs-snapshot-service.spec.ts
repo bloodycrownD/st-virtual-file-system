@@ -57,6 +57,34 @@ describe('ChatVfsSnapshotService', () => {
     expect(JSON.stringify(store.getState().chat.chatVfsSnapshot)).toBe(before)
   })
 
+  it('persistChatFileSaveWithPreSnapshot updates file and appends one manual snapshot atomically', () => {
+    const store = createVfsPersistenceStore(createAdapterMock())
+    store.init()
+    const codec = new DeflateContentCodec()
+    const core = new VfsCore(codec)
+    core.importSnapshot(createEmptyVfsSnapshot())
+    core.writeFile('/x.txt', 'before', { createParents: true })
+    const seeded = core.exportSnapshot()
+    store.updateChat((draft) => ({ ...draft, chatVfsSnapshot: seeded, chatVfsSnapshots: [] }))
+
+    const svc = new ChatVfsSnapshotService(store, codec)
+    svc.persistChatFileSaveWithPreSnapshot('/x.txt', 'after')
+
+    const chat = store.getState().chat
+    expect(chat.chatVfsSnapshots).toHaveLength(1)
+    expect(chat.chatVfsSnapshots[0]?.kind).toBe('manual')
+
+    const live = new VfsCore(codec)
+    live.importSnapshot(chat.chatVfsSnapshot)
+    expect(live.readFile('/x.txt')).toBe('after')
+
+    const applied = svc.applySnapshotById(chat.chatVfsSnapshots[0]!.id)
+    expect(applied.ok).toBe(true)
+    const rolled = new VfsCore(codec)
+    rolled.importSnapshot(store.getState().chat.chatVfsSnapshot)
+    expect(rolled.readFile('/x.txt')).toBe('before')
+  })
+
   it('rolls back a renamed path using a pre-batch manifest', () => {
     const store = createVfsPersistenceStore(createAdapterMock())
     store.init()
