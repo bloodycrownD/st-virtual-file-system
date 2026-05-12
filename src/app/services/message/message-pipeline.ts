@@ -10,7 +10,8 @@
  * ## Current behavior (v2 stub)
  *
  * - No parsing/validation/persistence stages are implemented yet beyond basic gating.
- * - Only message events that can carry user-visible text are considered (`MESSAGE_RECEIVED` / `MESSAGE_EDITED`).
+ * - Message events that can carry user-visible text delegate to the virtual-tool handler:
+ *   `MESSAGE_RECEIVED` / `MESSAGE_EDITED` / `MESSAGE_UPDATED` (ST may emit either edit flavor on save).
  * - When a handler is provided, the pipeline reads the current message text from the SillyTavern context and
  *   lets the handler decide whether to update it (typically by replacing a `<virtual-tool-call>` with a
  *   `<virtual-tool-result>`).
@@ -58,7 +59,12 @@ export function createMessagePipeline(handler?: VirtualToolMessageHandler): Mess
     if (!handler) {
       return { ok: true, eventKind: input.kind }
     }
-    if (input.kind !== 'MESSAGE_RECEIVED' && input.kind !== 'MESSAGE_EDITED') {
+    // WHY: ST "save edited message" may dispatch `MESSAGE_UPDATED` without `MESSAGE_EDITED`; skipping it breaks virtual tools until reload.
+    if (
+      input.kind !== 'MESSAGE_RECEIVED' &&
+      input.kind !== 'MESSAGE_EDITED' &&
+      input.kind !== 'MESSAGE_UPDATED'
+    ) {
       return { ok: true, eventKind: input.kind }
     }
     if (typeof SillyTavern === 'undefined') {

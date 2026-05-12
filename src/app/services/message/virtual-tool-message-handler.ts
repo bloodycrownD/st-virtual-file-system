@@ -13,9 +13,9 @@
  *
  * ## Idempotency + lock strategy
  *
- * SillyTavern can emit multiple events for the same message (e.g. `MESSAGE_RECEIVED` and `MESSAGE_EDITED`) and
- * those can overlap in time. This handler uses an **in-process lock** keyed by `chatId:messageId` to ensure
- * only one processing flow runs concurrently for the same message.
+ * SillyTavern can emit multiple events for the same message (e.g. `MESSAGE_RECEIVED` and `MESSAGE_EDITED` /
+ * `MESSAGE_UPDATED`) and those can overlap in time. This handler uses an **in-process lock** keyed by
+ * `chatId:messageId` to ensure only one processing flow runs concurrently for the same message.
  *
  * - If a concurrent call arrives while the lock is held, it returns `{ handled: false }` and leaves the
  *   message unchanged (i.e. “skip duplicate execution”).
