@@ -24,19 +24,18 @@ const props = withDefaults(
   },
 )
 const emits = defineEmits<{
-  manualRollbackRequested: [payload: { sourceVersionId: string }]
+  manualRollbackRequested: [payload: { snapshotId: string }]
   saveRequested: []
 }>()
-const rollbackSourceVersionId = ref<string | null>(null)
+const rollbackSnapshotId = ref<string | null>(null)
 const editorScrollTop = ref(0)
 const rollbackOptions = computed(() =>
   props.historyRecords.flatMap((record) => {
-    const targetId = record.commitId ?? record.sourceVersionId
-    if (!targetId) return []
+    if (!record.snapshotId) return []
     return {
-      key: `${record.time}-${record.scope}-${targetId}`,
+      key: `${record.time}-${record.scope}-${record.snapshotId}`,
       label: `${record.time} · ${record.actionType} · ${record.scope}`,
-      sourceVersionId: targetId,
+      snapshotId: record.snapshotId,
     }
   }),
 )
@@ -48,8 +47,8 @@ function handleEditorScroll(event: Event): void {
 }
 
 function requestManualRollback(): void {
-  if (!rollbackSourceVersionId.value) return
-  emits('manualRollbackRequested', { sourceVersionId: rollbackSourceVersionId.value })
+  if (!rollbackSnapshotId.value) return
+  emits('manualRollbackRequested', { snapshotId: rollbackSnapshotId.value })
 }
 
 function requestSave(): void {
@@ -101,23 +100,23 @@ function requestSave(): void {
     <aside v-if="props.showHistoryControls" class="vfs-editor-history-panel">
       <h4>History</h4>
       <ul>
-        <li v-for="record in props.historyRecords" :key="`${record.time}-${record.scope}`">
+        <li v-for="record in props.historyRecords" :key="`${record.time}-${record.snapshotId}`">
           <span>{{ record.time }}</span>
           <span>{{ record.operator }}</span>
           <span>{{ record.actionType }}</span>
           <span>{{ record.scope }}</span>
-          <span>{{ record.sourceVersionId }}</span>
+          <span>{{ record.snapshotId }}</span>
         </li>
       </ul>
       <fieldset class="vfs-editor-history-select" data-testid="editor-history-rollback-list">
-        <legend>选择历史版本回滚</legend>
+        <legend>选择快照回滚</legend>
         <label v-for="option in rollbackOptions" :key="option.key">
           <input
-            :checked="rollbackSourceVersionId === option.sourceVersionId"
+            :checked="rollbackSnapshotId === option.snapshotId"
             type="radio"
-            name="editor-rollback-source"
-            :value="option.sourceVersionId"
-            @change="rollbackSourceVersionId = option.sourceVersionId"
+            name="editor-rollback-snapshot"
+            :value="option.snapshotId"
+            @change="rollbackSnapshotId = option.snapshotId"
           />
           <span>{{ option.label }}</span>
         </label>
@@ -125,7 +124,7 @@ function requestSave(): void {
       <button
         data-testid="editor-history-rollback-submit"
         type="button"
-        :disabled="!rollbackSourceVersionId"
+        :disabled="!rollbackSnapshotId"
         @click="requestManualRollback"
       >
         {{ props.rollbackInProgress ? 'Rolling back...' : 'Rollback' }}

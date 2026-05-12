@@ -1,14 +1,12 @@
 import { computed, ref } from 'vue'
 
-export type VfsCommitActionType = 'save' | 'rollback' | 'batch-rollback' | 'trace-rollback'
-
+/** Editor-side snapshot list rows (derived from `chatVfsSnapshots` filtered to the active path). */
 export interface VfsCommitHistoryRecord {
-  commitId?: string
+  snapshotId: string
   time: string
   operator: string
-  actionType: VfsCommitActionType
+  actionType: string
   scope: string
-  sourceVersionId?: string
 }
 
 export function createVfsCommitHistoryStore() {

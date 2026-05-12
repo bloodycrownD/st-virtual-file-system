@@ -6,7 +6,6 @@ import VfsActionInputDialog from '@/app/components/business-components/VfsAction
 import VfsUnsavedEditorDialog from '@/app/components/business-components/VfsUnsavedEditorDialog.vue'
 import {
   createVfsCommitHistoryStore,
-  type VfsCommitActionType,
   type VfsCommitHistoryRecord,
 } from '@/app/composables/components-composables/useVfsCommitHistory'
 import {
@@ -30,11 +29,10 @@ import ReaderScreen from '@/app/screens/pure-screens/ReaderScreen.vue'
 import SlideshowScreen from '@/app/screens/pure-screens/SlideshowScreen.vue'
 import VfsTabShellScreen from '@/app/screens/pure-screens/VfsTabShellScreen.vue'
 import WorkTreeScreen from '@/app/screens/pure-screens/WorkTreeScreen.vue'
-import { useVfsCommitActions } from '@/app/composables/components-composables/useVfsCommitActions'
+import { useVfsSnapshotRollback } from '@/app/composables/components-composables/useVfsSnapshotRollback'
 import { createVfsHistoryStateMachine } from '@/app/composables/screens-composables/useVfsHistoryStateMachine'
-import { useVfsRollbackAction } from '@/app/composables/components-composables/useVfsRollbackActions'
 import { VFS_ERROR_CODES } from '@/app/constants/vfsErrorCodes'
-import { vfsPersistenceStore } from '@/app/stores/vfs-store-singleton'
+import { vfsPersistenceStore, vfsSnapshotService } from '@/app/stores/vfs-store-singleton'
 import type { VfsSnapshot } from '@/domain/vfs/types'
 import type { VfsBrowserEntity } from '@/app/components/business-components/VfsFileManagerPanel.vue'
 import { dirname, normalizePath, ROOT_PATH } from '@/domain/vfs/path-utils'
@@ -359,16 +357,23 @@ function refreshAuthoritativeState(): void {
   if (isTemplateScope.value) {
     history.replaceRecords([])
   } else {
-    history.replaceRecords(
-      state.chat.chatVfsVersions.map((entry) => ({
-        commitId: entry.id,
-        time: entry.time,
-        operator: entry.operator,
-        actionType: entry.actionType,
-        scope: entry.scope,
-        sourceVersionId: entry.sourceVersion?.id,
-      })),
-    )
+    const path = activeContextPath.value
+    if (!path) {
+      history.replaceRecords([])
+    } else {
+      const normalizedPath = normalizePath(path)
+      history.replaceRecords(
+        state.chat.chatVfsSnapshots
+          .filter((snap) => snap.entries.some((e) => normalizePath(e.path) === normalizedPath))
+          .map((snap) => ({
+            snapshotId: snap.id,
+            time: snap.time,
+            operator: 'snapshot',
+            actionType: snap.kind,
+            scope: normalizedPath,
+          })),
+      )
+    }
   }
 
   const normalizedDir = (() => {
@@ -397,16 +402,6 @@ const refreshAllViews = () => {
   // WHY: keep all screens synced to persisted state after rollback/save side effects.
   refreshAuthoritativeState()
   viewRefreshToken.value += 1
-}
-
-function appendHistory(actionType: VfsCommitActionType, scope: string, sourceVersionId?: string): void {
-  history.appendRecord({
-    time: new Date().toISOString(),
-    operator: 'assistant',
-    actionType,
-    scope,
-    sourceVersionId,
-  })
 }
 
 function withWriteScopeGuard(scope: string, action: 'save' | 'rollback', task: () => Promise<void>): Promise<void> {
@@ -506,7 +501,7 @@ function overwriteCurrentChatWithTemplate(): void {
   confirmDialogState.value = {
     action: 'overwrite',
     title: '确认覆盖',
-    message: '此操作将用模板覆盖当前 chat 目录，并清空日志与版本历史。此操作不可恢复，确认继续？',
+    message: '此操作将用模板覆盖当前 chat 目录，并清空日志与快照历史。此操作不可恢复，确认继续？',
   }
 }
 
@@ -970,7 +965,7 @@ function onConfirmDialogConfirm(): void {
         ...draft,
         chatVfsSnapshot: serializeVfsSnapshot(template),
         chatVfsLogs: [],
-        chatVfsVersions: [],
+        chatVfsSnapshots: [],
         templateInitialized: true,
         workTree: nextWorkTree,
       }))
@@ -1067,14 +1062,36 @@ function guardTabChange(nextTab: VfsScreenTab): boolean {
   return false
 }
 
-async function handleEditorManualRollback(payload: { sourceVersionId: string }): Promise<void> {
+async function handleEditorSnapshotRollback(payload: { snapshotId: string }): Promise<void> {
   const scope = selectedEntity.value?.path ?? '/'
   await withWriteScopeGuard(scope, 'rollback', async () => {
-    const ok = await useVfsRollbackAction(payload.sourceVersionId)
+    const ok = await useVfsSnapshotRollback(payload.snapshotId)
     if (!ok) return
     // WHY: rollback result must rehydrate all visible states from persistence as the single source of truth.
     refreshAuthoritativeState()
   })
+}
+
+async function handleManualSnapshotRequested(): Promise<void> {
+  if (isTemplateScope.value) return
+  const targetPath = activeContextPath.value
+  if (!targetPath) {
+    toastr.error('没有可快照的文件路径')
+    return
+  }
+  const node = getNodeByPath(currentSnapshot.value, targetPath)
+  if (!node || node.type !== 'file') {
+    toastr.error('仅支持对文件打快照')
+    return
+  }
+  try {
+    vfsSnapshotService.persistManualSnapshotForPath(targetPath)
+    refreshAuthoritativeState()
+    toastr.success('已创建快照')
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    toastr.error(message)
+  }
 }
 
 async function handleEditorSaveRequested(): Promise<void> {
@@ -1105,21 +1122,7 @@ async function handleEditorSaveRequested(): Promise<void> {
       toastr.error(toVfsErrorToast(mapped.code, mapped.message))
       return
     }
-    if (!isTemplateScope.value) {
-      const ok = await useVfsCommitActions(scope)
-      if (!ok) {
-        historyMachine.dispatch({
-          type: 'SAVE_FAILED',
-          errorCode: VFS_ERROR_CODES.SAVE_FAILED,
-          message: 'Save failed',
-        })
-        return
-      }
-    }
     historyMachine.dispatch({ type: 'SAVE_SUCCESS' })
-    if (!isTemplateScope.value) {
-      appendHistory('save', scope)
-    }
     savedContent.value = editorContent.value
     isDirty.value = false
     refreshAllViews()
@@ -1207,6 +1210,18 @@ async function handleEditorSaveRequested(): Promise<void> {
                 <i :class="editorPreviewMode ? 'fa-solid fa-code' : 'fa-solid fa-eye'" aria-hidden="true" />
               </button>
               <button
+                v-if="!isTemplateScope"
+                type="button"
+                class="menu_button vfs-preview-chrome-button"
+                data-testid="editor-manual-snapshot"
+                title="保存当前文件快照"
+                aria-label="保存当前文件快照"
+                :disabled="!activeContextPath"
+                @click="void handleManualSnapshotRequested()"
+              >
+                <i class="fa-solid fa-camera" aria-hidden="true" />
+              </button>
+              <button
                 data-testid="editor-save-submit"
                 type="button"
                 class="menu_button vfs-preview-chrome-button"
@@ -1271,7 +1286,7 @@ async function handleEditorSaveRequested(): Promise<void> {
                 :show-history-controls="!isTemplateScope"
                 :embed-toolbar="false"
                 @update:model-value="isDirty = true"
-                @manual-rollback-requested="handleEditorManualRollback"
+                @manual-rollback-requested="handleEditorSnapshotRollback"
               />
             </div>
             <SlideshowScreen

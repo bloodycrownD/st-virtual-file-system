@@ -1,20 +1,21 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { useVfsRollbackAction } from '@/app/composables/components-composables/useVfsRollbackActions'
+import { useVfsSnapshotRollback } from '@/app/composables/components-composables/useVfsSnapshotRollback'
 
-const commitId = ref('')
+const snapshotId = ref('')
 const isRollingBack = ref(false)
 const emits = defineEmits<{
-  rollbackStatus: [payload: { kind: 'single'; status: 'rollingBack' | 'succeeded' | 'failed'; sourceVersionId?: string }]
+  rollbackStatus: [payload: { kind: 'single'; status: 'rollingBack' | 'succeeded' | 'failed'; snapshotId?: string }]
 }>()
 
 async function rollback(): Promise<void> {
   if (isRollingBack.value) return
   isRollingBack.value = true
-  emits('rollbackStatus', { kind: 'single', status: 'rollingBack', sourceVersionId: commitId.value.trim() })
+  const id = snapshotId.value.trim()
+  emits('rollbackStatus', { kind: 'single', status: 'rollingBack', snapshotId: id })
   try {
-    const ok = await useVfsRollbackAction(commitId.value)
-    emits('rollbackStatus', { kind: 'single', status: ok ? 'succeeded' : 'failed', sourceVersionId: commitId.value.trim() })
+    const ok = await useVfsSnapshotRollback(id)
+    emits('rollbackStatus', { kind: 'single', status: ok ? 'succeeded' : 'failed', snapshotId: id })
   } finally {
     isRollingBack.value = false
   }
@@ -23,7 +24,7 @@ async function rollback(): Promise<void> {
 
 <template>
   <section>
-    <input v-model="commitId" type="text" placeholder="commit id" />
+    <input v-model="snapshotId" type="text" placeholder="snapshot id" />
     <button type="button" :disabled="isRollingBack" @click="rollback">
       {{ isRollingBack ? 'Rolling back...' : 'Rollback' }}
     </button>
