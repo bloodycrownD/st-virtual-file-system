@@ -51,9 +51,10 @@ if (extensionsSettings) {
 initVfsPersistenceStore()
 // Runtime wiring order:
 // - store first (loads chat/extension snapshots)
-// - version + template services (template init depends on version service)
+// - template service (may seed `chatVfsSnapshot` / chat flags on first access per chat)
 // - ST prompt macros read the same store snapshot (sync handlers)
-// - runtime + handler wired into message pipeline and ST event source
+// - runtime (`ChatVfsRuntime` + `ChatVfsSnapshotService`) + logs + `VirtualToolMessageHandler`
+//   wired into the message pipeline and ST event source
 const templateService = new ExtensionVfsTemplateService(vfsPersistenceStore)
 templateService.initializeChatFromTemplateIfNeeded()
 registerVfsChatReloadHook(templateService.initializeChatFromTemplateIfNeeded.bind(templateService))

@@ -169,8 +169,8 @@ export class VirtualToolMessageHandler {
           errorCode: batch.errorCode,
           errorMessage: batch.errorMessage,
         })
+        this.logPerToolExecution(input, envelope, batch, batchId)
       }
-      this.logPerToolExecution(input, envelope, batch, batchId)
       return { handled: true, messageText: replaceCallWithResult(input.messageText, callBlock, payload) }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error)
