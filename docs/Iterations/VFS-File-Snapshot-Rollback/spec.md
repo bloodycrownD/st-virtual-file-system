@@ -188,6 +188,12 @@
 | metadata 体积 | 按路径显著优于整树；大文件单路径仍可能大，默认 N=10 约束条数 |
 | manifest 应用顺序错误导致半棵树 | 单元测试锁顺序；失败则丢弃工作副本 |
 | `snapshotId` 与日志不同步 | 同一 `updateChat` 批次内写入快照与日志；单测锁定顺序 |
+
+### 工具批次成功：日志与快照同一 `updateChat`
+
+当 `ChatVfsRuntime.executeBatch` 传入 `logContext` 且批次成功时，实现将 **`chatVfsSnapshot` 更新、`chatVfsSnapshots` 追加 pre-batch manifest、批次级日志行（含 `snapshotId`）以及逐工具成功诊断行** 合并在 **单次** `updateChat` 中提交，并对拼接后的 `chatVfsLogs` **做一次** `logMaxBytes` FIFO 裁剪。
+
+因此：在正常预算下，`snapshotId` 与刚写入的快照 manifest **同源且同一持久化回合**。若 `logMaxBytes` 极小，FIFO 仍可能裁掉含 `snapshotId` 的旧日志行；**快照库条数由 `snapshotMaxCount` 单独约束**，与日志字节上限无关，故「日志行被裁」不等于「快照条目不可用」（仍可按 id 回滚，直至快照 FIFO 淘汰该 id）。
 | 路径 diff 漏路径 | 重命名/新建/删除纳入必测；禁止用 `'*'` 代替路径集合写快照 |
 
 **Git / 发布回滚**：保留独立分支；若上线后问题严重，可暂时 revert 合并提交（用户声明不考虑向前兼容时，不建议长期双轨）。

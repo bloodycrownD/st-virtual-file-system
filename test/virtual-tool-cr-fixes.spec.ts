@@ -147,6 +147,27 @@ describe('virtual tool CR fixes', () => {
     expect(batchEntry?.snapshotId).toBeTruthy()
   })
 
+  it('T2/T8: VirtualToolMessageHandler → executeBatch aligns batch log snapshotId with chatVfsSnapshots', () => {
+    const store = createVfsPersistenceStore(createAdapterMock())
+    store.init()
+    const logs = new ChatVfsLogService(store)
+    const runtime = new ChatVfsRuntime(store, new ToolDispatcher(), snapshotService(store))
+    const handler = new VirtualToolMessageHandler(runtime, logs)
+    handler.process({
+      chatId: 'chat-t2',
+      messageId: 'msg-t2',
+      messageText:
+        '<virtual-tool-call>{"calls":[{"tool":"write","args":{"path":"/t2.txt","content":"y"}}]}</virtual-tool-call>',
+    })
+    const snaps = store.getState().chat.chatVfsSnapshots
+    expect(snaps.length).toBeGreaterThan(0)
+    const batchLog = store.getState().chat.chatVfsLogs.find(
+      (e) => e.toolName === 'batch' && e.status === 'success' && e.messageId === 'msg-t2',
+    )
+    expect(batchLog?.snapshotId).toBeTruthy()
+    expect(snaps.some((s) => s.id === batchLog?.snapshotId)).toBe(true)
+  })
+
   it('returns CALL_LIMIT_EXCEEDED in acceptance flow when calls exceed limit', () => {
     const store = createVfsPersistenceStore(createAdapterMock())
     store.init()
