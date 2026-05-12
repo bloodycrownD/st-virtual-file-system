@@ -7,6 +7,7 @@ describe('vfs extension settings schema', () => {
   it('falls back to defaults for invalid values', () => {
     const parsed = parseVfsExtensionSettings({ enabled: 'nope' })
     expect(parsed.enabled).toBe(true)
+    expect(parsed.snapshotMaxCount).toBe(10)
     expect(parsed.logMaxBytes).toBe(1024 * 1024)
     expect(parsed.virtualToolCallEnabled).toBe(true)
     expect(parsed.extensionTemplateVfsSnapshot).toBeNull()
@@ -16,6 +17,7 @@ describe('vfs extension settings schema', () => {
   it('serializes into JSON-safe object', () => {
     const raw = serializeVfsExtensionSettings({
       enabled: false,
+      snapshotMaxCount: 3,
       logMaxBytes: 2048,
       virtualToolCallEnabled: false,
       extensionTemplateVfsSnapshot: null,
@@ -23,6 +25,7 @@ describe('vfs extension settings schema', () => {
     })
     expect(raw).toEqual({
       enabled: false,
+      snapshotMaxCount: 3,
       logMaxBytes: 2048,
       virtualToolCallEnabled: false,
       extensionTemplateVfsSnapshot: null,
@@ -38,7 +41,7 @@ describe('vfs chat metadata schema', () => {
     expect(parsed.chatVfsSnapshot).not.toBeNull()
     expect(parsed.chatVfsSnapshot.rootId).toBe('root')
     expect(parsed.chatVfsLogs).toEqual([])
-    expect(parsed.chatVfsVersions).toEqual([])
+    expect(parsed.chatVfsSnapshots).toEqual([])
     expect(parsed.templateInitialized).toBe(false)
   })
 
@@ -48,17 +51,19 @@ describe('vfs chat metadata schema', () => {
       mounted: true,
       chatVfsSnapshot: snapshot,
       chatVfsLogs: [],
-      chatVfsVersions: [],
+      chatVfsSnapshots: [],
       templateInitialized: false,
+      workTree: null,
     })
     expect(raw.mounted).toBe(true)
     expect(raw.chatVfsLogs).toEqual([])
-    expect(raw.chatVfsVersions).toEqual([])
+    expect(raw.chatVfsSnapshots).toEqual([])
     expect(raw.templateInitialized).toBe(false)
     expect(raw.chatVfsSnapshot).toEqual(snapshot)
+    expect(raw).not.toHaveProperty('chatVfsVersions')
   })
 
-  it('normalizes legacy commit records into required history fields', () => {
+  it('drops legacy chatVfsVersions on parse and defaults snapshots', () => {
     const parsed = parseVfsChatMetadata({
       chatVfsVersions: [
         {
@@ -71,14 +76,6 @@ describe('vfs chat metadata schema', () => {
       ],
     })
 
-    expect(parsed.chatVfsVersions[0]).toMatchObject({
-      id: 'legacy-1',
-      time: '2026-05-08T09:00:00.000Z',
-      operator: 'system',
-      actionType: 'save',
-      scope: '/docs/legacy.md',
-      source: 'manual',
-      summary: '/docs/legacy.md',
-    })
+    expect(parsed.chatVfsSnapshots).toEqual([])
   })
 })

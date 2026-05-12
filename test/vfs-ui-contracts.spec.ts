@@ -4,20 +4,32 @@ import { VFS_ERROR_CODES } from '@/app/constants/vfsErrorCodes'
 import { toVfsErrorToast } from '@/app/utils/vfsErrorMapper'
 import { createVfsLogPagination, createVfsServerLogPagination } from '@/app/composables/components-composables/useVfsLogPagination'
 import { createVfsHistoryStateMachine } from '@/app/composables/screens-composables/useVfsHistoryStateMachine'
-import { useVfsRollbackAction } from '@/app/composables/components-composables/useVfsRollbackActions'
+import { useVfsSnapshotRollback } from '@/app/composables/components-composables/useVfsSnapshotRollback'
 import { useVfsPopupLifecycle } from '@/app/composables/screens-composables/useVfsPopupLifecycle'
 import ReaderScreen from '@/app/screens/pure-screens/ReaderScreen.vue'
 import SlideshowScreen from '@/app/screens/pure-screens/SlideshowScreen.vue'
 
-vi.mock('@/app/services/vfs/rollbackService', () => ({
-  rollbackCommit: vi.fn(async () => ({ ok: true })),
-  rollbackBatch: vi.fn(async () => ({ ok: true })),
+const { applySnapshotByIdMock } = vi.hoisted(() => ({
+  applySnapshotByIdMock: vi.fn(() => ({ ok: true as const })),
 }))
+
+// WHY: VfsMainScreen needs the real persistence store; only snapshot apply is stubbed for rollback contract tests.
+vi.mock('@/app/stores/vfs-store-singleton', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/app/stores/vfs-store-singleton')>()
+  return {
+    ...actual,
+    vfsSnapshotService: {
+      ...actual.vfsSnapshotService,
+      applySnapshotById: applySnapshotByIdMock,
+    },
+  }
+})
 
 describe('vfs ui contracts', () => {
   beforeEach(() => {
     document.body.innerHTML = ''
     vi.restoreAllMocks()
+    applySnapshotByIdMock.mockReturnValue({ ok: true })
   })
 
   it('formats toastr error with prefixed code', () => {
@@ -79,7 +91,7 @@ describe('vfs ui contracts', () => {
     const spy = vi.fn()
     window.addEventListener('VFS_STATE_REFRESH_REQUIRED', spy)
 
-    const ok = await useVfsRollbackAction('commit-1')
+    const ok = await useVfsSnapshotRollback('snap-1')
 
     expect(ok).toBe(true)
     expect(spy).toHaveBeenCalledTimes(1)

@@ -7,6 +7,7 @@ function createStore(initialState?: Partial<VfsPersistenceState>): VfsPersistenc
   let state: VfsPersistenceState = {
     extension: {
       enabled: true,
+      snapshotMaxCount: 10,
       logMaxBytes: 1024 * 1024,
       virtualToolCallEnabled: true,
       extensionTemplateVfsSnapshot: null,
@@ -16,7 +17,7 @@ function createStore(initialState?: Partial<VfsPersistenceState>): VfsPersistenc
       mounted: false,
       chatVfsSnapshot: createEmptyVfsSnapshot(),
       chatVfsLogs: [],
-      chatVfsVersions: [],
+      chatVfsSnapshots: [],
       templateInitialized: false,
       workTree: null,
     },
@@ -36,7 +37,14 @@ function createStore(initialState?: Partial<VfsPersistenceState>): VfsPersistenc
       state = { ...state, extension: updater({ ...state.extension }) }
     },
     updateChat: (updater) => {
-      state = { ...state, chat: updater({ ...state.chat, chatVfsLogs: [...state.chat.chatVfsLogs], chatVfsVersions: [...state.chat.chatVfsVersions] }) }
+      state = {
+        ...state,
+        chat: updater({
+          ...state.chat,
+          chatVfsLogs: [...state.chat.chatVfsLogs],
+          chatVfsSnapshots: [...state.chat.chatVfsSnapshots],
+        }),
+      }
     },
   }
 }
@@ -74,7 +82,7 @@ describe('extension vfs template service', () => {
     expect(initialized).not.toBe(template)
   })
 
-  it('overwrites chat from template and clears logs/version history', () => {
+  it('overwrites chat from template and clears logs and snapshot manifests', () => {
     const template = createEmptyVfsSnapshot()
     const store = createStore({
       extension: { extensionTemplateVfsSnapshot: template },
@@ -92,7 +100,14 @@ describe('extension vfs template service', () => {
             argsSummary: '{}',
           },
         ],
-        chatVfsVersions: [{ id: 'v1', time: new Date().toISOString(), operator: 'system', actionType: 'save', scope: '*' }],
+        chatVfsSnapshots: [
+          {
+            id: 's1',
+            time: new Date().toISOString(),
+            kind: 'manual',
+            entries: [{ path: '/x.txt', presence: 'absent' as const }],
+          },
+        ],
       },
     })
     const service = new ExtensionVfsTemplateService(store)
@@ -103,7 +118,7 @@ describe('extension vfs template service', () => {
     expect(chat.chatVfsSnapshot).toEqual(template)
     expect(chat.chatVfsSnapshot).not.toBe(template)
     expect(chat.chatVfsLogs).toEqual([])
-    expect(chat.chatVfsVersions).toEqual([])
+    expect(chat.chatVfsSnapshots).toEqual([])
     expect(chat.templateInitialized).toBe(true)
   })
 })

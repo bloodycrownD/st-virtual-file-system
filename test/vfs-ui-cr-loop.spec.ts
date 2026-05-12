@@ -2,7 +2,6 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import VfsActionMenu from '@/app/components/business-components/VfsActionMenu.vue'
-import VfsCommitTab from '@/app/components/business-components/VfsCommitTab.vue'
 import VfsActionConfirmDialog from '@/app/components/business-components/VfsActionConfirmDialog.vue'
 import VfsActionInputDialog from '@/app/components/business-components/VfsActionInputDialog.vue'
 import VfsCreateEntityModal from '@/app/components/business-components/VfsCreateEntityModal.vue'
@@ -16,12 +15,10 @@ import { createVfsCommitHistoryStore } from '@/app/composables/components-compos
 import { VFS_LOG_REFRESH_AUTO, VFS_POPUP_BEFORE_CLOSE } from '@/app/composables/components-composables/useVfsMessageHooks'
 import { vfsPersistenceStore } from '@/app/stores/vfs-store-singleton'
 import { DeflateContentCodec } from '@/infra/serialization/deflate-codec'
-import type { VfsSnapshot } from '@/domain/vfs/types'
+import { buildManifestEntriesFromBefore } from '@/domain/vfs-snapshot/vfs-snapshot-manifest'
 
 const dispatchSpy = vi.fn()
-const useVfsCommitActionsMock = vi.fn<(summary: string) => Promise<boolean>>()
-const useVfsRollbackActionMock = vi.fn<(commitId: string) => Promise<boolean>>()
-const useVfsBatchRollbackActionMock = vi.fn<(commitIds: string[]) => Promise<boolean>>()
+const useVfsSnapshotRollbackMock = vi.fn<(snapshotId: string) => Promise<boolean>>()
 const fetchLogsMock = vi.fn(async () => ({ items: [], total: 0 }))
 let toastrErrorMock: ReturnType<typeof vi.fn>
 let toastrSuccessMock: ReturnType<typeof vi.fn>
@@ -170,13 +167,8 @@ vi.mock('@/app/composables/screens-composables/useVfsHistoryStateMachine', () =>
   }),
 }))
 
-vi.mock('@/app/composables/components-composables/useVfsCommitActions', () => ({
-  useVfsCommitActions: (summary: string) => useVfsCommitActionsMock(summary),
-}))
-
-vi.mock('@/app/composables/components-composables/useVfsRollbackActions', () => ({
-  useVfsRollbackAction: (commitId: string) => useVfsRollbackActionMock(commitId),
-  useVfsBatchRollbackAction: (commitIds: string[]) => useVfsBatchRollbackActionMock(commitIds),
+vi.mock('@/app/composables/components-composables/useVfsSnapshotRollback', () => ({
+  useVfsSnapshotRollback: (snapshotId: string) => useVfsSnapshotRollbackMock(snapshotId),
 }))
 
 vi.mock('@/app/services/vfs/logService', () => ({
@@ -187,12 +179,8 @@ describe('vfs ui cr loop fixes', () => {
   beforeEach(() => {
     window.innerWidth = 1366
     dispatchSpy.mockReset()
-    useVfsCommitActionsMock.mockReset()
-    useVfsRollbackActionMock.mockReset()
-    useVfsCommitActionsMock.mockResolvedValue(true)
-    useVfsRollbackActionMock.mockResolvedValue(true)
-    useVfsBatchRollbackActionMock.mockReset()
-    useVfsBatchRollbackActionMock.mockResolvedValue(true)
+    useVfsSnapshotRollbackMock.mockReset()
+    useVfsSnapshotRollbackMock.mockResolvedValue(true)
     fetchLogsMock.mockClear()
     toastrErrorMock = vi.fn()
     toastrSuccessMock = vi.fn()
@@ -283,16 +271,7 @@ describe('vfs ui cr loop fixes', () => {
           },
         },
       },
-      chatVfsVersions: [
-        {
-          id: 'commit-1',
-          time: new Date(now).toISOString(),
-          operator: 'assistant',
-          actionType: 'save',
-          scope: '/docs/docs.md',
-          sourceVersion: { id: 'v1', reason: 'rollback-target' },
-        },
-      ],
+      chatVfsSnapshots: [],
       workTree: {
         schemaVersion: 2,
         fileInclusionByPath: { '/docs/docs.md': 'explicit-include' },
@@ -303,12 +282,24 @@ describe('vfs ui cr loop fixes', () => {
         directoryRuleEnabledByPath: { '/docs': true },
       },
     }))
+    const seeded = vfsPersistenceStore.getState().chat.chatVfsSnapshot
+    vfsPersistenceStore.updateChat((draft) => ({
+      ...draft,
+      chatVfsSnapshots: [
+        {
+          id: 'snap-seed-1',
+          time: new Date(now).toISOString(),
+          kind: 'manual',
+          entries: buildManifestEntriesFromBefore(seeded, ['/docs/docs.md']),
+        },
+      ],
+    }))
   })
 
   it('requires explicit destructive confirmation dialog before template overwrite', async () => {
     const initial = JSON.stringify(vfsPersistenceStore.getState().chat.chatVfsSnapshot)
     const initialLogs = vfsPersistenceStore.getState().chat.chatVfsLogs.length
-    const initialVersions = vfsPersistenceStore.getState().chat.chatVfsVersions.length
+    const initialSnapshots = vfsPersistenceStore.getState().chat.chatVfsSnapshots.length
     const wrapper = mountTracked(VfsMainScreen)
 
     const overwriteButton = getButtonByAriaLabel(wrapper, '覆盖')
@@ -320,7 +311,7 @@ describe('vfs ui cr loop fixes', () => {
 
     expect(JSON.stringify(vfsPersistenceStore.getState().chat.chatVfsSnapshot)).toBe(initial)
     expect(vfsPersistenceStore.getState().chat.chatVfsLogs.length).toBe(initialLogs)
-    expect(vfsPersistenceStore.getState().chat.chatVfsVersions.length).toBe(initialVersions)
+    expect(vfsPersistenceStore.getState().chat.chatVfsSnapshots.length).toBe(initialSnapshots)
   })
 
   it('overwrites chat snapshot and resets chat logs/version history after dialog confirm', async () => {
@@ -337,7 +328,7 @@ describe('vfs ui cr loop fixes', () => {
     expect(template).not.toBeNull()
     expect(state.chat.chatVfsSnapshot).toEqual(template)
     expect(state.chat.chatVfsLogs).toEqual([])
-    expect(state.chat.chatVfsVersions).toEqual([])
+    expect(state.chat.chatVfsSnapshots).toEqual([])
     expect(state.chat.templateInitialized).toBe(true)
   })
 
@@ -395,34 +386,9 @@ describe('vfs ui cr loop fixes', () => {
     expect(wrapper.find('[data-testid="editor-history-rollback-submit"]').exists()).toBe(false)
   })
 
-  it('maps rollback success and failure to history events', async () => {
+  it('history screen renders status chrome', async () => {
     const wrapper = mountTracked(VfsHistoryScreen)
-
-    await wrapper.findComponent(VfsCommitTab).vm.$emit('rollback-status', { kind: 'single', status: 'succeeded' })
-    expect(dispatchSpy).toHaveBeenCalledWith({ type: 'ROLLBACK_SUCCESS' })
-
-    await wrapper
-      .findComponent(VfsCommitTab)
-      .vm.$emit('rollback-status', { kind: 'single', status: 'failed', sourceVersionId: 'v1' })
-    expect(dispatchSpy).toHaveBeenCalledWith({
-      type: 'ROLLBACK_FAILED',
-      errorCode: 'E_ROLLBACK_FAILED',
-      message: 'Rollback failed',
-    })
-
-    await wrapper.findComponent(VfsCommitTab).vm.$emit('rollback-status', {
-      kind: 'batch',
-      status: 'rollingBack',
-      sourceVersionIds: ['commit-1', 'commit-2'],
-    })
-    expect(dispatchSpy).toHaveBeenCalledWith({ type: 'BATCH_ROLLBACK_REQUEST' })
-
-    await wrapper.findComponent(VfsCommitTab).vm.$emit('rollback-status', {
-      kind: 'batch',
-      status: 'succeeded',
-      sourceVersionIds: ['commit-1', 'commit-2'],
-    })
-    expect(dispatchSpy).toHaveBeenCalledWith({ type: 'BATCH_ROLLBACK_SUCCESS' })
+    expect(wrapper.find('.vfs-history-status-bar').exists()).toBe(true)
   })
 
   it('guards runtime action triggering by entity kind', async () => {
@@ -446,20 +412,20 @@ describe('vfs ui cr loop fixes', () => {
     store.appendRecord({
       time: '2026-05-08T10:00:00.000Z',
       operator: 'assistant',
-      actionType: 'save',
+      actionType: 'manual',
       scope: '/docs',
-      sourceVersionId: 'v1',
+      snapshotId: 'v1',
     })
     store.appendRecord({
       time: '2026-05-08T11:00:00.000Z',
       operator: 'assistant',
-      actionType: 'rollback',
+      actionType: 'tool-batch-pre',
       scope: '/docs/a.md',
-      sourceVersionId: 'v2',
+      snapshotId: 'v2',
     })
 
-    expect(store.records.value[0]?.sourceVersionId).toBe('v2')
-    expect(store.records.value[1]?.sourceVersionId).toBe('v1')
+    expect(store.records.value[0]?.snapshotId).toBe('v2')
+    expect(store.records.value[1]?.snapshotId).toBe('v1')
   })
 
   it('shows editor history panel and emits manual rollback with source version', async () => {
@@ -472,7 +438,7 @@ describe('vfs ui cr loop fixes', () => {
             operator: 'assistant',
             actionType: 'save',
             scope: '/docs/a.md',
-            sourceVersionId: 'v42',
+            snapshotId: 'v42',
           },
         ],
       },
@@ -482,7 +448,7 @@ describe('vfs ui cr loop fixes', () => {
     await wrapper.get('[data-testid="editor-history-rollback-list"] input[type="radio"]').setValue(true)
     await wrapper.get('[data-testid="editor-history-rollback-submit"]').trigger('click')
 
-    expect(wrapper.emitted('manualRollbackRequested')?.[0]).toEqual([{ sourceVersionId: 'v42' }])
+    expect(wrapper.emitted('manualRollbackRequested')?.[0]).toEqual([{ snapshotId: 'v42' }])
   })
 
   it('maps manual rollback selection to valid commit snapshot ids', async () => {
@@ -491,12 +457,11 @@ describe('vfs ui cr loop fixes', () => {
         modelValue: 'draft',
         historyRecords: [
           {
-            commitId: 'commit-raw-1',
+            snapshotId: 'commit-raw-1',
             time: '2026-05-08T12:00:00.000Z',
             operator: 'assistant',
-            actionType: 'save',
+            actionType: 'manual',
             scope: '/docs/a.md',
-            sourceVersionId: 'legacy-source-v1',
           },
         ],
       },
@@ -505,48 +470,7 @@ describe('vfs ui cr loop fixes', () => {
     await wrapper.get('[data-testid="editor-history-rollback-list"] input[type="radio"]').setValue(true)
     await wrapper.get('[data-testid="editor-history-rollback-submit"]').trigger('click')
 
-    expect(wrapper.emitted('manualRollbackRequested')?.[0]).toEqual([{ sourceVersionId: 'commit-raw-1' }])
-  })
-
-  it('supports batch rollback selection flow in commit tab', async () => {
-    const wrapper = mountTracked(VfsCommitTab, {
-      props: {
-        commits: [
-          {
-            id: 'commit-1',
-            time: '2026-05-08T11:00:00.000Z',
-            operator: 'assistant',
-            actionType: 'save',
-            scope: '/docs/a.md',
-          },
-          {
-            id: 'commit-2',
-            time: '2026-05-08T10:00:00.000Z',
-            operator: 'assistant',
-            actionType: 'save',
-            scope: '/docs/b.md',
-          },
-        ],
-      },
-    })
-
-    const batchButtonBefore = wrapper.get('button')
-    expect(batchButtonBefore.text()).toContain('批量回滚')
-    expect(batchButtonBefore.attributes('disabled')).toBeDefined()
-
-    const checks = wrapper.findAll('input[type="checkbox"]')
-    expect(checks.length).toBeGreaterThan(1)
-    await checks[0].setValue(true)
-    await checks[1].setValue(true)
-    await wrapper.get('button').trigger('click')
-
-    expect(useVfsBatchRollbackActionMock).toHaveBeenCalledWith(['commit-1', 'commit-2'])
-    expect(wrapper.emitted('rollbackStatus')?.[0]).toEqual([
-      { kind: 'batch', status: 'rollingBack', sourceVersionIds: ['commit-1', 'commit-2'] },
-    ])
-    expect(wrapper.emitted('rollbackStatus')?.[1]).toEqual([
-      { kind: 'batch', status: 'succeeded', sourceVersionIds: ['commit-1', 'commit-2'] },
-    ])
+    expect(wrapper.emitted('manualRollbackRequested')?.[0]).toEqual([{ snapshotId: 'commit-raw-1' }])
   })
 
   it('switches between mobile and desktop layout modes', async () => {
@@ -625,7 +549,7 @@ describe('vfs ui cr loop fixes', () => {
     expect(wrapper.get('[data-testid="vfs-main-layout"]').exists()).toBe(true)
   })
 
-  it('wires editor save action to commit flow and appends commit record on success', async () => {
+  it('wires editor save action to persist snapshot content on success', async () => {
     const wrapper = mountTracked(VfsMainScreen)
     await selectDocsFile(wrapper)
     await triggerEntityAction(wrapper, 'open', 'docs.md')
@@ -637,8 +561,6 @@ describe('vfs ui cr loop fixes', () => {
 
     const snapshot = vfsPersistenceStore.getState().chat.chatVfsSnapshot
     expect(decodeFileFromSnapshot(snapshot, '/docs/docs.md')).toBe('new content')
-    expect(useVfsCommitActionsMock).toHaveBeenCalledTimes(1)
-    expect(useVfsCommitActionsMock).toHaveBeenCalledWith('/docs/docs.md')
     expect(dispatchSpy).toHaveBeenCalledWith({ type: 'SAVE_REQUEST' })
     expect(dispatchSpy).toHaveBeenCalledWith({ type: 'SAVE_SUCCESS' })
     expect(toastrSuccessMock).toHaveBeenCalledWith('已保存')
@@ -671,30 +593,6 @@ describe('vfs ui cr loop fixes', () => {
     expect(template).not.toBeNull()
     expect(decodeFileFromSnapshot(template!, '/template.md')).toBe('template updated')
     expect(toastrSuccessMock).toHaveBeenCalledWith('已保存')
-    // WHY: template mode is Tab1-only and should not append chat commit history.
-    expect(useVfsCommitActionsMock).not.toHaveBeenCalled()
-  })
-
-  it('shows error toast when chat commit fails after save write', async () => {
-    // WHY: the mocked module must still surface errors like the real useVfsCommitActions (toastr.error on !ok).
-    useVfsCommitActionsMock.mockImplementation(async () => {
-      toastrErrorMock('[E_SAVE_FAILED] Save failed')
-      return false
-    })
-    const wrapper = mountTracked(VfsMainScreen)
-    await selectDocsFile(wrapper)
-    await triggerEntityAction(wrapper, 'open', 'docs.md')
-    await ensureEditorSourceMode(wrapper)
-    await wrapper.get('textarea.vfs-editor').setValue('commit fails')
-    await wrapper.get('[data-testid="editor-save-submit"]').trigger('click')
-    await flushPromises()
-    await wrapper.vm.$nextTick()
-
-    expect(dispatchSpy.mock.calls.map((entry) => entry[0])).toContainEqual(
-      expect.objectContaining({ type: 'SAVE_FAILED' }),
-    )
-    expect(toastrErrorMock).toHaveBeenCalled()
-    expect(toastrSuccessMock).not.toHaveBeenCalled()
   })
 
   it('keeps unified top bar controls on one row without embedded editor toolbar', async () => {
@@ -744,10 +642,10 @@ describe('vfs ui cr loop fixes', () => {
   })
 
   it('allows overlapping save and rollback requests and leaves resolution to execution result', async () => {
-    let resolveSave: ((value: boolean) => void) | undefined
-    useVfsCommitActionsMock.mockReturnValue(
+    let resolveRollback: ((value: boolean) => void) | undefined
+    useVfsSnapshotRollbackMock.mockReturnValue(
       new Promise<boolean>((resolve) => {
-        resolveSave = resolve
+        resolveRollback = resolve
       }),
     )
 
@@ -763,10 +661,9 @@ describe('vfs ui cr loop fixes', () => {
     }
     await wrapper.get('[data-testid="editor-history-rollback-submit"]').trigger('click')
 
-    expect(useVfsCommitActionsMock).toHaveBeenCalledTimes(1)
-    expect(useVfsRollbackActionMock).toHaveBeenCalledTimes(1)
+    expect(useVfsSnapshotRollbackMock).toHaveBeenCalledTimes(1)
 
-    resolveSave?.(true)
+    resolveRollback?.(true)
     await Promise.resolve()
     await wrapper.vm.$nextTick()
   })
@@ -836,13 +733,13 @@ describe('vfs ui cr loop fixes', () => {
 
   it('disables rollback controls while rollback request is in progress', async () => {
     let resolveRollback: ((value: boolean) => void) | undefined
-    useVfsRollbackActionMock.mockReturnValue(
+    useVfsSnapshotRollbackMock.mockReturnValue(
       new Promise<boolean>((resolve) => {
         resolveRollback = resolve
       }),
     )
     const wrapper = mountTracked(VfsHistoryPanel)
-    await wrapper.get('input').setValue('commit-1')
+    await wrapper.get('input').setValue('snap-seed-1')
     await wrapper.get('button').trigger('click')
     await wrapper.vm.$nextTick()
 
@@ -1197,7 +1094,7 @@ describe('vfs ui cr loop fixes', () => {
     await nextTick()
     expect(getGutterLineTexts(wrapper)).toEqual(['1', '2', '3', '4'])
 
-    useVfsRollbackActionMock.mockImplementationOnce(async () => {
+    useVfsSnapshotRollbackMock.mockImplementationOnce(async () => {
       vfsPersistenceStore.updateChat((draft) => ({
         ...draft,
         chatVfsSnapshot: {
@@ -1215,7 +1112,7 @@ describe('vfs ui cr loop fixes', () => {
       return true
     })
 
-    const rollbackRadio = wrapper.get('input[name="editor-rollback-source"]')
+    const rollbackRadio = wrapper.get('input[name="editor-rollback-snapshot"]')
     await rollbackRadio.setValue()
     await wrapper.get('[data-testid="editor-history-rollback-submit"]').trigger('click')
     await flushPromises()
@@ -1254,7 +1151,7 @@ describe('vfs ui cr loop fixes', () => {
 
     expect(wrapper.get('[data-testid="slideshow-prev-page"]').attributes('disabled')).toBeDefined()
     expect(wrapper.get('[data-testid="slideshow-next-page"]').attributes('disabled')).toBeUndefined()
-    expect(wrapper.text()).toContain('/docs/docs.md')
+    expect(wrapper.get('[data-testid="viewer-file-title"]').text()).toContain('docs.md')
 
     await wrapper.get('[data-testid="slideshow-next-page"]').trigger('click')
     await nextTick()

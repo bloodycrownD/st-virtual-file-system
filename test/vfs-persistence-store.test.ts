@@ -24,6 +24,7 @@ describe('vfs persistence store', () => {
 
     expect(adapter.writeExtensionRaw).toHaveBeenCalledWith({
       enabled: true,
+      snapshotMaxCount: 10,
       logMaxBytes: 1024 * 1024,
       virtualToolCallEnabled: true,
       extensionTemplateVfsSnapshot: null,
@@ -38,7 +39,7 @@ describe('vfs persistence store', () => {
     expect(writtenChat).toMatchObject({
       mounted: false,
       chatVfsLogs: [],
-      chatVfsVersions: [],
+      chatVfsSnapshots: [],
       templateInitialized: false,
       workTree: null,
     })
@@ -56,6 +57,7 @@ describe('vfs persistence store', () => {
     store.setExtensionEnabled(true)
     expect(adapter.writeExtensionRaw).toHaveBeenCalledWith({
       enabled: true,
+      snapshotMaxCount: 10,
       logMaxBytes: 1024 * 1024,
       virtualToolCallEnabled: true,
       extensionTemplateVfsSnapshot: null,
@@ -95,6 +97,7 @@ describe('vfs persistence store', () => {
     expect(store.getState().chat.mounted).toBe(false)
     expect(adapter.writeExtensionRaw).toHaveBeenCalledWith({
       enabled: true,
+      snapshotMaxCount: 10,
       logMaxBytes: 1024 * 1024,
       virtualToolCallEnabled: true,
       extensionTemplateVfsSnapshot: null,
@@ -109,7 +112,7 @@ describe('vfs persistence store', () => {
     expect(writtenChat).toMatchObject({
       mounted: false,
       chatVfsLogs: [],
-      chatVfsVersions: [],
+      chatVfsSnapshots: [],
       templateInitialized: false,
       workTree: null,
     })

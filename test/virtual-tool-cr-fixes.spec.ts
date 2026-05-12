@@ -2,10 +2,12 @@ import { describe, expect, it } from 'vitest'
 import { createVfsPersistenceStore } from '@/app/stores/vfs-persistence-store'
 import { ToolDispatcher } from '@/app/services/virtual-tools/tool-dispatcher'
 import { ChatVfsRuntime } from '@/app/services/vfs-runtime/chat-vfs-runtime'
-import { ChatVfsVersionService } from '@/app/services/vfs-version/chat-vfs-version-service'
+import { ChatVfsSnapshotService } from '@/app/services/vfs-snapshot/chat-vfs-snapshot-service'
+import { DeflateContentCodec } from '@/infra/serialization/deflate-codec'
 import { ExtensionVfsTemplateService } from '@/app/services/vfs-runtime/extension-vfs-template-service'
 import { VirtualToolMessageHandler } from '@/app/services/message/virtual-tool-message-handler'
 import { ChatVfsLogService } from '@/app/services/vfs-log/chat-vfs-log-service'
+import { createEmptyVfsSnapshot } from '@/infra/persistence/vfs-snapshot.schema'
 import type { VirtualTool } from '@/app/services/virtual-tools/tool-contracts'
 import type { StContextAdapter } from '@/infra/persistence/st-context-adapter'
 
@@ -26,11 +28,15 @@ function createAdapterMock(extensionSeed: Record<string, unknown> = {}): StConte
   }
 }
 
+function snapshotService(store: ReturnType<typeof createVfsPersistenceStore>) {
+  return new ChatVfsSnapshotService(store, new DeflateContentCodec())
+}
+
 describe('virtual tool CR fixes', () => {
   it('enforces hard read caps regardless of caller-provided limits', () => {
     const store = createVfsPersistenceStore(createAdapterMock())
     store.init()
-    const runtime = new ChatVfsRuntime(store, new ToolDispatcher(), new ChatVfsVersionService(store))
+    const runtime = new ChatVfsRuntime(store, new ToolDispatcher(), snapshotService(store))
     const oversized = `L\n${'x'.repeat(25000)}`
     const result = runtime.executeBatch({
       calls: [
@@ -50,7 +56,7 @@ describe('virtual tool CR fixes', () => {
   it('rejects update calls missing strict required fields', () => {
     const store = createVfsPersistenceStore(createAdapterMock())
     store.init()
-    const runtime = new ChatVfsRuntime(store, new ToolDispatcher(), new ChatVfsVersionService(store))
+    const runtime = new ChatVfsRuntime(store, new ToolDispatcher(), snapshotService(store))
     const result = runtime.executeBatch({
       calls: [
         { tool: 'write', args: { path: '/a.txt', content: 'before' } },
@@ -87,14 +93,17 @@ describe('virtual tool CR fixes', () => {
       }),
     )
     store.init()
-    const versions = new ChatVfsVersionService(store)
-    const templateService = new ExtensionVfsTemplateService(store, versions)
-    const runtime = new ChatVfsRuntime(store, new ToolDispatcher(), versions, templateService)
+    const templateService = new ExtensionVfsTemplateService(store)
+    const runtime = new ChatVfsRuntime(store, new ToolDispatcher(), snapshotService(store), templateService)
     runtime.executeBatch({ calls: [{ tool: 'list', args: { path: '/' } }] })
     expect(store.getState().chat.templateInitialized).toBe(true)
 
     // Simulate chat reload that lands on a fresh chat metadata segment.
-    store.updateChat((draft) => ({ ...draft, templateInitialized: false, chatVfsSnapshot: null }))
+    store.updateChat((draft) => ({
+      ...draft,
+      templateInitialized: false,
+      chatVfsSnapshot: createEmptyVfsSnapshot(),
+    }))
     runtime.executeBatch({ calls: [{ tool: 'list', args: { path: '/' } }] })
     expect(store.getState().chat.templateInitialized).toBe(true)
     expect(store.getState().chat.chatVfsSnapshot).not.toBeNull()
@@ -104,7 +113,7 @@ describe('virtual tool CR fixes', () => {
     const store = createVfsPersistenceStore(createAdapterMock({ virtualToolCallEnabled: false }))
     store.init()
     const logs = new ChatVfsLogService(store)
-    const runtime = new ChatVfsRuntime(store, new ToolDispatcher(), new ChatVfsVersionService(store))
+    const runtime = new ChatVfsRuntime(store, new ToolDispatcher(), snapshotService(store))
     const before = JSON.stringify(store.getState().chat.chatVfsSnapshot)
     const handler = new VirtualToolMessageHandler(runtime, logs)
     const output = handler.process({
@@ -120,7 +129,7 @@ describe('virtual tool CR fixes', () => {
     const store = createVfsPersistenceStore(createAdapterMock())
     store.init()
     const logs = new ChatVfsLogService(store)
-    const runtime = new ChatVfsRuntime(store, new ToolDispatcher(), new ChatVfsVersionService(store))
+    const runtime = new ChatVfsRuntime(store, new ToolDispatcher(), snapshotService(store))
     const handler = new VirtualToolMessageHandler(runtime, logs)
     handler.process({
       chatId: 'chat',
@@ -134,13 +143,15 @@ describe('virtual tool CR fixes', () => {
     expect(entries.some((entry) => entry.toolName === 'write')).toBe(true)
     expect(entries.some((entry) => entry.toolName === 'read')).toBe(true)
     expect(entries.some((entry) => entry.errorCode === 'READ_TRUNCATED')).toBe(true)
+    const batchEntry = entries.find((e) => e.toolName === 'batch' && e.status === 'success')
+    expect(batchEntry?.snapshotId).toBeTruthy()
   })
 
   it('returns CALL_LIMIT_EXCEEDED in acceptance flow when calls exceed limit', () => {
     const store = createVfsPersistenceStore(createAdapterMock())
     store.init()
     const logs = new ChatVfsLogService(store)
-    const runtime = new ChatVfsRuntime(store, new ToolDispatcher(undefined, { maxCalls: 1 }), new ChatVfsVersionService(store))
+    const runtime = new ChatVfsRuntime(store, new ToolDispatcher(undefined, { maxCalls: 1 }), snapshotService(store))
     const handler = new VirtualToolMessageHandler(runtime, logs)
     const output = handler.process({
       chatId: 'chat',
@@ -160,7 +171,6 @@ describe('virtual tool CR fixes', () => {
       name: 'slow',
       execute: () => {
         const stopAt = Date.now() + 30
-        // Keep execution synchronous to validate dispatcher time-boundary checks.
         while (Date.now() < stopAt) {
           // noop busy wait
         }
@@ -170,7 +180,7 @@ describe('virtual tool CR fixes', () => {
     const runtime = new ChatVfsRuntime(
       store,
       new ToolDispatcher([slowTool], { timeoutMs: 10 }),
-      new ChatVfsVersionService(store),
+      snapshotService(store),
     )
     const handler = new VirtualToolMessageHandler(runtime, logs)
     const output = handler.process({
@@ -213,7 +223,7 @@ describe('virtual tool CR fixes', () => {
     const store = createVfsPersistenceStore(createAdapterMock())
     store.init()
     const logs = new ChatVfsLogService(store)
-    const runtime = new ChatVfsRuntime(store, new ToolDispatcher(), new ChatVfsVersionService(store))
+    const runtime = new ChatVfsRuntime(store, new ToolDispatcher(), snapshotService(store))
     const handler = new VirtualToolMessageHandler(runtime, logs)
     const output = handler.process({
       chatId: 'chat',
