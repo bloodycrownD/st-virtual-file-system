@@ -26,8 +26,8 @@
 
 | 模块 | 变更 |
 |------|------|
-| [`VfsFileManagerPanel.vue`](../../../../../src/app/components/business-components/VfsFileManagerPanel.vue) | 扩展 `VfsBrowserEntity` 可选字段（示例名，实现可微调）：`rowBadgeIconClass?: string`、`rowBadgeLabel?: string`、`rowBadgeTitle?: string`、`rowBadgeAria?: string`；在 `.vfs-fm-item` 内 **flex 布局**：左侧保持 `kind` + `name`（`name` 继续 `ellipsis`），右侧为 **角标区**（`flex-shrink:0`，小字号、低对比）。目录与文件共用同一套 props，由父组件区分语义。 |
-| [`VfsMainScreen.vue`](../../../../../src/app/screens/business-screens/VfsMainScreen.vue) | 在 `directoryEntries` 的 `computed` 映射中，根据 `currentWorkTree` + `getFileInclusionMode`（或等价读取 `fileInclusionByPath` 缺省 `follow-parent`）为**文件**填充角标字段；**目录**根据 `directoryRuleEnabledByPath`（根恒开）填充「规则·开/关」及对应图标。 |
+| [`VfsFileManagerPanel.vue`](../../../../../../src/app/components/business-components/VfsFileManagerPanel.vue) | 扩展 `VfsBrowserEntity` 可选字段（示例名，实现可微调）：`rowBadgeIconClass?: string`、`rowBadgeLabel?: string`、`rowBadgeTitle?: string`、`rowBadgeAria?: string`；在 `.vfs-fm-item` 内 **flex 布局**：左侧保持 `kind` + `name`（`name` 继续 `ellipsis`），右侧为 **角标区**（`flex-shrink:0`，小字号、低对比）。目录与文件共用同一套 props，由父组件区分语义。 |
+| [`VfsMainScreen.vue`](../../../../../../src/app/screens/business-screens/VfsMainScreen.vue) | 在 `directoryEntries` 的 `computed` 映射中，根据 `currentWorkTree` + `getFileInclusionMode`（或等价读取 `fileInclusionByPath` 缺省 `follow-parent`）为**文件**填充角标字段；**目录**根据 `directoryRuleEnabledByPath`（根恒开）填充「规则·开/关」及对应图标。 |
 | 域类型 | 可复用 `WorkTreeFileInclusionMode` 自 `work-tree.types.ts`；**不新增**对外 API 契约变更。 |
 
 **图标约定（实现时固定一套，写入代码注释）**：三态各选 **互不相同** 的 Font Awesome 6 solid 图标，与现有 header `fa-*` 风格一致；**目录**「规则·开/关」各选一图标（如 `fa-toggle-on` / `fa-toggle-off` 或 `fa-sliders` + 状态差异），避免与文件三态图标混淆。

@@ -3,7 +3,7 @@
 ## 设计目标
 
 - 落实 [`prd.md`](./prd.md)：在 **`.vfs-fm-item` 内最右侧**展示 **图标 + 极短中文**；文件三态 **纳入 / 排除 / 随目录**；目录 **规则·开 / 规则·关**；与现有暗色行、灯泡、`vfs-fm-path-text` 的 **muted** 风格一致。
-- **零业务语义分叉**：纳入方式与 `fileInclusionByPath` 稀疏缺省规则一致；目录与 `directoryRuleEnabledByPath` + 根恒开一致（与 [`VfsMainScreen.vue`](../../../../../src/app/screens/business-screens/VfsMainScreen.vue) 现有 `isEntityRowLit` 同源数据）。
+- **零业务语义分叉**：纳入方式与 `fileInclusionByPath` 稀疏缺省规则一致；目录与 `directoryRuleEnabledByPath` + 根恒开一致（与 [`VfsMainScreen.vue`](../../../../../../src/app/screens/business-screens/VfsMainScreen.vue) 现有 `isEntityRowLit` 同源数据）。
 - **不**改持久化、`toggle-status`、宏与工作树引擎的纳入判定逻辑（仅 UI 呈现）。
 
 ---
@@ -12,11 +12,11 @@
 
 | 位置 | 现状 | 约束 |
 |------|------|------|
-| [`VfsFileManagerPanel.vue`](../../../../../src/app/components/business-components/VfsFileManagerPanel.vue) | `.vfs-fm-item` 为 `display:flex`；子节点为 `.vfs-fm-kind` + `.vfs-fm-name`（`flex:1` + `ellipsis`）；无右侧槽位 | 需**不拆行**增加右侧角标区；名称区须 `min-width:0` 以免挤压角标 |
-| [`VfsMainScreen.vue`](../../../../../src/app/screens/business-screens/VfsMainScreen.vue) `directoryEntries` | 已为每行设置 `enabled`、`statusHintTitle/Aria`；文件用 `isFileIncludedInWorkTree`，目录用 `directoryRuleEnabledByPath` | 角标数据应在此 `computed` 内一次性算出，避免面板内再读 store |
-| [`work-tree-engine.ts`](../../../../../src/domain/work-tree/work-tree-engine.ts) | `getFileInclusionMode(config, path)` 为 **非导出** 私有函数；`resolveWorkTreeFileRowState` 已用 **规范化 path** 查表 | UI 若手写 `fileInclusionByPath[path]` 易与引擎 **路径规范化** 漂移；**推荐导出**薄封装供 Vue 使用 |
+| [`VfsFileManagerPanel.vue`](../../../../../../src/app/components/business-components/VfsFileManagerPanel.vue) | `.vfs-fm-item` 为 `display:flex`；子节点为 `.vfs-fm-kind` + `.vfs-fm-name`（`flex:1` + `ellipsis`）；无右侧槽位 | 需**不拆行**增加右侧角标区；名称区须 `min-width:0` 以免挤压角标 |
+| [`VfsMainScreen.vue`](../../../../../../src/app/screens/business-screens/VfsMainScreen.vue) `directoryEntries` | 已为每行设置 `enabled`、`statusHintTitle/Aria`；文件用 `isFileIncludedInWorkTree`，目录用 `directoryRuleEnabledByPath` | 角标数据应在此 `computed` 内一次性算出，避免面板内再读 store |
+| [`work-tree-engine.ts`](../../../../../../src/domain/work-tree/work-tree-engine.ts) | `getFileInclusionMode(config, path)` 为 **非导出** 私有函数；`resolveWorkTreeFileRowState` 已用 **规范化 path** 查表 | UI 若手写 `fileInclusionByPath[path]` 易与引擎 **路径规范化** 漂移；**推荐导出**薄封装供 Vue 使用 |
 
-**消费者**：仅 [`VfsMainScreen.vue`](../../../../../src/app/screens/business-screens/VfsMainScreen.vue) 挂载 [`VfsFileManagerPanel`](../../../../../src/app/components/business-components/VfsFileManagerPanel.vue)（`files` 列表态）；模板 / 聊天共用同一组件路径。
+**消费者**：仅 [`VfsMainScreen.vue`](../../../../../../src/app/screens/business-screens/VfsMainScreen.vue) 挂载 [`VfsFileManagerPanel`](../../../../../../src/app/components/business-components/VfsFileManagerPanel.vue)（`files` 列表态）；模板 / 聊天共用同一组件路径。
 
 ---
 

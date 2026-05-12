@@ -19,15 +19,15 @@
 
 | 区域 | 现状 | 与本需求冲突点 |
 |------|------|----------------|
-| [`work-tree.types.ts`](../../../src/domain/work-tree/work-tree.types.ts) | `WorkTreeConfig`：`defaultRule`、`directoryOverrides`、`directoryRulesEnabled`、`selectedFiles` | `selectedFiles` 与目录规则**分阶段**写入 `modes`（[`buildRenderModes`](../../../src/domain/work-tree/work-tree-engine.ts)），导致「未勾选但宏仍有」；与本 PRD 矛盾。 |
-| [`work-tree-engine.ts`](../../../src/domain/work-tree/work-tree-engine.ts) | `renderVirtualWorkTree` → `buildRenderModes` + `buildEmissionOrder` + `renderOneFile` | 需改为「按文件纳入方式 + 父目录门闸 + 规则」统一推导 `Map<path, RenderMode \| omit>`；未纳入路径不出现在 `order` 或不出块。 |
-| [`VfsMainScreen.vue`](../../../src/app/screens/business-screens/VfsMainScreen.vue) | `isEntityEnabled`：文件看 `selectedFiles`，目录看 `directoryRulesEnabled`；`toggle-status` 切换上述二者；`openDisplayStrategyDialogForCurrentDirectory` 写 `directoryOverrides` 并设 `directoryRulesEnabled[path]=true`；`includeDisplayStrategy: isNonRootDirectory` | 文件灯必须改为**推导的纳入结果**；根目录需**目录纳入规则**配置入口；根目录**无关闭规则**交互。 |
-| [`VfsFileManagerPanel.vue`](../../../src/app/components/business-components/VfsFileManagerPanel.vue) | 行状态槽位统一灯泡 `entry.enabled` | 文件：二态纳入；目录：PRD 称无「展示/不展示」——建议目录行改为**规则启用**语义（文案/ `title` / `aria-label`）或拆图标，避免用户以为目录「纳入工作树」。 |
-| [`VfsActionMenu.vue`](../../../src/app/components/business-components/VfsActionMenu.vue) | `includeDisplayStrategy` 控制 header 是否出现 `apply-strategy` | 根目录需为 `true`（与当前 `isNonRootDirectory` 相反）。 |
-| [`register-vfs-macros.ts`](../../../src/infra/sillytarvern/macros/register-vfs-macros.ts) | `VIRTUAL_WORK_TREE` 读 `chatVfsSnapshot` + `workTree` | 将 `workTree`（可为持久化 `null`）传入 `renderVirtualWorkTree`；引擎内 **`ensureWorkTreeConfig`**，与 UI 默认一致（**非**「null 必空串」）。 |
-| [`vfs-chat-metadata.schema.ts`](../../../src/infra/persistence/vfs-chat-metadata.schema.ts) / [`vfs-extension-settings.schema.ts`](../../../src/infra/persistence/vfs-extension-settings.schema.ts) | `workTree` / `workTreeTemplate` 经 `parseWorkTreeConfig` | 解析层需**识别新 schema**；旧形状**丢弃或整表重置**为默认新配置（实现二选一，见下文）。 |
-| [`extension-vfs-template-service.ts`](../../../src/app/services/vfs-runtime/extension-vfs-template-service.ts) | 初始化 chat 时 `workTree: workTreeTemplate ?? draft.workTree`；`overwriteChatWithTemplate` 仅替换快照 | **已定案**：`overwriteChatWithTemplate` 须**同时**将 `chat.workTree` 重置为模板工作树（或默认新配置）；与下节「已决产品规则」第 3 条一致。 |
-| [`test/work-tree-engine.spec.ts`](../../../test/work-tree-engine.spec.ts) | 覆盖 head/tail、selected 优先、目录未启用等 | 全部改为新语义用例；增加 PRD 头批与灯一致（以**纳入推导**断言；UI 可另加 `vfs-ui` 测）。 |
+| [`work-tree.types.ts`](../../../../src/domain/work-tree/work-tree.types.ts) | `WorkTreeConfig`：`defaultRule`、`directoryOverrides`、`directoryRulesEnabled`、`selectedFiles` | `selectedFiles` 与目录规则**分阶段**写入 `modes`（[`buildRenderModes`](../../../../src/domain/work-tree/work-tree-engine.ts)），导致「未勾选但宏仍有」；与本 PRD 矛盾。 |
+| [`work-tree-engine.ts`](../../../../src/domain/work-tree/work-tree-engine.ts) | `renderVirtualWorkTree` → `buildRenderModes` + `buildEmissionOrder` + `renderOneFile` | 需改为「按文件纳入方式 + 父目录门闸 + 规则」统一推导 `Map<path, RenderMode \| omit>`；未纳入路径不出现在 `order` 或不出块。 |
+| [`VfsMainScreen.vue`](../../../../src/app/screens/business-screens/VfsMainScreen.vue) | `isEntityEnabled`：文件看 `selectedFiles`，目录看 `directoryRulesEnabled`；`toggle-status` 切换上述二者；`openDisplayStrategyDialogForCurrentDirectory` 写 `directoryOverrides` 并设 `directoryRulesEnabled[path]=true`；`includeDisplayStrategy: isNonRootDirectory` | 文件灯必须改为**推导的纳入结果**；根目录需**目录纳入规则**配置入口；根目录**无关闭规则**交互。 |
+| [`VfsFileManagerPanel.vue`](../../../../src/app/components/business-components/VfsFileManagerPanel.vue) | 行状态槽位统一灯泡 `entry.enabled` | 文件：二态纳入；目录：PRD 称无「展示/不展示」——建议目录行改为**规则启用**语义（文案/ `title` / `aria-label`）或拆图标，避免用户以为目录「纳入工作树」。 |
+| [`VfsActionMenu.vue`](../../../../src/app/components/business-components/VfsActionMenu.vue) | `includeDisplayStrategy` 控制 header 是否出现 `apply-strategy` | 根目录需为 `true`（与当前 `isNonRootDirectory` 相反）。 |
+| [`register-vfs-macros.ts`](../../../../src/infra/sillytarvern/macros/register-vfs-macros.ts) | `VIRTUAL_WORK_TREE` 读 `chatVfsSnapshot` + `workTree` | 将 `workTree`（可为持久化 `null`）传入 `renderVirtualWorkTree`；引擎内 **`ensureWorkTreeConfig`**，与 UI 默认一致（**非**「null 必空串」）。 |
+| [`vfs-chat-metadata.schema.ts`](../../../../src/infra/persistence/vfs-chat-metadata.schema.ts) / [`vfs-extension-settings.schema.ts`](../../../../src/infra/persistence/vfs-extension-settings.schema.ts) | `workTree` / `workTreeTemplate` 经 `parseWorkTreeConfig` | 解析层需**识别新 schema**；旧形状**丢弃或整表重置**为默认新配置（实现二选一，见下文）。 |
+| [`extension-vfs-template-service.ts`](../../../../src/app/services/vfs-runtime/extension-vfs-template-service.ts) | 初始化 chat 时 `workTree: workTreeTemplate ?? draft.workTree`；`overwriteChatWithTemplate` 仅替换快照 | **已定案**：`overwriteChatWithTemplate` 须**同时**将 `chat.workTree` 重置为模板工作树（或默认新配置）；与下节「已决产品规则」第 3 条一致。 |
+| [`test/work-tree-engine.spec.ts`](../../../../test/work-tree-engine.spec.ts) | 覆盖 head/tail、selected 优先、目录未启用等 | 全部改为新语义用例；增加 PRD 头批与灯一致（以**纳入推导**断言；UI 可另加 `vfs-ui` 测）。 |
 
 ---
 
@@ -39,7 +39,7 @@
 
 - `schemaVersion: 2`（数字；缺失或 `<2` 视为旧版，**整对象按新默认重建**）。
 - **`fileInclusionByPath`**：`Record<VfsPath, 'explicit-include' | 'explicit-exclude' | 'follow-parent'>`，**稀疏存储**：缺省键 = **`follow-parent`**（与 PRD 默认一致）。
-- **`directoryRuleByPath`**：`Record<VfsPath, DirectoryRule>` — 复用现有 [`DirectoryRule`](../../../src/domain/work-tree/work-tree.types.ts) 结构（`sortField` / `sortDirection` / `headCount` / `tailCount` / `fill`），语义为「该目录作为父目录时使用的纳入规则内容」。
+- **`directoryRuleByPath`**：`Record<VfsPath, DirectoryRule>` — 复用现有 [`DirectoryRule`](../../../../src/domain/work-tree/work-tree.types.ts) 结构（`sortField` / `sortDirection` / `headCount` / `tailCount` / `fill`），语义为「该目录作为父目录时使用的纳入规则内容」。
 - **`directoryRuleEnabledByPath`**：`Record<VfsPath, boolean>` — **仅非根路径**有意义；**根路径 `/` 不得持久化为 `false`**（解析时丢弃 `false`）。UI 上不展示根目录「关闭规则」。
 
 **默认新配置**（新建 chat / 模板 / 解析失败回退）建议：

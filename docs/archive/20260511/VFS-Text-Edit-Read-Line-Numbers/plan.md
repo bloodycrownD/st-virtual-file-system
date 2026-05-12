@@ -19,4 +19,4 @@
 
 ## 集成
 
-- 功能分支合并入 `master` 后，可按仓库惯例归档 `docs/Iterations/...` 至 `docs/archive/...`。
+- 本迭代文稿已落盘于 `docs/archive/20260511/VFS-Text-Edit-Read-Line-Numbers/`（与 `prd.md` / `spec.md` / `plan.md` 同目录快照）。

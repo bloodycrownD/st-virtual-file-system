@@ -124,6 +124,6 @@
 
 ---
 
-**文档路径**：`docs/Iterations/VFS-File-Snapshot-Rollback/prd.md`  
+**文档路径**：`docs/archive/20260511/VFS-File-Snapshot-Rollback/prd.md`  
 
 **已定案摘录**：工具批次语义锚点为 **pre-batch（批次前状态）**，持久化为 **受影响路径的 manifest**；**非**整棵聊天树副本。界面入口见上文「界面入口（已定案）」。实现细节以同目录 `spec.md` 为准。

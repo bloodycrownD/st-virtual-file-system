@@ -132,4 +132,4 @@
 
 ---
 
-**生成路径**：`docs/Iterations/VFS-Work-Tree-Inclusion-Rework/prd.md`
+**生成路径**：`docs/archive/20260511/VFS-Work-Tree-Inclusion-Rework/prd.md`
