@@ -362,5 +362,15 @@ function handleRowDoubleClick(entry: VfsBrowserEntity): void {
     min-width: 0;
     white-space: normal;
   }
+
+  /*
+    WHY: cap the kind+name block ~4/5 of the row key so `vfs-fm-row-badge` / FA icons get ~1/5 more budget;
+    `.vfs-fm-name` ellipsis still applies inside the tighter rail.
+  */
+  .vfs-fm-item-main {
+    flex: 1 1 0;
+    min-width: 0;
+    max-width: 80%;
+  }
 }
 </style>
