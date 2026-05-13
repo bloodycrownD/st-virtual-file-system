@@ -11,7 +11,25 @@ const machine = createVfsHistoryStateMachine()
 const logs = ref<ChatVfsLogEntry[]>([])
 const snapshotMaxCount = ref(0)
 
-const statusLabel = computed(() => machine.state.status)
+/** WHY: state machine keeps English ids; surface Chinese product copy (撤回 vs 回滚) in the UI. */
+const statusLabelZh = computed(() => {
+  switch (machine.state.status) {
+    case 'idle':
+      return '空闲'
+    case 'saving':
+      return '保存中'
+    case 'rollingBack':
+      return '撤回中'
+    case 'batchRollingBack':
+      return '批次撤回中'
+    case 'failed':
+      return '失败'
+    case 'succeeded':
+      return '成功'
+    default:
+      return machine.state.status
+  }
+})
 const rollingBack = computed(
   () => machine.state.status === 'rollingBack' || machine.state.status === 'batchRollingBack',
 )
@@ -36,7 +54,7 @@ function snapshotExists(snapshotId: string): boolean {
 
 /**
  * Tool-batch pre manifests for pure-create batches store only `absent` anchors (paths did not exist before the batch).
- * Rolling back restores that pre-state — it cannot resurrect a file the user deleted later; it matches "undo create".
+ * Withdrawing to that anchor restores pre-batch state — it cannot resurrect a file the user deleted later; it matches "undo create".
  */
 function isToolBatchCreateOnlyManifest(record: ChatVfsSnapshotRecord | undefined): boolean {
   return Boolean(
@@ -56,12 +74,12 @@ async function rollbackLogSnapshot(snapshotId: string): Promise<void> {
   if (!id) return
   // WHY: FIFO eviction / TOCTOU — manifest row gone; do not call apply (useVfsSnapshotRollback would toast error too).
   if (!snapshotExists(id)) {
-    toastr.warning('该还原点已不可用（可能刚被 FIFO 移出列表），本次未执行回滚。')
+    toastr.warning('该还原点已不可用（可能刚被 FIFO 移出列表），本次未执行撤回。')
     return
   }
-  // WHY: align with editor rollback — block duplicate async applies while one is in flight.
+  // WHY: align with editor toolbar — block duplicate async applies while one is in flight.
   if (machine.state.status === 'rollingBack' || machine.state.status === 'batchRollingBack') {
-    toastr.info('已有回滚正在进行，请稍候。')
+    toastr.info('已有撤回正在进行，请稍候。')
     return
   }
 
@@ -99,7 +117,7 @@ async function rollbackLogSnapshot(snapshotId: string): Promise<void> {
       })
     }
   }
-  // WHY: refresh is UI-only; failures here must not overwrite a successful rollback state.
+  // WHY: refresh is UI-only; failures here must not overwrite a successful withdraw state.
   if (rollbackSucceeded) {
     try {
       refreshLogs()
@@ -109,8 +127,8 @@ async function rollbackLogSnapshot(snapshotId: string): Promise<void> {
     // WHY: apply + store refresh are silent; explain pure-create rollback so users are not surprised when files stay gone.
     toastr.success(
       createOnlyRollback
-        ? '已回滚到该批次执行前的锚点。该批次在涉及路径上为「新建」，批次前这些路径本不存在，因此不会恢复你之后手动删除的文件（等价于撤销这次新建）。'
-        : '已回滚到该批次前的还原点。',
+        ? '已撤回到该批次执行前的锚点。该批次在涉及路径上为「新建」，批次前这些路径本不存在，因此不会恢复你之后手动删除的文件（等价于撤销这次新建）。'
+        : '已撤回到该批次执行前的锚点。',
     )
   }
 }
@@ -134,11 +152,11 @@ onUnmounted(() => {
     <div class="vfs-history-top">
       <div class="vfs-history-status-bar">
         <span class="vfs-history-status-label">状态</span>
-        <span class="vfs-history-status-pill">{{ statusLabel }}</span>
+        <span class="vfs-history-status-pill">{{ statusLabelZh }}</span>
         <i v-if="rollingBack" class="fa-solid fa-spinner fa-spin vfs-history-status-spinner" aria-hidden="true" />
       </div>
       <p class="vfs-history-hint">
-        执行日志（含工具批次）。带快照引用的行可回滚到<strong>该批次执行前</strong>的虚拟树锚点；若批次为<strong>新建路径</strong>，回滚后这些路径会回到「不存在」状态，不会把你之后手动删除的文件再写回来。
+        执行日志（含工具批次）。带快照引用的行可<strong>撤回</strong>到<strong>该批次执行前</strong>的虚拟树锚点（撤销该批次对树的改动）。若批次为<strong>新建路径</strong>，撤回后这些路径会回到「不存在」状态，不会把你之后手动删除的文件再写回来。若你要的是「回到工具批次<strong>执行完成后</strong>」的检查点，需要另行提供「批次后」还原能力（当前未实现）。
       </p>
     </div>
     <!-- WHY: dedicated scrollport — dialog root is overflow:hidden; wheel must terminate here. -->
@@ -156,13 +174,13 @@ onUnmounted(() => {
               type="button"
               class="menu_button vfs-log-rollback"
               data-testid="vfs-log-rollback"
-              title="回滚到该批次执行前的锚点（新建路径会被撤销存在，不恢复其后手动删除）"
-              aria-label="回滚到该批次执行前的锚点"
+              title="撤回到该批次执行前的锚点（撤销该批次；新建路径会被撤销存在，不恢复其后手动删除）"
+              aria-label="撤回到该批次执行前的锚点"
               :disabled="rollingBack"
               :aria-busy="rollingBack ? 'true' : undefined"
               @click="void rollbackLogSnapshot(entry.snapshotId!)"
             >
-              回滚
+              撤回
             </button>
             <div v-else class="vfs-log-snapshot-missing">
               <button
