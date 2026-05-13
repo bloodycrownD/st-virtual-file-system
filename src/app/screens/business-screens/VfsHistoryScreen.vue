@@ -42,18 +42,19 @@ async function rollbackLogSnapshot(snapshotId: string): Promise<void> {
   if (machine.state.status === 'rollingBack' || machine.state.status === 'batchRollingBack') return
 
   machine.dispatch({ type: 'ROLLBACK_REQUEST' })
+  let rollbackSucceeded = false
   try {
     const ok = await useVfsSnapshotRollback(id)
     if (ok) {
       machine.dispatch({ type: 'ROLLBACK_SUCCESS' })
-      refreshLogs()
-      return
+      rollbackSucceeded = true
+    } else {
+      machine.dispatch({
+        type: 'ROLLBACK_FAILED',
+        errorCode: VFS_ERROR_CODES.ROLLBACK_FAILED,
+        message: 'Snapshot rollback failed',
+      })
     }
-    machine.dispatch({
-      type: 'ROLLBACK_FAILED',
-      errorCode: VFS_ERROR_CODES.ROLLBACK_FAILED,
-      message: 'Snapshot rollback failed',
-    })
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
     machine.dispatch({
@@ -70,6 +71,14 @@ async function rollbackLogSnapshot(snapshotId: string): Promise<void> {
         errorCode: VFS_ERROR_CODES.ROLLBACK_FAILED,
         message: 'Rollback ended without completing',
       })
+    }
+  }
+  // WHY: refresh is UI-only; failures here must not overwrite a successful rollback state.
+  if (rollbackSucceeded) {
+    try {
+      refreshLogs()
+    } catch {
+      /* refreshLogs is sync and non-throwing today; swallow defensively for audit semantics */
     }
   }
 }
