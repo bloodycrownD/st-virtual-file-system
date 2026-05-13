@@ -63,6 +63,6 @@
 
 ---
 
-**文档路径**：`docs/Iterations/VFS-Editor-Save-Snapshot-VirtualTool-And-Rollback-UI/prd.md`
+**文档路径**：`docs/archive/20260513/VFS-Editor-Save-Snapshot-VirtualTool-And-Rollback-UI/prd.md`
 
 请确认以上范围与验收标准是否可直接进入设计（`/design-proposal`）与实现；若有删减或「执行与回滚」Tab 也要同步改版，请说明。

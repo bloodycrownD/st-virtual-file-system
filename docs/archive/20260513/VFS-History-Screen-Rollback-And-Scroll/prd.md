@@ -65,6 +65,6 @@
 
 ---
 
-**生成路径**：`docs/Iterations/VFS-History-Screen-Rollback-And-Scroll/prd.md`
+**生成路径**：`docs/archive/20260513/VFS-History-Screen-Rollback-And-Scroll/prd.md`
 
 请你最终确认：以上范围与验收是否与你的预期一致；若需补充「约束与依赖」「风险与待确认项」等扩展章节，可说明后我再追加到同文件。

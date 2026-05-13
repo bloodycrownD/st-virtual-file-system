@@ -47,7 +47,7 @@
 
 ---
 
-**文档路径**：`docs/Iterations/VFS-Editor-Save-Snapshot-VirtualTool-And-Rollback-UI/features/editor-snapshot-toolbar-and-pipeline-diagnostics/prd.md`
+**文档路径**：`docs/archive/20260513/VFS-Editor-Save-Snapshot-VirtualTool-And-Rollback-UI/features/editor-snapshot-toolbar-and-pipeline-diagnostics/prd.md`
 
 **已定案（AskQuestion）**：诊断日志为 **始终 console**；快照下拉为 **抽取共享组件**。
 

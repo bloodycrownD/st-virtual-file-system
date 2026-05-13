@@ -53,7 +53,7 @@
 无新增包或顶层目录需求；主要变更集中在：
 
 ```text
-docs/Iterations/VFS-History-Screen-Rollback-And-Scroll/
+docs/archive/20260513/VFS-History-Screen-Rollback-And-Scroll/
   prd.md          # 已存在
   spec.md         # 本文件
 

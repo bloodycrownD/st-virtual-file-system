@@ -178,6 +178,6 @@ test/
 
 ---
 
-**文档路径**：`docs/Iterations/VFS-Editor-Save-Snapshot-VirtualTool-And-Rollback-UI/spec.md`
+**文档路径**：`docs/archive/20260513/VFS-Editor-Save-Snapshot-VirtualTool-And-Rollback-UI/spec.md`
 
 请确认本 `spec.md`（含第二轮范围）是否可作为实现与评审的唯一事实来源；确认后再进入编码。

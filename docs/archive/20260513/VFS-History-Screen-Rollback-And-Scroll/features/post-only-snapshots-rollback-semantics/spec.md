@@ -162,6 +162,6 @@ src/app/composables/components-composables/
 
 ---
 
-**文档路径**：`docs/Iterations/VFS-History-Screen-Rollback-And-Scroll/features/post-only-snapshots-rollback-semantics/spec.md`
+**文档路径**：`docs/archive/20260513/VFS-History-Screen-Rollback-And-Scroll/features/post-only-snapshots-rollback-semantics/spec.md`
 
 本版 SPEC 为 **破坏性、单轨、零旧 manifest 技术债**；实现前无需再选「迁移 / 双轨」策略。

@@ -114,6 +114,6 @@
 
 ---
 
-**文档路径**：`docs/Iterations/VFS-History-Screen-Rollback-And-Scroll/features/post-only-snapshots-rollback-semantics/prd.md`
+**文档路径**：`docs/archive/20260513/VFS-History-Screen-Rollback-And-Scroll/features/post-only-snapshots-rollback-semantics/prd.md`
 
 请确认本 PRD 与 **破坏性** SPEC 一致；实现阶段直接按 `spec.md` 编码即可。
