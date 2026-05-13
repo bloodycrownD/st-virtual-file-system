@@ -1,5 +1,5 @@
 <!--
-  扩展「设置页」UI：启用开关、快照保留条数等。
+  扩展「设置页」UI：启用开关、检查点保留条数等。
   数据来自 vfsPersistenceStore（extensionSettings）；消息事件管线在下方按需启动/停止。
 -->
 <script setup lang="ts">
@@ -12,7 +12,7 @@ import { useVfsPopupLifecycle } from '@/app/composables/screens-composables/useV
 
 /** 与 checkbox 双向绑定；勾选状态变化时在 handleToggle 里写回 store */
 const enabled = ref(true)
-/** 快照库 FIFO 上限（`snapshotMaxCount`，扩展设置） */
+/** 检查点 FIFO 上限（`snapshotMaxCount` 持久化键名不变，扩展设置） */
 const snapshotMaxCount = ref(10)
 /** store.subscribe 返回的取消函数，组件卸载时调用，防止内存泄漏 */
 let unsubscribe: (() => void) | null = null
@@ -80,7 +80,7 @@ const openTemplateManager = () => {
             <span>启用虚拟文件系统</span>
           </label>
           <label class="vfs-field">
-            <span class="vfs-field-label">快照保留条数（FIFO，1–500）</span>
+            <span class="vfs-field-label">检查点保留条数（FIFO，1–500）</span>
             <input
               v-model.number="snapshotMaxCount"
               class="vfs-number-input"

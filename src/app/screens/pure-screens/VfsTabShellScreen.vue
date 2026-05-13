@@ -96,11 +96,10 @@ defineExpose({ forceSwitchTab })
 
 .vfs-tabs__primary {
   display: flex;
+  flex-wrap: wrap;
   gap: 6px;
-  overflow-x: auto;
   flex: 1 1 auto;
   min-width: 0;
-  white-space: nowrap;
 }
 
 .vfs-tabs__trailing {
@@ -112,6 +111,27 @@ defineExpose({ forceSwitchTab })
   gap: 6px;
   min-width: 0;
   max-width: 100%;
+}
+
+/* WHY: align with `layoutMode` in `VfsMainScreen` (innerWidth < 1024 → mobile) — avoid tab-strip horizontal scroll; stack trailing under tabs, left-aligned. */
+@media (max-width: 1023px) {
+  .vfs-tabs {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .vfs-tabs__primary {
+    width: 100%;
+    overflow-x: visible;
+  }
+
+  .vfs-tabs__trailing {
+    margin-left: 0;
+    width: 100%;
+    max-width: none;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
 }
 
 .vfs-tabs__trailing:empty {

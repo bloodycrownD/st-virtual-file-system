@@ -1422,7 +1422,7 @@ async function handleEditorSaveRequested(): Promise<void> {
   flex: 0 0 auto;
 }
 
-/* WHY: labels are `时间 · {工具批次|保存|检查点}` — bounded length; fixed width avoids fragile flex/% sizing in the tab strip. (~11rem ≈ 2/3 of prior 16.5rem at 16px root.) */
+/* WHY: labels are `时间 · {工具批次|保存|检查点}` — desktop keeps a stable trigger width; narrow viewports shrink with the tab strip (see mobile media block). */
 .vfs-tabs-snapshot-listbox {
   flex: 0 0 auto;
   width: 11rem;
@@ -1545,5 +1545,40 @@ async function handleEditorSaveRequested(): Promise<void> {
 .vfs-preview-meta--flow {
   margin-top: 8px;
   margin-left: auto;
+}
+
+/* WHY: `data-layout` mirrors `innerWidth >= 1024` — narrow editor chrome reads as back → title → actions without competing for one flex row. */
+[data-layout='mobile'] .vfs-preview-top-bar {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+[data-layout='mobile'] .vfs-preview-top-bar__title {
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+}
+
+[data-layout='mobile'] .vfs-preview-chrome-actions {
+  margin-left: 0;
+  width: 100%;
+  justify-content: flex-start;
+}
+
+/* WHY: checkpoint toolbar lives in `VfsTabShellScreen` header (not under `[data-layout]`) — same 1023 breakpoint as `layoutMode` for listbox flex shrink. */
+@media (max-width: 1023px) {
+  .vfs-tabs-editor-snapshot-tools {
+    flex: 1 1 auto;
+    min-width: 0;
+    max-width: 100%;
+    width: 100%;
+  }
+
+  .vfs-tabs-snapshot-listbox {
+    flex: 1 1 auto;
+    min-width: 0;
+    max-width: 100%;
+    width: 100%;
+  }
 }
 </style>

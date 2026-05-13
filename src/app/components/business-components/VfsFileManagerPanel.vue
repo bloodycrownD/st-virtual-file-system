@@ -331,4 +331,21 @@ function handleRowDoubleClick(entry: VfsBrowserEntity): void {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* WHY: match VFS mobile/desktop split at 1024px — let header actions wrap instead of forcing a horizontal scroll track. */
+@media (max-width: 1023px) {
+  .vfs-fm-header {
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+
+  .vfs-fm-action-group {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    overflow-x: visible;
+    max-width: 100%;
+    min-width: 0;
+    white-space: normal;
+  }
+}
 </style>
