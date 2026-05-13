@@ -48,17 +48,23 @@ defineExpose({ forceSwitchTab })
 <template>
   <section class="vfs-tab-shell">
     <header v-if="showTabsHeader" class="vfs-tabs">
-      <button
-        v-for="tab in resolvedTabs()"
-        :key="tab"
-        type="button"
-        :class="['menu_button', 'vfs-tab', { active: activeTab === tab }]"
-        :title="TAB_LABELS[tab]"
-        :aria-label="TAB_LABELS[tab]"
-        @click="void trySwitchTab(tab)"
-      >
-        <span>{{ TAB_LABELS[tab] }}</span>
-      </button>
+      <div class="vfs-tabs__primary" role="tablist" aria-label="虚拟文件系统">
+        <button
+          v-for="tab in resolvedTabs()"
+          :key="tab"
+          type="button"
+          :class="['menu_button', 'vfs-tab', { active: activeTab === tab }]"
+          :title="TAB_LABELS[tab]"
+          :aria-label="TAB_LABELS[tab]"
+          @click="void trySwitchTab(tab)"
+        >
+          <span>{{ TAB_LABELS[tab] }}</span>
+        </button>
+      </div>
+      <!-- WHY: trailing area stays visually empty until a parent (e.g. editor snapshot tools) mounts into this slot. -->
+      <div class="vfs-tabs__trailing">
+        <slot name="tabs-trailing" :active-tab="activeTab" />
+      </div>
     </header>
     <div class="vfs-tab-content">
       <slot :active-tab="activeTab" />
@@ -77,15 +83,39 @@ defineExpose({ forceSwitchTab })
 
 .vfs-tabs {
   display: flex;
-  gap: 6px;
-  overflow-x: auto;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
   padding: 6px;
   padding-bottom: 6px;
   flex: 0 0 auto;
   border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.12);
   background: rgba(0, 0, 0, 0.14);
+}
+
+.vfs-tabs__primary {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  flex: 1 1 auto;
+  min-width: 0;
   white-space: nowrap;
+}
+
+.vfs-tabs__trailing {
+  margin-left: auto;
+  /* WHY: `0 0 auto` kept the snapshot row wider than the row remainder and clipped the rollback button; allow shrink + cap width to the tab bar. */
+  flex: 0 1 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.vfs-tabs__trailing:empty {
+  display: none;
 }
 
 .vfs-tab-content {

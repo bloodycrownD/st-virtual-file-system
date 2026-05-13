@@ -423,7 +423,7 @@ describe('vfs ui cr loop fixes', () => {
     expect(store.records.value[1]?.snapshotId).toBe('v1')
   })
 
-  it('shows header snapshot listbox in chat editor left group and wires rollback to selected id', async () => {
+  it('shows editor snapshot listbox in tabs strip and wires rollback to selected id', async () => {
     const wrapper = mountTracked(VfsMainScreen)
     await selectDocsFile(wrapper)
     await triggerEntityAction(wrapper, 'open', 'docs.md')
@@ -433,8 +433,9 @@ describe('vfs ui cr loop fixes', () => {
     const left = wrapper.get('[data-testid="vfs-preview-top-bar-left"]')
     expect(left.find('[data-testid="vfs-preview-back"]').exists()).toBe(true)
 
+    const toolbar = wrapper.get('[data-testid="editor-snapshot-toolbar-tabs"]')
     const trigger = wrapper.get('[data-testid="editor-snapshot-listbox-trigger"]')
-    expect(left.element.contains(trigger.element)).toBe(true)
+    expect(toolbar.element.contains(trigger.element)).toBe(true)
 
     const listbox = wrapper.findComponent(VfsListboxField)
     expect(listbox.exists()).toBe(true)

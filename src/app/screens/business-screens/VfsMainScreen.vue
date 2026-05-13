@@ -34,7 +34,7 @@ import { VFS_ERROR_CODES } from '@/app/constants/vfsErrorCodes'
 import { vfsPersistenceStore, vfsSnapshotService } from '@/app/stores/vfs-store-singleton'
 import type { VfsSnapshot } from '@/domain/vfs/types'
 import type { VfsBrowserEntity } from '@/app/components/business-components/VfsFileManagerPanel.vue'
-import { basename, dirname, normalizePath, ROOT_PATH } from '@/domain/vfs/path-utils'
+import { dirname, normalizePath, ROOT_PATH } from '@/domain/vfs/path-utils'
 import { DeflateContentCodec } from '@/infra/serialization/deflate-codec'
 import { VfsCore } from '@/domain/vfs/vfs-core'
 import {
@@ -604,21 +604,18 @@ const currentViewerUpdatedAtText = computed(() => formatShortDateTime(currentVie
 function formatEditorSnapshotOptionLabel(record: VfsCommitHistoryRecord): string {
   const parsed = Date.parse(record.time)
   const when = Number.isFinite(parsed)
-    ? new Date(parsed).toLocaleString('zh-CN', {
-        year: 'numeric',
+    ? new Intl.DateTimeFormat('zh-CN', {
         month: '2-digit',
         day: '2-digit',
         hour: '2-digit',
         minute: '2-digit',
         second: '2-digit',
         hour12: false,
-      })
+      }).format(parsed)
     : record.time
-  const path = typeof record.scope === 'string' ? record.scope : ''
-  const fileLabel = path ? basename(path) : '—'
-  const kindHint =
-    record.actionType === 'tool-batch-pre' ? '工具前' : record.actionType === 'manual' ? '保存前' : String(record.actionType)
-  return `${when} · ${fileLabel} · ${kindHint} · 还原点`
+  const status =
+    record.actionType === 'tool-batch-pre' ? '工具前' : record.actionType === 'manual' ? '保存前' : '快照'
+  return `${when} · ${status}`
 }
 
 const editorSnapshotListboxOptions = computed(() =>
@@ -1148,8 +1145,44 @@ async function handleEditorSaveRequested(): Promise<void> {
     :tabs="resolvedTabs"
     :before-tab-change="guardTabChange"
     @tab-changed="handleTabChanged"
-    v-slot="{ activeTab: slotTab }"
   >
+    <template #tabs-trailing="{ activeTab: tabsStripTab }">
+      <div
+        v-if="!isTemplateScope && tabsStripTab === 'files' && isPreviewStage && mode === 'editor'"
+        class="vfs-tabs-editor-snapshot-tools"
+        data-testid="editor-snapshot-toolbar-tabs"
+      >
+        <VfsListboxField
+          v-model="editorRollbackSnapshotId"
+          density="compact"
+          dropdown-width="match-trigger"
+          class="vfs-tabs-snapshot-listbox"
+          :options="editorSnapshotListboxOptions"
+          placeholder="还原点…"
+          :disabled="!activeContextPath || editorHistoryRecords.length === 0"
+          ariaLabel="选择快照还原点"
+          data-testid="editor-snapshot-listbox-trigger"
+        />
+        <button
+          type="button"
+          class="menu_button vfs-tabs-snapshot-rollback-button"
+          data-testid="editor-history-rollback-submit"
+          title="回滚到所选还原点"
+          aria-label="回滚到所选还原点"
+          :disabled="!editorRollbackSnapshotId || rollbackInProgress"
+          :aria-busy="rollbackInProgress ? 'true' : undefined"
+          @click="void handleEditorSnapshotRollback({ snapshotId: editorRollbackSnapshotId })"
+        >
+          <i
+            v-if="rollbackInProgress"
+            class="fa-solid fa-spinner fa-spin"
+            aria-hidden="true"
+          />
+          <span v-else>回滚</span>
+        </button>
+      </div>
+    </template>
+    <template #default="{ activeTab: slotTab }">
     <div
       v-if="slotTab === 'files'"
       data-testid="vfs-main-layout"
@@ -1201,34 +1234,6 @@ async function handleEditorSaveRequested(): Promise<void> {
               >
                 <i class="fa-solid fa-arrow-left" aria-hidden="true" />
               </button>
-              <template v-if="mode === 'editor' && !isTemplateScope">
-                <VfsListboxField
-                  v-model="editorRollbackSnapshotId"
-                  class="vfs-preview-snapshot-listbox"
-                  :options="editorSnapshotListboxOptions"
-                  placeholder="选择还原点…"
-                  :disabled="!activeContextPath || editorHistoryRecords.length === 0"
-                  ariaLabel="选择快照还原点"
-                  data-testid="editor-snapshot-listbox-trigger"
-                />
-                <button
-                  type="button"
-                  class="menu_button vfs-preview-chrome-button"
-                  data-testid="editor-history-rollback-submit"
-                  title="回滚到所选还原点"
-                  aria-label="回滚到所选还原点"
-                  :disabled="!editorRollbackSnapshotId || rollbackInProgress"
-                  :aria-busy="rollbackInProgress ? 'true' : undefined"
-                  @click="void handleEditorSnapshotRollback({ snapshotId: editorRollbackSnapshotId })"
-                >
-                  <i
-                    v-if="rollbackInProgress"
-                    class="fa-solid fa-spinner fa-spin"
-                    aria-hidden="true"
-                  />
-                  <span v-else>回滚</span>
-                </button>
-              </template>
             </div>
             <div class="vfs-preview-top-bar__title">
               <p
@@ -1364,6 +1369,7 @@ async function handleEditorSaveRequested(): Promise<void> {
       @confirm="onInputDialogConfirm"
       @cancel="onInputDialogCancel"
     />
+    </template>
   </VfsTabShellScreen>
 </template>
 
@@ -1408,6 +1414,32 @@ async function handleEditorSaveRequested(): Promise<void> {
   position: relative;
 }
 
+.vfs-tabs-editor-snapshot-tools {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+}
+
+/* WHY: labels are `时间 · {工具前|保存前|快照}` — bounded length; fixed width avoids fragile flex/% sizing in the tab strip. (~11rem ≈ 2/3 of prior 16.5rem at 16px root.) */
+.vfs-tabs-snapshot-listbox {
+  flex: 0 0 auto;
+  width: 11rem;
+  min-width: 11rem;
+  max-width: 11rem;
+}
+
+.vfs-tabs-snapshot-rollback-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.1rem;
+  min-height: 30px;
+  padding: 4px 8px;
+  font-size: 0.8rem;
+  flex-shrink: 0;
+}
+
 .vfs-preview-top-bar__left {
   display: flex;
   align-items: center;
@@ -1419,12 +1451,6 @@ async function handleEditorSaveRequested(): Promise<void> {
 .vfs-preview-top-bar__title {
   flex: 1 1 auto;
   min-width: 0;
-}
-
-.vfs-preview-snapshot-listbox {
-  width: auto;
-  min-width: 10.5rem;
-  max-width: min(42vw, 22rem);
 }
 
 .vfs-preview-chrome-actions {

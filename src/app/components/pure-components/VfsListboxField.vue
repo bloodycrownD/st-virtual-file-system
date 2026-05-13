@@ -11,12 +11,21 @@ const props = withDefaults(
     dataTestid?: string
     /** When set, listbox visibility is controlled by the parent (e.g. mutual exclusion across fields). */
     open?: boolean
+    /** Compact typography for dense toolbars (e.g. tab strip snapshot picker). */
+    density?: 'default' | 'compact'
+    /**
+     * `auto`: panel may grow past trigger width (long option labels).
+     * `match-trigger`: panel matches trigger width (bounded labels, stable toolbar layout).
+     */
+    dropdownWidth?: 'auto' | 'match-trigger'
   }>(),
   {
     placeholder: '',
     disabled: false,
     dataTestid: undefined,
     open: undefined,
+    density: 'default',
+    dropdownWidth: 'auto',
   },
 )
 
@@ -31,8 +40,12 @@ const internalOpen = ref(false)
 const activeOptionIndex = ref(0)
 
 const uid = `vfs-lb-${Math.random().toString(36).slice(2, 10)}`
-const triggerId = computed(() => (props.dataTestid ? `${props.dataTestid}-trigger` : `${uid}-trigger`))
-const listboxId = computed(() => (props.dataTestid ? `${props.dataTestid}-listbox` : `${uid}-listbox`))
+const triggerId = computed(() =>
+  props.dataTestid ? `${props.dataTestid}-combobox` : `${uid}-trigger`,
+)
+const listboxId = computed(() =>
+  props.dataTestid ? `${props.dataTestid}-listbox` : `${uid}-listbox`,
+)
 
 const isControlledOpen = computed(() => typeof props.open === 'boolean')
 const isExpanded = computed(() => (isControlledOpen.value ? Boolean(props.open) : internalOpen.value))
@@ -191,7 +204,14 @@ defineExpose({ focus })
 </script>
 
 <template>
-  <div ref="rootRef" class="vfs-listbox-field">
+  <div
+    ref="rootRef"
+    class="vfs-listbox-field"
+    :class="{
+      'vfs-listbox-field--compact': density === 'compact',
+      'vfs-listbox-field--dropdown-match-trigger': dropdownWidth === 'match-trigger',
+    }"
+  >
     <button
       :id="triggerId"
       ref="triggerRef"
@@ -287,7 +307,7 @@ defineExpose({ focus })
   position: absolute;
   top: calc(100% + 6px);
   left: 0;
-  right: 0;
+  right: auto;
   z-index: 20;
   margin: 0;
   padding: 4px;
@@ -295,11 +315,17 @@ defineExpose({ focus })
   border-radius: 8px;
   border: 1px solid rgba(255, 255, 255, 0.2);
   background: rgba(20, 24, 32, 0.98);
+  box-sizing: border-box;
+  min-width: 100%;
+  width: max-content;
+  max-width: min(100vw - 20px, 36rem);
   max-height: 220px;
-  overflow: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 .vfs-listbox-field__option {
+  display: block;
   width: 100%;
   border: 0;
   border-radius: 6px;
@@ -310,6 +336,7 @@ defineExpose({ focus })
   font-size: 1rem;
   line-height: 1.35;
   cursor: pointer;
+  white-space: nowrap;
 }
 
 .vfs-listbox-field__option[data-active='true'] {
@@ -318,5 +345,31 @@ defineExpose({ focus })
 
 .vfs-listbox-field__option[aria-selected='true'] {
   font-weight: 600;
+}
+
+.vfs-listbox-field--dropdown-match-trigger .vfs-listbox-field__listbox {
+  left: 0;
+  right: 0;
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+}
+
+.vfs-listbox-field--compact .vfs-listbox-field__trigger {
+  min-height: 30px;
+  padding: 4px 8px;
+  font-size: 0.8rem;
+  border-radius: 6px;
+}
+
+.vfs-listbox-field--compact .vfs-listbox-field__listbox {
+  max-height: 200px;
+  padding: 3px;
+}
+
+.vfs-listbox-field--compact .vfs-listbox-field__option {
+  padding: 5px 8px;
+  font-size: 0.75rem;
+  line-height: 1.3;
 }
 </style>
