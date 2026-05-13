@@ -61,6 +61,16 @@ async function rollbackLogSnapshot(snapshotId: string): Promise<void> {
       errorCode: VFS_ERROR_CODES.ROLLBACK_FAILED,
       message,
     })
+  } finally {
+    // WHY: spec B.2 — if SUCCESS/FAILED dispatch or refresh throws, avoid leaving status stuck at rollingBack.
+    const status = machine.state.status as string
+    if (status === 'rollingBack' || status === 'batchRollingBack') {
+      machine.dispatch({
+        type: 'ROLLBACK_FAILED',
+        errorCode: VFS_ERROR_CODES.ROLLBACK_FAILED,
+        message: 'Rollback ended without completing',
+      })
+    }
   }
 }
 
@@ -118,9 +128,9 @@ onUnmounted(() => {
                 data-testid="vfs-log-rollback-missing"
                 disabled
                 :title="snapshotMissingTitle"
-                aria-label="快照不可用"
+                aria-label="快照已过期"
               >
-                快照不可用
+                快照已过期
               </button>
               <span class="vfs-log-snapshot-missing-hint" :title="snapshotMissingTitle">
                 还原点已被 FIFO 移出列表
