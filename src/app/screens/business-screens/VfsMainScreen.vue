@@ -1547,22 +1547,30 @@ async function handleEditorSaveRequested(): Promise<void> {
   margin-left: auto;
 }
 
-/* WHY: `data-layout` mirrors `innerWidth >= 1024` — narrow editor chrome reads as back → title → actions without competing for one flex row. */
+/*
+  WHY: `data-layout` mirrors `innerWidth < 1024` — two rows only: (1) back + ellipsis title, (2) full-width action
+  strip. `flex-basis: 100%` on chrome forces a wrap after the first flex line without a DOM change.
+*/
 [data-layout='mobile'] .vfs-preview-top-bar {
-  flex-direction: column;
-  align-items: stretch;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  min-width: 0;
 }
 
 [data-layout='mobile'] .vfs-preview-top-bar__title {
-  flex: 1 1 auto;
-  width: 100%;
+  flex: 1 1 0;
   min-width: 0;
 }
 
 [data-layout='mobile'] .vfs-preview-chrome-actions {
-  margin-left: 0;
+  flex-basis: 100%;
   width: 100%;
+  max-width: 100%;
+  margin-left: 0;
   justify-content: flex-start;
+  flex-wrap: nowrap;
+  box-sizing: border-box;
 }
 
 /* WHY: checkpoint toolbar lives in `VfsTabShellScreen` header (not under `[data-layout]`) — same 1023 breakpoint as `layoutMode` for listbox flex shrink. */
