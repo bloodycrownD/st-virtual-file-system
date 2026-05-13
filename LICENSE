@@ -1,0 +1,71 @@
+ST Virtual File System — Non-Commercial Public License (NCPL) Version 1.0
+
+Copyright (c) 2026 bloodycrownD and contributors. All rights reserved.
+
+简体中文摘要（以英文条款为准；若有冲突以英文为准）：
+本仓库可自由阅读、学习、修改与再分发，但不得用于商业目的。商业使用须事先取得著作权人书面许可。
+本许可不符合 OSI《开源定义》中的“不得限制商业使用”条款；若你需要 OSI 意义上的开源，请勿将本许可标为 OSI Open Source。
+
+---
+
+TERMS AND CONDITIONS
+
+1. Definitions
+
+   "Software" means the st-virtual-file-system repository, including source code, build outputs where distributed with the source, documentation, and accompanying files.
+
+   "Licensor" means the copyright holder(s) named above.
+
+   "You" means the individual or legal entity exercising permissions under this license.
+
+   "Non-commercial Use" means use, reproduction, modification, distribution, or performance of the Software where none of the following apply:
+
+   (a) the activity is intended for or directed toward commercial advantage or private monetary compensation for You or a third party (including advertising revenue, subscription fees, paid support, or paid hosting tied to the Software);
+
+   (b) the Software is incorporated into, or offered as part of, a product or service that is sold, leased, licensed for a fee, or otherwise furnished for consideration;
+
+   (c) the Software is used primarily to carry on business operations on behalf of a for-profit entity, except for the limited internal evaluation in Section 3.
+
+   "Commercial Use" means any use that is not Non-commercial Use.
+
+2. Grant of rights (Non-commercial Use only)
+
+   Subject to Your compliance with this license, Licensor grants You a worldwide, royalty-free, non-exclusive license to:
+
+   - use and run the Software;
+   - copy and modify the Software;
+   - distribute copies of the Software (including modified versions), in source or object form,
+
+   solely for Non-commercial Use.
+
+3. Limited exception for evaluation inside for-profit organizations
+
+   Employees and contractors of a for-profit entity may use and modify the Software internally without fee solely to evaluate whether the Software suits the entity’s needs, for a reasonable evaluation period, provided that such use does not serve end users or customers of the entity and does not replace a commercial license where one is required for broader use.
+
+4. Commercial Use prohibited
+
+   Commercial Use of the Software is not permitted under this license. If You wish to use the Software commercially (including any use not covered by Section 3), You must obtain a separate written agreement from Licensor.
+
+5. Attribution
+
+   You must retain the above copyright notice and this permission notice in all copies or substantial portions of the Software. If You distribute a modified version, You must clearly indicate that You changed the Software.
+
+6. No trademark license
+
+   This license does not grant permission to use the trade names, trademarks, service marks, or product names of the Licensor, except as required for reasonable and customary use in describing the origin of the Software.
+
+7. Disclaimer of warranty
+
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+8. Limitation of liability
+
+   TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, IN NO EVENT SHALL THE LICENSOR BE LIABLE FOR ANY SPECIAL, INCIDENTAL, INDIRECT, OR CONSEQUENTIAL DAMAGES WHATSOEVER ARISING OUT OF OR RELATED TO YOUR USE OR INABILITY TO USE THE SOFTWARE.
+
+9. Termination
+
+   This license terminates automatically if You violate any of its terms. Sections 7 and 8 survive termination.
+
+10. Severability
+
+    If any provision of this license is held to be invalid or unenforceable, the remaining provisions remain in full force and effect.

@@ -1,0 +1,45 @@
+name: Build and Deploy to Dist Branch
+
+# WHY: deploy only when a version tag is pushed — avoids every master push rewriting `dist`.
+on:
+  push:
+    tags:
+      - '*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout tag
+        uses: actions/checkout@v4
+        # Default ref is the tag (or commit) that triggered the workflow — do not pin `master`.
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build project
+        run: npm run build
+
+      - name: Prepare dist branch files
+        run: |
+          mkdir -p deploy/dist
+          cp dist/index.js deploy/dist/
+          cp manifest.json deploy/
+          echo "*.map" > deploy/dist/.gitignore
+          echo "node_modules/" >> deploy/dist/.gitignore
+
+      - name: Deploy to dist branch
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./deploy
+          publish_branch: dist
