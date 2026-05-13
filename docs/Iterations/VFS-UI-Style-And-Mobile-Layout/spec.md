@@ -101,7 +101,7 @@ src/
 ### 自动化
 
 - 现有 **Vitest + Vue Test Utils** 以 **行为/结构** 为主；纯 CSS 布局默认 **不强制** 做像素断言。
-- 若需加测：在 `test/vfs-ui-contracts.spec.ts`（或同类）对 `VfsTabShellScreen` / `VfsMainScreen` 挂载后断言 **关键类名或 `data-layout` 属性** 仍存在（防回归），**不**断言 `getBoundingClientRect`（脆弱）。
+- 若需加测：在 `tests/vfs-ui-contracts.spec.ts`（或同类）对 `VfsTabShellScreen` / `VfsMainScreen` 挂载后断言 **关键类名或 `data-layout` 属性** 仍存在（防回归），**不**断言 `getBoundingClientRect`（脆弱）。
 
 ### 测试用例（人工验收清单，对应 PRD）
 

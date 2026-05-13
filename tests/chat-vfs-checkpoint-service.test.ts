@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { VfsPersistenceStore } from '@/app/stores/vfs-persistence-store'
-import { ChatVfsCheckpointService } from './chat-vfs-checkpoint-service'
+import { ChatVfsCheckpointService } from '@/app/services/vfs-checkpoint/chat-vfs-checkpoint-service'
 import { DeflateContentCodec } from '@/infra/serialization/deflate-codec'
 import { createEmptyVfsSnapshot, serializeVfsSnapshot } from '@/infra/persistence/vfs-snapshot.schema'
 import { parseVfsChatMetadata } from '@/infra/persistence/vfs-chat-metadata.schema'

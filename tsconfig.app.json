@@ -17,5 +17,5 @@
     "noUncheckedSideEffectImports": true
   },
   "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.vue", "global.d.ts"],
-  "exclude": ["test/**/*.ts", "test/**/*.tsx"]
+  "exclude": ["tests/**/*.ts", "tests/**/*.tsx"]
 }

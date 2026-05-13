@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { VFS_ERROR_CODES } from '@/app/constants/vfsErrorCodes'
-import { createVfsHistoryStateMachine } from './useVfsHistoryStateMachine'
+import { createVfsHistoryStateMachine } from '@/app/composables/screens-composables/useVfsHistoryStateMachine'
 
 describe('createVfsHistoryStateMachine', () => {
   it('follows rollback dispatch transitions', () => {
