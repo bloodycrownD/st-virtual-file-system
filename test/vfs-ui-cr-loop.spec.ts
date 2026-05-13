@@ -15,11 +15,10 @@ import { createVfsCommitHistoryStore } from '@/app/composables/components-compos
 import { VFS_POPUP_BEFORE_CLOSE } from '@/app/composables/components-composables/useVfsMessageHooks'
 import { vfsPersistenceStore } from '@/app/stores/vfs-store-singleton'
 import { DeflateContentCodec } from '@/infra/serialization/deflate-codec'
-import { buildManifestEntriesFromBefore } from '@/domain/vfs-snapshot/vfs-snapshot-manifest'
 import type { VfsSnapshot } from '@/domain/vfs/types'
 
 const dispatchSpy = vi.fn()
-const useVfsSnapshotRollbackMock = vi.fn<(snapshotId: string) => Promise<boolean>>()
+const useVfsCheckpointRollbackMock = vi.fn<(checkpointId: string) => Promise<boolean>>()
 let toastrErrorMock: ReturnType<typeof vi.fn>
 let toastrSuccessMock: ReturnType<typeof vi.fn>
 
@@ -167,16 +166,17 @@ vi.mock('@/app/composables/screens-composables/useVfsHistoryStateMachine', () =>
   }),
 }))
 
-vi.mock('@/app/composables/components-composables/useVfsSnapshotRollback', () => ({
-  useVfsSnapshotRollback: (snapshotId: string) => useVfsSnapshotRollbackMock(snapshotId),
+vi.mock('@/app/composables/components-composables/useVfsCheckpointRollback', () => ({
+  useVfsCheckpointRollback: (checkpointId: string) => useVfsCheckpointRollbackMock(checkpointId),
 }))
 
 describe('vfs ui cr loop fixes', () => {
-  beforeEach(() => {
+  let testSeedCheckpointId = ''
+  beforeEach(async () => {
     window.innerWidth = 1366
     dispatchSpy.mockReset()
-    useVfsSnapshotRollbackMock.mockReset()
-    useVfsSnapshotRollbackMock.mockResolvedValue(true)
+    useVfsCheckpointRollbackMock.mockReset()
+    useVfsCheckpointRollbackMock.mockResolvedValue(true)
     toastrErrorMock = vi.fn()
     toastrSuccessMock = vi.fn()
     ;(globalThis as { toastr: { error: (message: string) => void; success: (message: string) => void } }).toastr = {
@@ -266,7 +266,6 @@ describe('vfs ui cr loop fixes', () => {
           },
         },
       },
-      chatVfsSnapshots: [],
       workTree: {
         schemaVersion: 2,
         fileInclusionByPath: { '/docs/docs.md': 'explicit-include' },
@@ -277,24 +276,14 @@ describe('vfs ui cr loop fixes', () => {
         directoryRuleEnabledByPath: { '/docs': true },
       },
     }))
-    const seeded = vfsPersistenceStore.getState().chat.chatVfsSnapshot
-    vfsPersistenceStore.updateChat((draft) => ({
-      ...draft,
-      chatVfsSnapshots: [
-        {
-          id: 'snap-seed-1',
-          time: new Date(now).toISOString(),
-          kind: 'manual',
-          entries: buildManifestEntriesFromBefore(seeded, ['/docs/docs.md']),
-        },
-      ],
-    }))
+    const { vfsCheckpointService } = await import('@/app/stores/vfs-store-singleton')
+    testSeedCheckpointId = vfsCheckpointService.appendCheckpointForPersistedTree('editor-save')
   })
 
   it('requires explicit destructive confirmation dialog before template overwrite', async () => {
     const initial = JSON.stringify(vfsPersistenceStore.getState().chat.chatVfsSnapshot)
     const initialLogs = vfsPersistenceStore.getState().chat.chatVfsLogs.length
-    const initialSnapshots = vfsPersistenceStore.getState().chat.chatVfsSnapshots.length
+    const initialCheckpoints = vfsPersistenceStore.getState().chat.vfsCheckpoints.length
     const wrapper = mountTracked(VfsMainScreen)
 
     const overwriteButton = getButtonByAriaLabel(wrapper, '覆盖')
@@ -306,7 +295,7 @@ describe('vfs ui cr loop fixes', () => {
 
     expect(JSON.stringify(vfsPersistenceStore.getState().chat.chatVfsSnapshot)).toBe(initial)
     expect(vfsPersistenceStore.getState().chat.chatVfsLogs.length).toBe(initialLogs)
-    expect(vfsPersistenceStore.getState().chat.chatVfsSnapshots.length).toBe(initialSnapshots)
+    expect(vfsPersistenceStore.getState().chat.vfsCheckpoints.length).toBe(initialCheckpoints)
   })
 
   it('overwrites chat snapshot and resets chat logs/version history after dialog confirm', async () => {
@@ -323,7 +312,7 @@ describe('vfs ui cr loop fixes', () => {
     expect(template).not.toBeNull()
     expect(state.chat.chatVfsSnapshot).toEqual(template)
     expect(state.chat.chatVfsLogs).toEqual([])
-    expect(state.chat.chatVfsSnapshots).toEqual([])
+    expect(state.chat.vfsCheckpoints).toEqual([])
     expect(state.chat.templateInitialized).toBe(true)
   })
 
@@ -407,20 +396,20 @@ describe('vfs ui cr loop fixes', () => {
     store.appendRecord({
       time: '2026-05-08T10:00:00.000Z',
       operator: 'assistant',
-      actionType: 'manual',
+      actionType: 'editor-save',
       scope: '/docs',
-      snapshotId: 'v1',
+      checkpointId: 'v1',
     })
     store.appendRecord({
       time: '2026-05-08T11:00:00.000Z',
       operator: 'assistant',
-      actionType: 'tool-batch-pre',
+      actionType: 'tool-batch',
       scope: '/docs/a.md',
-      snapshotId: 'v2',
+      checkpointId: 'v2',
     })
 
-    expect(store.records.value[0]?.snapshotId).toBe('v2')
-    expect(store.records.value[1]?.snapshotId).toBe('v1')
+    expect(store.records.value[0]?.checkpointId).toBe('v2')
+    expect(store.records.value[1]?.checkpointId).toBe('v1')
   })
 
   it('shows editor snapshot listbox in tabs strip and wires rollback to selected id', async () => {
@@ -441,14 +430,14 @@ describe('vfs ui cr loop fixes', () => {
     expect(listbox.exists()).toBe(true)
     expect(listbox.props('options')?.length ?? 0).toBeGreaterThan(0)
 
-    await listbox.vm.$emit('update:modelValue', 'snap-seed-1')
+    await listbox.vm.$emit('update:modelValue', 'testSeedCheckpointId')
     await nextTick()
 
     await wrapper.get('[data-testid="editor-history-rollback-submit"]').trigger('click')
     await flushPromises()
     await nextTick()
 
-    expect(useVfsSnapshotRollbackMock).toHaveBeenCalledWith('snap-seed-1')
+    expect(useVfsCheckpointRollbackMock).toHaveBeenCalledWith('testSeedCheckpointId')
   })
 
   it('switches between mobile and desktop layout modes', async () => {
@@ -532,14 +521,15 @@ describe('vfs ui cr loop fixes', () => {
     await selectDocsFile(wrapper)
     await triggerEntityAction(wrapper, 'open', 'docs.md')
     await ensureEditorSourceMode(wrapper)
-    const beforeSnapshots = vfsPersistenceStore.getState().chat.chatVfsSnapshots.length
+    const beforeCheckpoints = vfsPersistenceStore.getState().chat.vfsCheckpoints.length
     await wrapper.get('textarea.vfs-editor').setValue('new content')
     await wrapper.get('[data-testid="editor-save-submit"]').trigger('click')
     await Promise.resolve()
     await wrapper.vm.$nextTick()
 
     const snapshot = vfsPersistenceStore.getState().chat.chatVfsSnapshot
-    expect(vfsPersistenceStore.getState().chat.chatVfsSnapshots.length).toBe(beforeSnapshots + 1)
+    const max = vfsPersistenceStore.getState().extension.snapshotMaxCount
+    expect(vfsPersistenceStore.getState().chat.vfsCheckpoints.length).toBe(Math.min(beforeCheckpoints + 1, max))
     expect(decodeFileFromSnapshot(snapshot, '/docs/docs.md')).toBe('new content')
     expect(dispatchSpy).toHaveBeenCalledWith({ type: 'SAVE_REQUEST' })
     expect(dispatchSpy).toHaveBeenCalledWith({ type: 'SAVE_SUCCESS' })
@@ -623,7 +613,7 @@ describe('vfs ui cr loop fixes', () => {
 
   it('allows overlapping save and rollback requests and leaves resolution to execution result', async () => {
     let resolveRollback: ((value: boolean) => void) | undefined
-    useVfsSnapshotRollbackMock.mockReturnValue(
+    useVfsCheckpointRollbackMock.mockReturnValue(
       new Promise<boolean>((resolve) => {
         resolveRollback = resolve
       }),
@@ -636,11 +626,11 @@ describe('vfs ui cr loop fixes', () => {
     await wrapper.get('textarea.vfs-editor').setValue('pending save')
     await wrapper.get('[data-testid="editor-save-submit"]').trigger('click')
     const listbox = wrapper.findComponent(VfsListboxField)
-    await listbox.vm.$emit('update:modelValue', 'snap-seed-1')
+    await listbox.vm.$emit('update:modelValue', 'testSeedCheckpointId')
     await nextTick()
     await wrapper.get('[data-testid="editor-history-rollback-submit"]').trigger('click')
 
-    expect(useVfsSnapshotRollbackMock).toHaveBeenCalledTimes(1)
+    expect(useVfsCheckpointRollbackMock).toHaveBeenCalledTimes(1)
 
     resolveRollback?.(true)
     await Promise.resolve()
@@ -712,13 +702,13 @@ describe('vfs ui cr loop fixes', () => {
 
   it('disables rollback controls while rollback request is in progress', async () => {
     let resolveRollback: ((value: boolean) => void) | undefined
-    useVfsSnapshotRollbackMock.mockReturnValue(
+    useVfsCheckpointRollbackMock.mockReturnValue(
       new Promise<boolean>((resolve) => {
         resolveRollback = resolve
       }),
     )
     const wrapper = mountTracked(VfsHistoryPanel)
-    await wrapper.get('input').setValue('snap-seed-1')
+    await wrapper.get('input').setValue('testSeedCheckpointId')
     await wrapper.get('button').trigger('click')
     await wrapper.vm.$nextTick()
 
@@ -1073,7 +1063,7 @@ describe('vfs ui cr loop fixes', () => {
     await nextTick()
     expect(getGutterLineTexts(wrapper)).toEqual(['1', '2', '3', '4'])
 
-    useVfsSnapshotRollbackMock.mockImplementationOnce(async () => {
+    useVfsCheckpointRollbackMock.mockImplementationOnce(async () => {
       vfsPersistenceStore.updateChat((draft) => ({
         ...draft,
         chatVfsSnapshot: {
@@ -1092,7 +1082,7 @@ describe('vfs ui cr loop fixes', () => {
     })
 
     const listbox = wrapper.findComponent(VfsListboxField)
-    await listbox.vm.$emit('update:modelValue', 'snap-seed-1')
+    await listbox.vm.$emit('update:modelValue', 'testSeedCheckpointId')
     await nextTick()
     await wrapper.get('[data-testid="editor-history-rollback-submit"]').trigger('click')
     await flushPromises()

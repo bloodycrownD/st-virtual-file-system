@@ -1,8 +1,8 @@
 import { computed, ref } from 'vue'
 
-/** Editor-side snapshot list rows (derived from `chatVfsSnapshots` filtered to the active path). */
+/** Editor-side checkpoint list rows (derived from `vfsCheckpoints` filtered to the active path). */
 export interface VfsCommitHistoryRecord {
-  snapshotId: string
+  checkpointId: string
   time: string
   operator: string
   actionType: string

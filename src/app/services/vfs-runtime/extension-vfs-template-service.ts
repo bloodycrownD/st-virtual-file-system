@@ -73,10 +73,11 @@ export class ExtensionVfsTemplateService {
     const nextWorkTree = ensureWorkTreeConfig(state.extension.workTreeTemplate)
     this.store.updateChat((draft) => ({
       ...draft,
-      // WHY: overwrite is semantic re-initialization, so logs + snapshot manifests must reset with content.
+      // WHY: overwrite is semantic re-initialization, so logs + checkpoint history must reset with content.
       chatVfsSnapshot: this.cloneSnapshot(templateSnapshot),
       chatVfsLogs: [],
-      chatVfsSnapshots: [],
+      vfsPathVersionStore: {},
+      vfsCheckpoints: [],
       templateInitialized: true,
       // WHY: chat work tree must follow template v2 (or default) — never keep pre-overwrite legacy config.
       workTree: nextWorkTree,

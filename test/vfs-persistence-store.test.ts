@@ -39,7 +39,9 @@ describe('vfs persistence store', () => {
     expect(writtenChat).toMatchObject({
       mounted: false,
       chatVfsLogs: [],
-      chatVfsSnapshots: [],
+      vfsCheckpoints: [],
+      vfsPathVersionStore: {},
+      vfsChatPersistenceVersion: 2,
       templateInitialized: false,
       workTree: null,
     })
@@ -112,7 +114,9 @@ describe('vfs persistence store', () => {
     expect(writtenChat).toMatchObject({
       mounted: false,
       chatVfsLogs: [],
-      chatVfsSnapshots: [],
+      vfsCheckpoints: [],
+      vfsPathVersionStore: {},
+      vfsChatPersistenceVersion: 2,
       templateInitialized: false,
       workTree: null,
     })

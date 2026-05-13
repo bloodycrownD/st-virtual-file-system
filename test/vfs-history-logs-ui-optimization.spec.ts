@@ -12,12 +12,28 @@ vi.mock('@/app/services/vfs/logService', () => ({
   fetchLogs: (...args: unknown[]) => mockFetchLogs(...args),
 }))
 
-vi.mock('@/app/composables/components-composables/useVfsSnapshotRollback', () => ({
-  useVfsSnapshotRollback: (id: string) => rollbackMock(id),
+vi.mock('@/app/composables/components-composables/useVfsCheckpointRollback', () => ({
+  useVfsCheckpointRollback: (id: string) => rollbackMock(id),
 }))
 
 const historyState = vi.hoisted(() => ({
   chat: {
+    vfsChatPersistenceVersion: 2,
+    mounted: false,
+    templateInitialized: false,
+    workTree: null,
+    vfsPathVersionStore: {
+      '/a.txt': [
+        {
+          versionId: 'pv-1',
+          kind: 'file' as const,
+          createdAt: '2026-01-01T00:00:00.000Z',
+          content: { encoding: 'plain' as const, data: 'x', originalSize: 1 },
+          updatedBy: 'user' as const,
+        },
+      ],
+    },
+    chatVfsSnapshot: { schemaVersion: 1, rootId: 'root', nodes: {} },
     chatVfsLogs: [
       {
         id: '1',
@@ -29,15 +45,15 @@ const historyState = vi.hoisted(() => ({
         status: 'success',
         durationMs: 1,
         argsSummary: 'calls=1',
-        snapshotId: 'snap-1',
+        checkpointId: 'cp-1',
       },
     ],
-    chatVfsSnapshots: [
+    vfsCheckpoints: [
       {
-        id: 'snap-1',
+        id: 'cp-1',
         time: '2026-01-01T00:00:00.000Z',
-        kind: 'tool-batch-pre' as const,
-        entries: [{ path: '/a.txt', presence: 'absent' as const }],
+        source: 'tool-batch' as const,
+        treeVersion: { '/a.txt': 'pv-1' },
       },
     ],
   },

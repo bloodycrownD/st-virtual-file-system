@@ -12,7 +12,7 @@
  * - **extension**: global `extensionSettings[name]` (shared across all chats)
  * - **chat**: per-conversation `chatMetadata[name]` (switching chats swaps the backing record)
  *
- * ## Snapshot semantics
+ * ## Chat checkpoint semantics
  * `getState()` and subscriber notifications always return a shallow-copied snapshot to prevent
  * external mutation of internal state references.
  */
@@ -58,7 +58,7 @@ export interface VfsPersistenceStore {
   /**
    * Update chat metadata with an immutable updater and persist to chat metadata.
    *
-   * The updater receives a draft copy (including cloned arrays for logs/snapshots) to prevent
+   * The updater receives a draft copy (including cloned arrays for logs/checkpoints) to prevent
    * accidental external mutation.
    */
   updateChat: (updater: (draft: VfsChatMetadata) => VfsChatMetadata) => void
@@ -90,7 +90,8 @@ export function createVfsPersistenceStore(adapter: StContextAdapter): VfsPersist
     chat: {
       ...state.chat,
       chatVfsLogs: [...state.chat.chatVfsLogs],
-      chatVfsSnapshots: [...state.chat.chatVfsSnapshots],
+      vfsPathVersionStore: { ...state.chat.vfsPathVersionStore },
+      vfsCheckpoints: [...state.chat.vfsCheckpoints],
     },
   })
 
@@ -195,7 +196,8 @@ export function createVfsPersistenceStore(adapter: StContextAdapter): VfsPersist
       const next = updater({
         ...state.chat,
         chatVfsLogs: [...state.chat.chatVfsLogs],
-        chatVfsSnapshots: [...state.chat.chatVfsSnapshots],
+        vfsPathVersionStore: { ...state.chat.vfsPathVersionStore },
+        vfsCheckpoints: [...state.chat.vfsCheckpoints],
       })
       state = { ...state, chat: next }
       adapter.writeChatRaw(serializeVfsChatMetadata(state.chat))

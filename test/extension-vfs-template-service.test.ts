@@ -14,10 +14,12 @@ function createStore(initialState?: Partial<VfsPersistenceState>): VfsPersistenc
       workTreeTemplate: null,
     },
     chat: {
+      vfsChatPersistenceVersion: 2,
       mounted: false,
       chatVfsSnapshot: createEmptyVfsSnapshot(),
       chatVfsLogs: [],
-      chatVfsSnapshots: [],
+      vfsPathVersionStore: {},
+      vfsCheckpoints: [],
       templateInitialized: false,
       workTree: null,
     },
@@ -42,7 +44,8 @@ function createStore(initialState?: Partial<VfsPersistenceState>): VfsPersistenc
         chat: updater({
           ...state.chat,
           chatVfsLogs: [...state.chat.chatVfsLogs],
-          chatVfsSnapshots: [...state.chat.chatVfsSnapshots],
+          vfsPathVersionStore: { ...state.chat.vfsPathVersionStore },
+          vfsCheckpoints: [...state.chat.vfsCheckpoints],
         }),
       }
     },
@@ -82,7 +85,7 @@ describe('extension vfs template service', () => {
     expect(initialized).not.toBe(template)
   })
 
-  it('overwrites chat from template and clears logs and snapshot manifests', () => {
+  it('overwrites chat from template and clears logs and checkpoint history', () => {
     const template = createEmptyVfsSnapshot()
     const store = createStore({
       extension: { extensionTemplateVfsSnapshot: template },
@@ -100,12 +103,23 @@ describe('extension vfs template service', () => {
             argsSummary: '{}',
           },
         ],
-        chatVfsSnapshots: [
+        vfsPathVersionStore: {
+          '/x.txt': [
+            {
+              versionId: 'pv-1',
+              kind: 'file' as const,
+              createdAt: new Date().toISOString(),
+              content: { encoding: 'plain' as const, data: 'x', originalSize: 1 },
+              updatedBy: 'user' as const,
+            },
+          ],
+        },
+        vfsCheckpoints: [
           {
-            id: 's1',
+            id: 'c1',
             time: new Date().toISOString(),
-            kind: 'manual',
-            entries: [{ path: '/x.txt', presence: 'absent' as const }],
+            source: 'editor-save' as const,
+            treeVersion: { '/x.txt': 'pv-1' },
           },
         ],
       },
@@ -118,7 +132,8 @@ describe('extension vfs template service', () => {
     expect(chat.chatVfsSnapshot).toEqual(template)
     expect(chat.chatVfsSnapshot).not.toBe(template)
     expect(chat.chatVfsLogs).toEqual([])
-    expect(chat.chatVfsSnapshots).toEqual([])
+    expect(chat.vfsCheckpoints).toEqual([])
+    expect(chat.vfsPathVersionStore).toEqual({})
     expect(chat.templateInitialized).toBe(true)
   })
 })

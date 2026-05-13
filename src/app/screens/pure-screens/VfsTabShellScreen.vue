@@ -7,8 +7,8 @@ type VfsTab = (typeof ALL_TABS)[number]
 const activeTab = ref<VfsTab>('files')
 const TAB_LABELS: Record<VfsTab, string> = {
   files: '文件管理',
-  /** WHY: `history` slot renders chat execution logs + batch pre-anchor withdraw (撤回到批次前) — not legacy commit records. */
-  history: '执行与撤回',
+  /** WHY: `history` slot renders chat execution logs + post-commit checkpoint rollback. */
+  history: '执行与回滚',
   worktree: '工作树',
 }
 const props = defineProps<{

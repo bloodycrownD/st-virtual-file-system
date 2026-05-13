@@ -28,10 +28,10 @@ import ReaderScreen from '@/app/screens/pure-screens/ReaderScreen.vue'
 import SlideshowScreen from '@/app/screens/pure-screens/SlideshowScreen.vue'
 import VfsTabShellScreen from '@/app/screens/pure-screens/VfsTabShellScreen.vue'
 import WorkTreeScreen from '@/app/screens/pure-screens/WorkTreeScreen.vue'
-import { useVfsSnapshotRollback } from '@/app/composables/components-composables/useVfsSnapshotRollback'
+import { useVfsCheckpointRollback } from '@/app/composables/components-composables/useVfsCheckpointRollback'
 import { createVfsHistoryStateMachine } from '@/app/composables/screens-composables/useVfsHistoryStateMachine'
 import { VFS_ERROR_CODES } from '@/app/constants/vfsErrorCodes'
-import { vfsPersistenceStore, vfsSnapshotService } from '@/app/stores/vfs-store-singleton'
+import { vfsPersistenceStore, vfsCheckpointService } from '@/app/stores/vfs-store-singleton'
 import type { VfsSnapshot } from '@/domain/vfs/types'
 import type { VfsBrowserEntity } from '@/app/components/business-components/VfsFileManagerPanel.vue'
 import { dirname, normalizePath, ROOT_PATH } from '@/domain/vfs/path-utils'
@@ -130,8 +130,8 @@ const inputDialogError = ref('')
 
 const readerHtml = computed(() => editorContent.value)
 const editorHistoryRecords = computed<VfsCommitHistoryRecord[]>(() => history.records.value)
-/** Header rollback control: bound to editor snapshot listbox; cleared when history list no longer contains the id. */
-const editorRollbackSnapshotId = ref('')
+/** Header rollback control: bound to editor checkpoint listbox; cleared when history list no longer contains the id. */
+const editorRollbackCheckpointId = ref('')
 const isTemplateScope = computed(() => props.scope === 'template')
 const resolvedTabs = computed<VfsScreenTab[]>(() => {
   if (isTemplateScope.value) return ['files']
@@ -362,13 +362,13 @@ function refreshAuthoritativeState(): void {
     } else {
       const normalizedPath = normalizePath(path)
       history.replaceRecords(
-        state.chat.chatVfsSnapshots
-          .filter((snap) => snap.entries.some((e) => normalizePath(e.path) === normalizedPath))
-          .map((snap) => ({
-            snapshotId: snap.id,
-            time: snap.time,
-            operator: 'snapshot',
-            actionType: snap.kind,
+        state.chat.vfsCheckpoints
+          .filter((cp) => Object.prototype.hasOwnProperty.call(cp.treeVersion, normalizedPath))
+          .map((cp) => ({
+            checkpointId: cp.id,
+            time: cp.time,
+            operator: 'checkpoint',
+            actionType: cp.source,
             scope: normalizedPath,
           })),
       )
@@ -486,7 +486,7 @@ function overwriteCurrentChatWithTemplate(): void {
   confirmDialogState.value = {
     action: 'overwrite',
     title: '确认覆盖',
-    message: '此操作将用模板覆盖当前 chat 目录，并清空日志与快照历史。此操作不可恢复，确认继续？',
+    message: '此操作将用模板覆盖当前 chat 目录，并清空日志与检查点历史。此操作不可恢复，确认继续？',
   }
 }
 
@@ -614,15 +614,15 @@ function formatEditorSnapshotOptionLabel(record: VfsCommitHistoryRecord): string
       }).format(parsed)
     : record.time
   const status =
-    record.actionType === 'tool-batch-pre' ? '工具前' : record.actionType === 'manual' ? '保存前' : '快照'
+    record.actionType === 'tool-batch' ? '工具批次' : record.actionType === 'editor-save' ? '保存' : '检查点'
   return `${when} · ${status}`
 }
 
 const editorSnapshotListboxOptions = computed(() =>
   editorHistoryRecords.value
-    .filter((record): record is VfsCommitHistoryRecord & { snapshotId: string } => Boolean(record.snapshotId))
+    .filter((record): record is VfsCommitHistoryRecord & { checkpointId: string } => Boolean(record.checkpointId))
     .map((record) => ({
-      value: record.snapshotId,
+      value: record.checkpointId,
       label: formatEditorSnapshotOptionLabel(record),
     })),
 )
@@ -631,10 +631,10 @@ watch(
   [editorHistoryRecords, mode, activeContextPath],
   () => {
     const ids = new Set(
-      editorHistoryRecords.value.map((row) => row.snapshotId).filter((id): id is string => Boolean(id)),
+      editorHistoryRecords.value.map((row) => row.checkpointId).filter((id): id is string => Boolean(id)),
     )
-    if (editorRollbackSnapshotId.value && !ids.has(editorRollbackSnapshotId.value)) {
-      editorRollbackSnapshotId.value = ''
+    if (editorRollbackCheckpointId.value && !ids.has(editorRollbackCheckpointId.value)) {
+      editorRollbackCheckpointId.value = ''
     }
   },
   { deep: true },
@@ -989,7 +989,8 @@ function onConfirmDialogConfirm(): void {
         ...draft,
         chatVfsSnapshot: serializeVfsSnapshot(template),
         chatVfsLogs: [],
-        chatVfsSnapshots: [],
+        vfsPathVersionStore: {},
+        vfsCheckpoints: [],
         templateInitialized: true,
         workTree: nextWorkTree,
       }))
@@ -1086,10 +1087,10 @@ function guardTabChange(nextTab: VfsScreenTab): boolean {
   return false
 }
 
-async function handleEditorSnapshotRollback(payload: { snapshotId: string }): Promise<void> {
+async function handleEditorCheckpointRollback(payload: { checkpointId: string }): Promise<void> {
   const scope = selectedEntity.value?.path ?? '/'
   await withWriteScopeGuard(scope, 'rollback', async () => {
-    const ok = await useVfsSnapshotRollback(payload.snapshotId)
+    const ok = await useVfsCheckpointRollback(payload.checkpointId)
     if (!ok) return
     // WHY: rollback result must rehydrate all visible states from persistence as the single source of truth.
     refreshAuthoritativeState()
@@ -1113,11 +1114,11 @@ async function handleEditorSaveRequested(): Promise<void> {
     }
     try {
       if (isTemplateScope.value) {
-        // WHY: template scope has no `chatVfsSnapshots`; keep the existing single-bucket write path.
+        // WHY: template scope has no per-chat checkpoints; keep the existing single-bucket write path.
         applySnapshotMutation((core) => core.writeFile(targetPath, editorContent.value))
       } else {
-        // WHY: one `updateChat` commits pre-save manifest + file bytes so rollback metadata cannot drift from disk state.
-        vfsSnapshotService.persistChatFileSaveWithPreSnapshot(targetPath, editorContent.value)
+        // WHY: one `updateChat` commits post-save checkpoint + file bytes so rollback metadata cannot drift from disk state.
+        vfsCheckpointService.persistEditorSaveWithCheckpoint(targetPath, editorContent.value)
         currentSnapshot.value = vfsPersistenceStore.getState().chat.chatVfsSnapshot
       }
     } catch (error) {
@@ -1153,25 +1154,25 @@ async function handleEditorSaveRequested(): Promise<void> {
         data-testid="editor-snapshot-toolbar-tabs"
       >
         <VfsListboxField
-          v-model="editorRollbackSnapshotId"
+          v-model="editorRollbackCheckpointId"
           density="compact"
           dropdown-width="match-trigger"
           class="vfs-tabs-snapshot-listbox"
           :options="editorSnapshotListboxOptions"
-          placeholder="还原点…"
+          placeholder="检查点…"
           :disabled="!activeContextPath || editorHistoryRecords.length === 0"
-          ariaLabel="选择快照还原点"
+          ariaLabel="选择检查点以回滚"
           data-testid="editor-snapshot-listbox-trigger"
         />
         <button
           type="button"
           class="menu_button vfs-tabs-snapshot-rollback-button"
           data-testid="editor-history-rollback-submit"
-          title="回滚到所选还原点"
-          aria-label="回滚到所选还原点"
-          :disabled="!editorRollbackSnapshotId || rollbackInProgress"
+          title="回滚到所选检查点"
+          aria-label="回滚到所选检查点"
+          :disabled="!editorRollbackCheckpointId || rollbackInProgress"
           :aria-busy="rollbackInProgress ? 'true' : undefined"
-          @click="void handleEditorSnapshotRollback({ snapshotId: editorRollbackSnapshotId })"
+          @click="void handleEditorCheckpointRollback({ checkpointId: editorRollbackCheckpointId })"
         >
           <i
             v-if="rollbackInProgress"
@@ -1421,7 +1422,7 @@ async function handleEditorSaveRequested(): Promise<void> {
   flex: 0 0 auto;
 }
 
-/* WHY: labels are `时间 · {工具前|保存前|快照}` — bounded length; fixed width avoids fragile flex/% sizing in the tab strip. (~11rem ≈ 2/3 of prior 16.5rem at 16px root.) */
+/* WHY: labels are `时间 · {工具批次|保存|检查点}` — bounded length; fixed width avoids fragile flex/% sizing in the tab strip. (~11rem ≈ 2/3 of prior 16.5rem at 16px root.) */
 .vfs-tabs-snapshot-listbox {
   flex: 0 0 auto;
   width: 11rem;

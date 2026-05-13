@@ -41,29 +41,36 @@ describe('vfs chat metadata schema', () => {
     expect(parsed.chatVfsSnapshot).not.toBeNull()
     expect(parsed.chatVfsSnapshot.rootId).toBe('root')
     expect(parsed.chatVfsLogs).toEqual([])
-    expect(parsed.chatVfsSnapshots).toEqual([])
+    expect(parsed.vfsCheckpoints).toEqual([])
+    expect(parsed.vfsPathVersionStore).toEqual({})
+    expect(parsed.vfsChatPersistenceVersion).toBe(2)
     expect(parsed.templateInitialized).toBe(false)
   })
 
   it('serializes into JSON-safe object', () => {
     const snapshot = createEmptyVfsSnapshot()
     const raw = serializeVfsChatMetadata({
+      vfsChatPersistenceVersion: 2,
       mounted: true,
       chatVfsSnapshot: snapshot,
       chatVfsLogs: [],
-      chatVfsSnapshots: [],
+      vfsPathVersionStore: {},
+      vfsCheckpoints: [],
       templateInitialized: false,
       workTree: null,
     })
     expect(raw.mounted).toBe(true)
     expect(raw.chatVfsLogs).toEqual([])
-    expect(raw.chatVfsSnapshots).toEqual([])
+    expect(raw.vfsCheckpoints).toEqual([])
+    expect(raw.vfsPathVersionStore).toEqual({})
+    expect(raw.vfsChatPersistenceVersion).toBe(2)
     expect(raw.templateInitialized).toBe(false)
     expect(raw.chatVfsSnapshot).toEqual(snapshot)
     expect(raw).not.toHaveProperty('chatVfsVersions')
+    expect(raw).not.toHaveProperty('chatVfsSnapshots')
   })
 
-  it('drops legacy chatVfsVersions on parse and defaults snapshots', () => {
+  it('drops legacy chatVfsVersions on parse and defaults checkpoints', () => {
     const parsed = parseVfsChatMetadata({
       chatVfsVersions: [
         {
@@ -76,6 +83,6 @@ describe('vfs chat metadata schema', () => {
       ],
     })
 
-    expect(parsed.chatVfsSnapshots).toEqual([])
+    expect(parsed.vfsCheckpoints).toEqual([])
   })
 })

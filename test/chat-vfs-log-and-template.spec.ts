@@ -70,12 +70,23 @@ describe('chat vfs logs and templates', () => {
           argsSummary: '{}',
         },
       ],
-      chatVfsSnapshots: [
+      vfsPathVersionStore: {
+        '/x.txt': [
+          {
+            versionId: 'pv-1',
+            kind: 'file' as const,
+            createdAt: new Date().toISOString(),
+            content: { encoding: 'plain' as const, data: 'x', originalSize: 1 },
+            updatedBy: 'user' as const,
+          },
+        ],
+      },
+      vfsCheckpoints: [
         {
           id: 's1',
           time: new Date().toISOString(),
-          kind: 'manual',
-          entries: [{ path: '/x.txt', presence: 'absent' as const }],
+          source: 'editor-save' as const,
+          treeVersion: { '/x.txt': 'pv-1' },
         },
       ],
     }))
@@ -84,7 +95,8 @@ describe('chat vfs logs and templates', () => {
     expect(store.getState().chat.templateInitialized).toBe(true)
     templateService.overwriteChatWithTemplate()
     expect(store.getState().chat.chatVfsLogs).toEqual([])
-    expect(store.getState().chat.chatVfsSnapshots).toEqual([])
+    expect(store.getState().chat.vfsCheckpoints).toEqual([])
+    expect(store.getState().chat.vfsPathVersionStore).toEqual({})
   })
 
   it('clones work-tree config from extension template on first init', () => {

@@ -170,7 +170,7 @@ export class VirtualToolMessageHandler {
         }
       }
       const batchId = `batch-${Date.now()}`
-      // 进入运行时执行（含原子事务语义：成功才落盘）；成功路径在同一次 `updateChat` 写入 batch 日志 + `snapshotId`。
+      // 进入运行时执行（含原子事务语义：成功才落盘）；成功路径在同一次 `updateChat` 写入 batch 日志 + `checkpointId`。
       const batch = this.runtime.executeBatch(envelope, {
         chatId: input.chatId,
         messageId: input.messageId,
