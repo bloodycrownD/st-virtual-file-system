@@ -1548,8 +1548,8 @@ async function handleEditorSaveRequested(): Promise<void> {
 }
 
 /*
-  WHY: `data-layout` mirrors `innerWidth < 1024` — two rows: (1) title full-width, (2) back + all chrome buttons.
-  Title uses `order: -1` + `flex-basis: 100%` so it visually precedes siblings without reordering DOM.
+  WHY: `data-layout` mirrors `innerWidth < 1024` — two rows: (1) back + chrome buttons, (2) full-width title.
+  `order: -1` on `__left` + `chrome-actions` pulls the button strip above the title without DOM surgery.
 */
 [data-layout='mobile'] .vfs-preview-top-bar {
   flex-direction: row;
@@ -1558,21 +1558,32 @@ async function handleEditorSaveRequested(): Promise<void> {
   min-width: 0;
 }
 
-[data-layout='mobile'] .vfs-preview-top-bar__title {
+[data-layout='mobile'] .vfs-preview-top-bar__left {
   order: -1;
-  flex: 0 0 100%;
-  width: 100%;
-  max-width: 100%;
-  min-width: 0;
+  flex: 0 0 auto;
 }
 
 [data-layout='mobile'] .vfs-preview-chrome-actions {
+  order: -1;
   flex: 1 1 0;
   min-width: 0;
   margin-left: 0;
   justify-content: flex-start;
   flex-wrap: nowrap;
   box-sizing: border-box;
+}
+
+[data-layout='mobile'] .vfs-preview-top-bar__title {
+  order: 0;
+  flex: 0 0 100%;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  text-align: center;
+}
+
+[data-layout='mobile'] .vfs-preview-file-title {
+  text-align: center;
 }
 
 /* WHY: checkpoint toolbar lives in `VfsTabShellScreen` header (not under `[data-layout]`) — same 1023 breakpoint as `layoutMode` for listbox flex shrink. */
