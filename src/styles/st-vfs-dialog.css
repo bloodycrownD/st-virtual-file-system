@@ -124,6 +124,14 @@
   white-space: nowrap;
 }
 
+/*
+  File list row body is a flex <button>. Global `nowrap` here inflates the button's min-content width and
+  defeats sibling shrink in `.vfs-fm-row`; `.vfs-fm-name` keeps its own nowrap for ellipsis.
+*/
+#st-vfs-popup button.vfs-fm-item {
+  white-space: normal;
+}
+
 /* Make <details>/<summary> menu toggles reliably clickable under CSS resets */
 #st-vfs-popup .vfs-action-menu__toggle {
   display: inline-flex;

@@ -133,6 +133,7 @@ function handleRowDoubleClick(entry: VfsBrowserEntity): void {
   display: flex;
   flex-direction: column;
   min-height: 0;
+  min-width: 0;
   flex: 1 1 auto;
 }
 
@@ -229,20 +230,27 @@ function handleRowDoubleClick(entry: VfsBrowserEntity): void {
   gap: 6px;
   flex: 1 1 auto;
   min-height: 0;
-  overflow: auto;
+  min-width: 0;
+  /* WHY: vertical scroll only — row layout must never widen the list; avoids a mobile "bottom grey bar". */
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 .vfs-fm-row {
   display: flex;
   align-items: stretch;
   gap: 6px;
+  /* WHY: grid/flex children default min-width:auto from content; allow the row to shrink inside the list. */
+  min-width: 0;
 }
 
 .vfs-fm-item {
-  /* WHY: `min-width:0` lets the name ellipsis win inside a flex row; badge stays `flex-shrink:0`. */
-  flex: 1 1 auto;
+  /*
+    WHY: `min-width:0` + `flex:1 1 0` lets `.vfs-fm-name` ellipsis win; omit `width:100%` — it fights the
+    sibling `.vfs-fm-row-actions` in a horizontal flex row and can force horizontal overflow.
+  */
+  flex: 1 1 0;
   min-width: 0;
-  width: 100%;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -263,18 +271,20 @@ function handleRowDoubleClick(entry: VfsBrowserEntity): void {
 }
 
 .vfs-fm-row-badge {
-  flex: 0 0 auto;
+  /* WHY: may shrink before the filename rail — label ellipsis keeps row width bounded (see `.vfs-fm-row-badge-label`). */
+  flex: 0 1 auto;
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  flex-shrink: 0;
-  white-space: nowrap;
+  min-width: 0;
+  max-width: 42%;
   color: rgba(255, 255, 255, 0.45);
   font-size: 11px;
   line-height: 1.2;
 }
 
 .vfs-fm-row-badge i {
+  flex-shrink: 0;
   font-size: 12px;
   line-height: 1;
   opacity: 0.95;
@@ -282,6 +292,10 @@ function handleRowDoubleClick(entry: VfsBrowserEntity): void {
 
 .vfs-fm-row-badge-label {
   font-size: 12px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .vfs-fm-row-actions {
@@ -290,6 +304,7 @@ function handleRowDoubleClick(entry: VfsBrowserEntity): void {
   gap: 6px;
   justify-content: center;
   flex: 0 0 auto;
+  flex-shrink: 0;
   position: relative;
   z-index: 2;
 }
