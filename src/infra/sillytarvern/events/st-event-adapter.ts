@@ -14,7 +14,6 @@
  *   centralized in `vfs-store-singleton` to avoid duplicated subscriptions and double reloads.
  */
 import type { MessageController } from '@/app/controllers/message-controller'
-import { logVtPipeline } from '@/app/services/message/vfs-virtual-tool-pipeline-diag'
 
 /** Lifecycle wrapper around SillyTavern event subscriptions. */
 export interface StMessageEventAdapter {
@@ -92,15 +91,6 @@ export function createStMessageEventAdapter(controller: MessageController): StMe
     if (typeof et.MESSAGE_DELETED === 'string' && et.MESSAGE_DELETED) {
       register(et.MESSAGE_DELETED, onMessageDeleted)
     }
-
-    // WHY: one-shot fingerprint of runtime ST `event_types` strings (avoid per-message spam).
-    logVtPipeline('adapter-start', {
-      registeredEditEvents: collectUniqueEventNames(et.MESSAGE_EDITED, et.MESSAGE_UPDATED),
-      MESSAGE_RECEIVED: et.MESSAGE_RECEIVED,
-      MESSAGE_EDITED: et.MESSAGE_EDITED,
-      MESSAGE_UPDATED: et.MESSAGE_UPDATED,
-      MESSAGE_DELETED: et.MESSAGE_DELETED,
-    })
 
     started = true
   }

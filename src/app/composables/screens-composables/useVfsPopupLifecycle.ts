@@ -22,10 +22,6 @@ export function useVfsPopupLifecycle() {
   let popupApp: VueApp<Element> | null = null
   let disposeInProgress = false
   let closeButtonHandler: (() => void) | null = null
-  let testButtonHandler: (() => void) | null = null
-  let clickProbeHandler: ((event: MouseEvent) => void) | null = null
-  let documentClickProbeHandler: ((event: MouseEvent) => void) | null = null
-  const isDev = Boolean(import.meta.env?.DEV)
 
   const disposePopup = () => {
     if (!popup || disposeInProgress) return
@@ -38,19 +34,6 @@ export function useVfsPopupLifecycle() {
       const btn = popup.querySelector<HTMLButtonElement>('[data-st-vfs-close]')
       btn?.removeEventListener('click', closeButtonHandler)
       closeButtonHandler = null
-    }
-    if (testButtonHandler) {
-      const btn = popup.querySelector<HTMLButtonElement>('[data-st-vfs-test]')
-      btn?.removeEventListener('click', testButtonHandler)
-      testButtonHandler = null
-    }
-    if (clickProbeHandler) {
-      popup.removeEventListener('click', clickProbeHandler, true)
-      clickProbeHandler = null
-    }
-    if (documentClickProbeHandler) {
-      document.removeEventListener('click', documentClickProbeHandler, true)
-      documentClickProbeHandler = null
     }
     popup.removeEventListener('close', onClose)
     popup.removeEventListener('cancel', onCancel)
@@ -104,26 +87,6 @@ export function useVfsPopupLifecycle() {
     closeButton.setAttribute('aria-label', '关闭')
     closeButton.title = '关闭'
     closeButton.textContent = '×'
-    if (isDev) {
-      const testButton = document.createElement('button')
-      testButton.type = 'button'
-      testButton.className = 'menu_button st-vfs-popup__test'
-      testButton.setAttribute('data-st-vfs-test', 'true')
-      testButton.title = 'Test click (console)'
-      testButton.textContent = 'Test'
-      headerActions.append(testButton)
-      testButtonHandler = () => {
-        const label = options?.title ?? 'VFS'
-        console.log('[st-vfs] popup click test', {
-          label,
-          popupOpen: Boolean(popup?.open),
-          activeElement: document.activeElement ? (document.activeElement as Element).tagName : null,
-        })
-        // Visual feedback in case console is filtered/hidden.
-        testButton.textContent = testButton.textContent === 'Test' ? 'Test✓' : 'Test'
-      }
-      testButton.addEventListener('click', testButtonHandler)
-    }
     headerActions.append(closeButton)
     header.append(title, headerActions)
     const appRoot = document.createElement('div')
@@ -143,37 +106,6 @@ export function useVfsPopupLifecycle() {
     }
     closeButtonHandler = () => close()
     closeButton.addEventListener('click', closeButtonHandler)
-
-    if (isDev) {
-      // WHY: when host CSS/overlays swallow clicks, we need a capture-phase probe to prove whether events reach the dialog.
-      clickProbeHandler = (event: MouseEvent) => {
-        const target = event.target as Element | null
-        if (!target) return
-        const interesting = target.closest('button, summary, a, [role="button"], .mes_button')
-        if (!interesting) return
-        console.log('[st-vfs] popup click probe (dialog)', {
-          target: target.tagName,
-          closest: interesting.tagName,
-          closestClass: (interesting as HTMLElement).className,
-          closestId: (interesting as HTMLElement).id,
-          defaultPrevented: event.defaultPrevented,
-        })
-      }
-      popup.addEventListener('click', clickProbeHandler, true)
-
-      // WHY: if clicks never reach the dialog, we still want to know if they occur and whether the composed path includes the dialog.
-      documentClickProbeHandler = (event: MouseEvent) => {
-        const path = typeof event.composedPath === 'function' ? event.composedPath() : []
-        const includesPopup = path.includes(popup as unknown as EventTarget)
-        if (!includesPopup) return
-        const target = event.target as Element | null
-        console.log('[st-vfs] popup click probe (document)', {
-          target: target ? target.tagName : null,
-          defaultPrevented: event.defaultPrevented,
-        })
-      }
-      document.addEventListener('click', documentClickProbeHandler, true)
-    }
 
     try {
       popupApp = createApp(VfsMainScreen, {

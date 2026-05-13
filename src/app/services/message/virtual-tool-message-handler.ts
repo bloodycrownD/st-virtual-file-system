@@ -34,7 +34,6 @@
  *   only when the message still contains a call tag (blocking repeated processing loops).
  */
 import { extractLastCallBlock, replaceCallWithResult, validateSingleResultTag } from './virtual-tool-tag-manager'
-import { logVtPipeline } from './vfs-virtual-tool-pipeline-diag'
 import type { ToolCallEnvelope } from '@/app/services/virtual-tools/tool-contracts'
 import type { ChatVfsRuntime } from '@/app/services/vfs-runtime/chat-vfs-runtime'
 import type { ChatVfsLogService } from '@/app/services/vfs-log/chat-vfs-log-service'
@@ -84,12 +83,6 @@ export class VirtualToolMessageHandler {
     const lockKey = `${input.chatId}:${input.messageId}`
     // 同一消息并发事件（received/edited）时，后续请求直接跳过，避免重复执行。
     if (locks.has(lockKey)) {
-      logVtPipeline('vt-handler-skip', {
-        skipReason: 'lock',
-        chatId: input.chatId,
-        messageId: input.messageId,
-        handled: false,
-      })
       return { handled: false, messageText: input.messageText }
     }
     locks.add(lockKey)
@@ -97,12 +90,6 @@ export class VirtualToolMessageHandler {
     let callBlock = extractLastCallBlock(input.messageText)
     try {
       if (!this.runtime.isVirtualToolCallEnabled()) {
-        logVtPipeline('vt-handler-skip', {
-          skipReason: 'disabled',
-          chatId: input.chatId,
-          messageId: input.messageId,
-          handled: false,
-        })
         return { handled: false, messageText: input.messageText }
       }
       // 一个消息只允许最多一个 result 标签；多标签视为不一致状态并拒绝执行。
@@ -122,22 +109,10 @@ export class VirtualToolMessageHandler {
           errorCode: 'MULTIPLE_RESULT_TAGS',
           errorMessage: `Found ${resultTag.count} result tags`,
         })
-        logVtPipeline('vt-handler-skip', {
-          skipReason: 'multi-result',
-          chatId: input.chatId,
-          messageId: input.messageId,
-          handled: false,
-        })
         return { handled: false, messageText: input.messageText }
       }
       // 没有可执行调用块时，不改消息内容。
       if (!callBlock || !callBlock.content) {
-        logVtPipeline('vt-handler-skip', {
-          skipReason: 'no-call',
-          chatId: input.chatId,
-          messageId: input.messageId,
-          handled: false,
-        })
         return { handled: false, messageText: input.messageText }
       }
       let envelope: ToolCallEnvelope

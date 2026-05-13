@@ -49,8 +49,7 @@ describe('message-pipeline virtual-tool delegation', () => {
     expect(orphan.mes).toBe('patched')
   })
 
-  it('logs vt pipeline diagnostics with textSource and handled', () => {
-    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+  it('prefers args[1] over stale mes for MESSAGE_UPDATED and marks handled', () => {
     const process = vi.fn(() => ({ handled: true, messageText: 'done' }))
     const handler = { process } as unknown as VirtualToolMessageHandler
     const pipeline = createMessagePipeline(handler)
@@ -63,11 +62,6 @@ describe('message-pipeline virtual-tool delegation', () => {
     const fresh = '<virtual-tool-call>{}</virtual-tool-call>'
     pipeline.run({ kind: 'MESSAGE_UPDATED', args: [0, fresh] })
 
-    const vtCalls = logSpy.mock.calls.filter((c) => String(c[0]).includes('[st-vfs][vt-msg]'))
-    expect(vtCalls.length).toBeGreaterThan(0)
-    const payloads = vtCalls.map((c) => c[2] as Record<string, unknown>)
-    expect(payloads.some((p) => p.textSource === 'args[1]')).toBe(true)
-    expect(payloads.some((p) => p.handled === true)).toBe(true)
     expect(process).toHaveBeenCalledWith(
       expect.objectContaining({
         messageText: fresh,

@@ -116,13 +116,6 @@
   opacity: 0.85;
 }
 
-#st-vfs-popup .st-vfs-popup__test {
-  min-width: 52px;
-  height: 28px;
-  line-height: 28px;
-  padding: 0 8px;
-}
-
 /* Prevent "vertical text" layout caused by extreme `writing-mode` or narrow buttons */
 #st-vfs-popup button,
 #st-vfs-popup .menu_button,
