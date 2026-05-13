@@ -80,6 +80,7 @@ describe('VFS history screen + VfsLogPanel component baseline', () => {
     await nextTick()
     expect(historyWrapper.find('.vfs-history-status-bar').exists()).toBe(true)
     expect(historyWrapper.find('.vfs-history-status-pill').exists()).toBe(true)
+    expect(historyWrapper.find('.vfs-log-scrollport').exists()).toBe(true)
     expect(historyWrapper.find('[data-testid="vfs-log-rollback"]').exists()).toBe(true)
 
     mockFetchLogs.mockResolvedValue({ items: [], total: 0 })
