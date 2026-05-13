@@ -33,5 +33,7 @@ declare global {
     const toastr: {
         error: (message: string) => void;
         success: (message: string) => void;
+        warning: (message: string) => void;
+        info: (message: string) => void;
     };
 }

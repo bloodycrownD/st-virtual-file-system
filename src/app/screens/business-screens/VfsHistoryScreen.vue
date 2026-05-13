@@ -36,10 +36,16 @@ function snapshotExists(snapshotId: string): boolean {
 async function rollbackLogSnapshot(snapshotId: string): Promise<void> {
   const id = snapshotId.trim()
   if (!id) return
-  // WHY: FIFO eviction — never call apply when the manifest row is gone (avoids toast spam / races).
-  if (!snapshotExists(id)) return
+  // WHY: FIFO eviction / TOCTOU — manifest row gone; do not call apply (useVfsSnapshotRollback would toast error too).
+  if (!snapshotExists(id)) {
+    toastr.warning('该还原点已不可用（可能刚被 FIFO 移出列表），本次未执行回滚。')
+    return
+  }
   // WHY: align with editor rollback — block duplicate async applies while one is in flight.
-  if (machine.state.status === 'rollingBack' || machine.state.status === 'batchRollingBack') return
+  if (machine.state.status === 'rollingBack' || machine.state.status === 'batchRollingBack') {
+    toastr.info('已有回滚正在进行，请稍候。')
+    return
+  }
 
   machine.dispatch({ type: 'ROLLBACK_REQUEST' })
   let rollbackSucceeded = false
@@ -80,6 +86,8 @@ async function rollbackLogSnapshot(snapshotId: string): Promise<void> {
     } catch {
       /* refreshLogs is sync and non-throwing today; swallow defensively for audit semantics */
     }
+    // WHY: apply + store refresh are silent; users otherwise cannot tell success from no-op without watching files.
+    toastr.success('已回滚到该批次前的还原点。')
   }
 }
 
