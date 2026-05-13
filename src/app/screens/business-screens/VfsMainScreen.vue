@@ -1568,7 +1568,8 @@ async function handleEditorSaveRequested(): Promise<void> {
   flex: 1 1 0;
   min-width: 0;
   margin-left: 0;
-  justify-content: flex-start;
+  /* WHY: back stays left; preview/save/prev/next group to the right within the flex remainder. */
+  justify-content: flex-end;
   flex-wrap: nowrap;
   box-sizing: border-box;
 }
