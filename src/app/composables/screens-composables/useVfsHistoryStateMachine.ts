@@ -1,3 +1,4 @@
+import { reactive } from 'vue'
 import type { VfsErrorCode } from '@/app/constants/vfsErrorCodes'
 
 type VfsHistoryStatus = 'idle' | 'saving' | 'rollingBack' | 'batchRollingBack' | 'failed' | 'succeeded'
@@ -20,7 +21,8 @@ interface VfsHistoryState {
 }
 
 export function createVfsHistoryStateMachine() {
-  const state: VfsHistoryState = { status: 'idle' }
+  // WHY: plain object mutations are invisible to Vue; reactive wrapper keeps status pills in sync.
+  const state = reactive<VfsHistoryState>({ status: 'idle' })
 
   const markFailed = (errorCode: VfsErrorCode, message: string) => {
     state.status = 'failed'
