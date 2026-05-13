@@ -1548,8 +1548,8 @@ async function handleEditorSaveRequested(): Promise<void> {
 }
 
 /*
-  WHY: `data-layout` mirrors `innerWidth < 1024` — two rows only: (1) back + ellipsis title, (2) full-width action
-  strip. `flex-basis: 100%` on chrome forces a wrap after the first flex line without a DOM change.
+  WHY: `data-layout` mirrors `innerWidth < 1024` — two rows: (1) title full-width, (2) back + all chrome buttons.
+  Title uses `order: -1` + `flex-basis: 100%` so it visually precedes siblings without reordering DOM.
 */
 [data-layout='mobile'] .vfs-preview-top-bar {
   flex-direction: row;
@@ -1559,14 +1559,16 @@ async function handleEditorSaveRequested(): Promise<void> {
 }
 
 [data-layout='mobile'] .vfs-preview-top-bar__title {
-  flex: 1 1 0;
+  order: -1;
+  flex: 0 0 100%;
+  width: 100%;
+  max-width: 100%;
   min-width: 0;
 }
 
 [data-layout='mobile'] .vfs-preview-chrome-actions {
-  flex-basis: 100%;
-  width: 100%;
-  max-width: 100%;
+  flex: 1 1 0;
+  min-width: 0;
   margin-left: 0;
   justify-content: flex-start;
   flex-wrap: nowrap;
