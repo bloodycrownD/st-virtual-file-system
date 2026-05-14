@@ -30,6 +30,7 @@ import VfsTabShellScreen from '@/app/screens/pure-screens/VfsTabShellScreen.vue'
 import WorkTreeScreen from '@/app/screens/pure-screens/WorkTreeScreen.vue'
 import { useVfsCheckpointRollback } from '@/app/composables/components-composables/useVfsCheckpointRollback'
 import { createVfsHistoryStateMachine } from '@/app/composables/screens-composables/useVfsHistoryStateMachine'
+import { useVfsPreviewFullscreen } from '@/app/composables/screens-composables/useVfsPreviewFullscreen'
 import { VFS_ERROR_CODES } from '@/app/constants/vfsErrorCodes'
 import { vfsPersistenceStore, vfsCheckpointService } from '@/app/stores/vfs-store-singleton'
 import type { VfsSnapshot } from '@/domain/vfs/types'
@@ -104,6 +105,8 @@ const createModalOpen = ref(false)
 const createKind = ref<'file' | 'directory'>('directory')
 const codec = new DeflateContentCodec()
 const tabShellRef = ref<VfsTabShellExposed | null>(null)
+const previewBodyEl = ref<HTMLElement | null>(null)
+const previewFullscreen = useVfsPreviewFullscreen(previewBodyEl)
 const unsavedDialogOpen = ref(false)
 const pendingEditorLeave = ref<PendingEditorLeave | null>(null)
 /** Preview vs source toggle for editor mode; lifted here so back + preview + save share one top bar. */
@@ -754,6 +757,15 @@ function restoreViewerOriginOrFallbackToList(): void {
   requestModeChange('list')
 }
 
+/** Preview back: exit browser fullscreen first; only then navigate back to list (see PRD / spec). */
+async function onPreviewBackClick(): Promise<void> {
+  if (previewFullscreen.isActive) {
+    await previewFullscreen.exit()
+    return
+  }
+  restoreViewerOriginOrFallbackToList()
+}
+
 function onOpened(path: string): void {
   currentDirectoryPath.value = path
   activeContextPath.value = null
@@ -1233,16 +1245,21 @@ async function handleEditorSaveRequested(): Promise<void> {
       </div>
 
       <div v-else-if="isPreviewStage" class="vfs-preview-stack" data-testid="vfs-preview-stack">
-        <section class="vfs-preview-body">
+        <section
+          ref="previewBodyEl"
+          class="vfs-preview-body"
+          data-testid="vfs-preview-body"
+          :class="{ 'vfs-preview-body--fullscreen': previewFullscreen.isActive }"
+        >
           <header class="vfs-preview-top-bar">
             <div class="vfs-preview-top-bar__left" data-testid="vfs-preview-top-bar-left">
               <button
                 type="button"
                 class="menu_button vfs-preview-back-button"
                 data-testid="vfs-preview-back"
-                aria-label="返回"
-                title="返回"
-                @click="restoreViewerOriginOrFallbackToList"
+                :aria-label="previewFullscreen.isActive ? '退出全屏' : '返回'"
+                :title="previewFullscreen.isActive ? '退出全屏' : '返回'"
+                @click="onPreviewBackClick()"
               >
                 <i class="fa-solid fa-arrow-left" aria-hidden="true" />
               </button>
@@ -1258,6 +1275,33 @@ async function handleEditorSaveRequested(): Promise<void> {
               </p>
             </div>
             <div class="vfs-preview-chrome-actions">
+              <button
+                type="button"
+                class="menu_button vfs-preview-chrome-button"
+                data-testid="vfs-preview-fullscreen-toggle"
+                :title="
+                  previewFullscreen.isSupported
+                    ? previewFullscreen.isActive
+                      ? '退出全屏'
+                      : '全屏阅读'
+                    : '当前环境不支持全屏'
+                "
+                :aria-label="
+                  previewFullscreen.isSupported
+                    ? previewFullscreen.isActive
+                      ? '退出全屏'
+                      : '全屏阅读'
+                    : '当前环境不支持全屏'
+                "
+                :disabled="!previewFullscreen.isSupported"
+                @click="void previewFullscreen.toggle()"
+              >
+                <i
+                  class="fa-solid"
+                  :class="previewFullscreen.isActive ? 'fa-compress' : 'fa-expand'"
+                  aria-hidden="true"
+                />
+              </button>
               <button
                 type="button"
                 class="menu_button vfs-preview-chrome-button"
@@ -1416,6 +1460,14 @@ async function handleEditorSaveRequested(): Promise<void> {
   gap: 8px;
   min-height: 0;
   flex: 1 1 auto;
+}
+
+/* WHY: fullscreen element needs its own backdrop tint; 100dvh avoids mobile URL bar jump vs 100vh. */
+.vfs-preview-body--fullscreen {
+  box-sizing: border-box;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--SmartThemeBlurTintColor, rgba(20, 20, 20, 0.92));
 }
 
 .vfs-preview-top-bar {
