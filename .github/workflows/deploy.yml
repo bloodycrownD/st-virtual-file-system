@@ -15,11 +15,11 @@ jobs:
 
     steps:
       - name: Checkout tag
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         # Default ref is the tag (or commit) that triggered the workflow — do not pin `master`.
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: '20'
 
@@ -38,7 +38,7 @@ jobs:
           echo "node_modules/" >> deploy/dist/.gitignore
 
       - name: Deploy to dist branch
-        uses: peaceiris/actions-gh-pages@v3
+        uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./deploy
