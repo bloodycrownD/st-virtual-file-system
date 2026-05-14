@@ -51,6 +51,7 @@ import {
 } from '@/domain/work-tree/work-tree-engine'
 import { mapVfsMutationError, toVfsErrorToast } from '@/app/utils/vfsErrorMapper'
 import { createEmptyVfsSnapshot, serializeVfsSnapshot } from '@/infra/persistence/vfs-snapshot.schema'
+import { splitYamlFrontMatter } from '@/domain/markdown/markdown-frontmatter'
 
 type VfsScreenScope = 'chat' | 'template'
 type VfsScreenTab = 'files' | 'history' | 'worktree'
@@ -645,6 +646,16 @@ const shouldShowPreviewMetadata = computed(() => {
   if (mode.value === 'editor') return editorPreviewMode.value
   return mode.value === 'reader' || mode.value === 'slideshow'
 })
+/** UTF-16 body length after YAML fence strip; matches PRD “正文”口径 (see `splitYamlFrontMatter`). */
+const previewCharacterCount = computed(() => {
+  if (!shouldShowPreviewMetadata.value) return 0
+  const markdown =
+    mode.value === 'slideshow' ? (slideshowPages.value[viewerIndex.value]?.content ?? '') : editorContent.value
+  return splitYamlFrontMatter(markdown).body.length
+})
+const previewMetaTitle = computed(
+  () => `创建: ${currentViewerCreatedAtText} | 更新: ${currentViewerUpdatedAtText} | 字数: ${previewCharacterCount}`,
+)
 const shouldUseFlowPreviewMeta = computed(() => layoutMode.value === 'mobile' || viewportHeight.value < 680)
 const canGoPrevSlideshowPage = computed(() => viewerIndex.value > 0)
 const canGoNextSlideshowPage = computed(() => viewerIndex.value < viewerFilePaths.value.length - 1)
@@ -1331,10 +1342,11 @@ async function handleEditorSaveRequested(): Promise<void> {
               v-if="shouldShowPreviewMetadata"
               :class="['vfs-preview-meta', shouldUseFlowPreviewMeta ? 'vfs-preview-meta--flow' : 'vfs-preview-meta--anchored']"
               data-testid="vfs-preview-meta"
-              :title="`创建: ${currentViewerCreatedAtText} | 更新: ${currentViewerUpdatedAtText}`"
+              :title="previewMetaTitle"
             >
-              <span>创建: {{ currentViewerCreatedAtText }}</span>
-              <span>更新: {{ currentViewerUpdatedAtText }}</span>
+              <span data-testid="vfs-preview-meta-created">创建: {{ currentViewerCreatedAtText }}</span>
+              <span data-testid="vfs-preview-meta-updated">更新: {{ currentViewerUpdatedAtText }}</span>
+              <span data-testid="vfs-preview-meta-char-count">字数: {{ previewCharacterCount }}</span>
             </footer>
           </section>
         </section>
@@ -1505,7 +1517,8 @@ async function handleEditorSaveRequested(): Promise<void> {
 }
 
 .vfs-preview-content-frame--meta-anchored {
-  padding-bottom: 34px;
+  /* WHY: footer can wrap to two rows after adding character count + flex-wrap meta. */
+  padding-bottom: 52px;
 }
 
 .vfs-editor-stage {
@@ -1527,13 +1540,17 @@ async function handleEditorSaveRequested(): Promise<void> {
 }
 
 .vfs-preview-meta {
-  display: inline-flex;
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 10px;
+  justify-content: flex-end;
+  column-gap: 10px;
+  row-gap: 6px;
   font-size: 12px;
   line-height: 1.3;
   opacity: 0.72;
-  white-space: nowrap;
+  max-width: 100%;
+  text-align: right;
 }
 
 .vfs-preview-meta--anchored {
