@@ -1,10 +1,11 @@
 import { createApp, type App as VueApp } from 'vue'
-import VfsMainScreen from '@/app/screens/business-screens/VfsMainScreen.vue'
 import {
   emitVfsEvent,
   requestVfsPopupClose,
   VFS_POPUP_CLOSED,
 } from '@/app/composables/components-composables/useVfsMessageHooks'
+import { exitFullscreenIfContainedBy } from '@/app/composables/screens-composables/useVfsPreviewFullscreen'
+import VfsMainScreen from '@/app/screens/business-screens/VfsMainScreen.vue'
 
 const POPUP_ID = 'st-vfs-popup'
 const POPUP_APP_ID = 'st-vfs-popup-app'
@@ -27,6 +28,8 @@ export function useVfsPopupLifecycle() {
     if (!popup || disposeInProgress) return
     disposeInProgress = true
     if (popupApp) {
+      // WHY: element fullscreen can outlive Vue teardown; exit before unmount so the host dialog is not stuck behind a blank layer.
+      exitFullscreenIfContainedBy(popup)
       popupApp.unmount()
       popupApp = null
     }
