@@ -78,6 +78,8 @@
 
 仓库用 Vue 3 + TypeScript + Vite 构建；扩展入口为 `src/main.ts`，构建产物为 `dist/index.js`（见 `manifest.json`）。
 
+**预览全屏（移动端）**：文件预览顶栏提供「全屏」时，依赖浏览器的 **Fullscreen API**（对预览内容区 `requestFullscreen`）。部分环境（尤其 **iOS / 移动 Safari**）对「非视频元素」全屏支持不完整或不可用；此时按钮会禁用或通过提示说明，属浏览器能力限制而非扩展逻辑错误。
+
 ```bash
 npm install
 npm run build
