@@ -16,6 +16,7 @@ import { VFS_POPUP_BEFORE_CLOSE } from '@/app/composables/components-composables
 import { vfsPersistenceStore } from '@/app/stores/vfs-store-singleton'
 import { DeflateContentCodec } from '@/infra/serialization/deflate-codec'
 import type { VfsSnapshot } from '@/domain/vfs/types'
+import { splitYamlFrontMatter } from '@/domain/markdown/markdown-frontmatter'
 
 const dispatchSpy = vi.fn()
 const useVfsCheckpointRollbackMock = vi.fn<(checkpointId: string) => Promise<boolean>>()
@@ -971,6 +972,8 @@ describe('vfs ui cr loop fixes', () => {
     const metadata = wrapper.get('[data-testid="vfs-preview-meta"]')
     expect(metadata.text()).toContain('创建:')
     expect(metadata.text()).toContain('更新:')
+    expect(metadata.text()).toContain('字数:')
+    expect(wrapper.get('[data-testid="vfs-preview-meta-char-count"]').text()).toMatch(/字数:\s*\d+/)
 
     const frame = wrapper.get('[data-testid="vfs-preview-content-frame"]')
     expect(frame.classes()).toContain('vfs-preview-content-frame')
@@ -1025,14 +1028,42 @@ describe('vfs ui cr loop fixes', () => {
     await selectDocsFile(wrapper)
     await triggerEntityAction(wrapper, 'open', 'docs.md')
 
-    const metadata = wrapper.get('[data-testid="vfs-preview-meta"]')
-    const createdText = metadata.findAll('span')[0]?.text() ?? ''
-    const updatedText = metadata.findAll('span')[1]?.text() ?? ''
+    const createdText = wrapper.get('[data-testid="vfs-preview-meta-created"]').text()
+    const updatedText = wrapper.get('[data-testid="vfs-preview-meta-updated"]').text()
 
     expect(createdText).toContain(expectedCreated)
     expect(updatedText).toContain(expectedUpdated)
     expect(createdText.replace('创建:', '').trim()).not.toBe('—')
     expect(updatedText.replace('更新:', '').trim()).not.toBe('—')
+  })
+
+  it('preview footer character count excludes YAML front matter', async () => {
+    const fmDoc = '---\na: 1\n---\n# Hello\n\nX'
+    vfsPersistenceStore.updateChat((draft) => {
+      const node = draft.chatVfsSnapshot.nodes['node-3']
+      if (!node || node.type !== 'file') return draft
+      return {
+        ...draft,
+        chatVfsSnapshot: {
+          ...draft.chatVfsSnapshot,
+          nodes: {
+            ...draft.chatVfsSnapshot.nodes,
+            'node-3': {
+              ...node,
+              size: fmDoc.length,
+              content: { encoding: 'plain', data: fmDoc, originalSize: fmDoc.length },
+            },
+          },
+        },
+      }
+    })
+    const wrapper = mountTracked(VfsMainScreen)
+    await selectDocsFile(wrapper)
+    await triggerEntityAction(wrapper, 'open', 'docs.md')
+    await nextTick()
+
+    const expected = splitYamlFrontMatter(fmDoc).body.length
+    expect(wrapper.get('[data-testid="vfs-preview-meta-char-count"]').text()).toContain(`字数: ${expected}`)
   })
 
   it('keeps metadata visibility parity: preview hides gutter, source edit shows gutter', async () => {
