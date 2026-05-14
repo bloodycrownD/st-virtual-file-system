@@ -104,6 +104,14 @@ describe('parseWorkTreeConfig + serializeWorkTreeConfig', () => {
     expect(again?.fileInclusionByPath['/a.txt']).toBe('explicit-include')
   })
 
+  it('round-trips explicit directory gate false', () => {
+    const cfg = baseWorkTree({
+      directoryRuleEnabledByPath: { '/docs': false },
+    })
+    const again = parseWorkTreeConfig(serializeWorkTreeConfig(cfg))
+    expect(again?.directoryRuleEnabledByPath['/docs']).toBe(false)
+  })
+
   it('ensure default root head is 1000', () => {
     const d = createDefaultWorkTreeConfig()
     expect(d.directoryRuleByPath['/']?.headCount).toBe(1000)
@@ -142,7 +150,7 @@ describe('resolveWorkTreeFileRowState / renderVirtualWorkTree', () => {
       directoryRuleByPath: {
         '/docs': { sortField: 'name', sortDirection: 'asc', headCount: 0, tailCount: 0, fill: 'omit' },
       },
-      directoryRuleEnabledByPath: {},
+      directoryRuleEnabledByPath: { '/docs': false },
     })
 
     expect(resolveWorkTreeFileRowState(snapshot, workTree, '/docs/note.md').included).toBe(true)
@@ -151,7 +159,24 @@ describe('resolveWorkTreeFileRowState / renderVirtualWorkTree', () => {
     expect(out).toContain('1|note body')
   })
 
-  it('follow-parent under non-root is excluded when directory rule is off', () => {
+  it('follow-parent under non-root is excluded when directory rule gate is explicitly off', () => {
+    const root = createDir('root', '/', '', ['docs'])
+    const docs = createDir('docs', '/docs', 'docs', ['note'])
+    const note = createFile('note', '/docs/note.md', 'note.md', 'note body', 10, 'docs')
+    const snapshot = createSnapshot([root, docs, note])
+
+    const workTree = baseWorkTree({
+      directoryRuleByPath: {
+        '/docs': { sortField: 'name', sortDirection: 'asc', headCount: 10, tailCount: 0, fill: 'filename' },
+      },
+      directoryRuleEnabledByPath: { '/docs': false },
+    })
+
+    expect(resolveWorkTreeFileRowState(snapshot, workTree, '/docs/note.md').included).toBe(false)
+    expect(renderVirtualWorkTree(snapshot, workTree)).toBe('')
+  })
+
+  it('follow-parent under non-root follows directory rule when gate omitted (default on)', () => {
     const root = createDir('root', '/', '', ['docs'])
     const docs = createDir('docs', '/docs', 'docs', ['note'])
     const note = createFile('note', '/docs/note.md', 'note.md', 'note body', 10, 'docs')
@@ -164,8 +189,8 @@ describe('resolveWorkTreeFileRowState / renderVirtualWorkTree', () => {
       directoryRuleEnabledByPath: {},
     })
 
-    expect(resolveWorkTreeFileRowState(snapshot, workTree, '/docs/note.md').included).toBe(false)
-    expect(renderVirtualWorkTree(snapshot, workTree)).toBe('')
+    expect(resolveWorkTreeFileRowState(snapshot, workTree, '/docs/note.md').included).toBe(true)
+    expect(renderVirtualWorkTree(snapshot, workTree)).toContain('path="/docs/note.md"')
   })
 
   it('root head=3 + fill omit includes only first three follow-parent children (sorted by name)', () => {

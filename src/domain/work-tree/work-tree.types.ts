@@ -29,8 +29,15 @@ export interface WorkTreeConfig {
   /**
    * Non-root only: gate whether `directoryRuleByPath[dir]` applies to direct children.
    * WHY: `/` is always logically enabled; never persist `false` for `ROOT_PATH` (SPEC).
+   * Semantics: **omitted path = gate on** (default). Persist **`false`** only when the user explicitly turns the directory off.
    */
   directoryRuleEnabledByPath: Record<string, boolean>
+}
+
+/** Whether `directoryRuleByPath` applies to this directory's direct children (`follow-parent` files). Root is always on. */
+export function isWorkTreeDirectoryRuleGateOn(config: WorkTreeConfig, directoryPath: string): boolean {
+  if (directoryPath === ROOT_PATH) return true
+  return config.directoryRuleEnabledByPath[directoryPath] !== false
 }
 
 /** Default body for `/` and fallback when a directory has no stored rule. */
@@ -114,7 +121,8 @@ export function parseWorkTreeConfig(raw: unknown): WorkTreeConfig | null {
   if (o.directoryRuleEnabledByPath && typeof o.directoryRuleEnabledByPath === 'object') {
     for (const [k, v] of Object.entries(o.directoryRuleEnabledByPath as Record<string, unknown>)) {
       if (k === ROOT_PATH) continue // WHY: root is always-on; ignore any persisted root gate.
-      directoryRuleEnabledByPath[k] = v === true
+      if (v === true) directoryRuleEnabledByPath[k] = true
+      else if (v === false) directoryRuleEnabledByPath[k] = false
     }
   }
 
@@ -144,6 +152,7 @@ export function normalizeWorkTreeConfig(config: WorkTreeConfig): WorkTreeConfig 
   for (const [k, v] of Object.entries(config.directoryRuleEnabledByPath)) {
     if (k === ROOT_PATH) continue
     if (v === true) directoryRuleEnabledByPath[k] = true
+    else if (v === false) directoryRuleEnabledByPath[k] = false
   }
 
   const fileInclusionByPath: Record<string, WorkTreeFileInclusionMode> = {}
@@ -172,6 +181,7 @@ export function serializeWorkTreeConfig(config: WorkTreeConfig): Record<string, 
   for (const [k, v] of Object.entries(normalized.directoryRuleEnabledByPath)) {
     if (k === ROOT_PATH) continue
     if (v === true) enabledOut[k] = true
+    else if (v === false) enabledOut[k] = false
   }
   return {
     schemaVersion: 2,

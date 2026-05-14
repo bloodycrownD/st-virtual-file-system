@@ -8,7 +8,11 @@ import type { VfsSnapshot, VfsDirectoryNodeSnapshot, VfsFileNodeSnapshot, VfsNod
 import { normalizePath, basename as vfsBasename, dirname, ROOT_PATH } from '@/domain/vfs/path-utils'
 import { DeflateContentCodec } from '@/infra/serialization/deflate-codec'
 import type { DirectoryRule, WorkTreeConfig, WorkTreeFileInclusionMode } from '@/domain/work-tree/work-tree.types'
-import { DEFAULT_ROOT_DIRECTORY_RULE, ensureWorkTreeConfig } from '@/domain/work-tree/work-tree.types'
+import {
+  DEFAULT_ROOT_DIRECTORY_RULE,
+  ensureWorkTreeConfig,
+  isWorkTreeDirectoryRuleGateOn,
+} from '@/domain/work-tree/work-tree.types'
 
 const codec = new DeflateContentCodec()
 
@@ -149,9 +153,7 @@ export function resolveWorkTreeFileRowState(
   if (mode === 'explicit-include') return { included: true, renderMode: 'full' }
 
   const parentPath = dirname(path)
-  const parentEnabled =
-    parentPath === ROOT_PATH ? true : normalized.directoryRuleEnabledByPath[parentPath] === true
-  if (!parentEnabled) return { included: false, renderMode: 'full' }
+  if (!isWorkTreeDirectoryRuleGateOn(normalized, parentPath)) return { included: false, renderMode: 'full' }
 
   const rule = effectiveDirectoryRule(normalized, parentPath)
   const allChildren = directChildFiles(snapshot, parentPath)
@@ -195,7 +197,7 @@ function buildEmissionOrder(snapshot: VfsSnapshot, config: WorkTreeConfig, modes
 
   const listRuleForDirectory = (dirPath: string): DirectoryRule => {
     if (dirPath === ROOT_PATH) return effectiveDirectoryRule(normalized, ROOT_PATH)
-    if (normalized.directoryRuleEnabledByPath[dirPath] !== true) {
+    if (!isWorkTreeDirectoryRuleGateOn(normalized, dirPath)) {
       return { ...DEFAULT_ROOT_DIRECTORY_RULE, sortField: 'name', sortDirection: 'asc' }
     }
     return effectiveDirectoryRule(normalized, dirPath)

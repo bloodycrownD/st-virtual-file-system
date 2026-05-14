@@ -44,6 +44,7 @@ import {
   type WorkTreeConfig,
   type WorkTreeFileInclusionMode,
   ensureWorkTreeConfig,
+  isWorkTreeDirectoryRuleGateOn,
 } from '@/domain/work-tree/work-tree.types'
 import {
   getWorkTreeFileInclusionMode,
@@ -193,8 +194,8 @@ function resolveDirectoryListRule(config: WorkTreeConfig, directoryPath: string)
   if (directoryPath === ROOT_PATH) {
     return { ...DEFAULT_ROOT_DIRECTORY_RULE, ...config.directoryRuleByPath[ROOT_PATH] }
   }
-  // WHY: list order matches engine list pass — disabled non-root dirs sort by name asc only (SPEC).
-  if (config.directoryRuleEnabledByPath[directoryPath] !== true) {
+  // WHY: list order matches engine list pass — only explicit `false` turns the directory gate off.
+  if (!isWorkTreeDirectoryRuleGateOn(config, directoryPath)) {
     return { ...DEFAULT_ROOT_DIRECTORY_RULE, sortField: 'name', sortDirection: 'asc' }
   }
   return { ...DEFAULT_ROOT_DIRECTORY_RULE, ...config.directoryRuleByPath[directoryPath] }
@@ -552,7 +553,7 @@ const directoryEntries = computed(() => {
         ...workTreeFileRowBadge(mode),
       }
     }
-    const ruleOn = entry.path === ROOT_PATH || cfg.directoryRuleEnabledByPath[entry.path] === true
+    const ruleOn = isWorkTreeDirectoryRuleGateOn(cfg, entry.path)
     return {
       ...entry,
       enabled: ruleOn,
@@ -949,10 +950,16 @@ function handleEntityAction(action: VfsEntityAction, entityOverride?: VfsManager
           return { ...config, fileInclusionByPath }
         }
         if (path === ROOT_PATH) return config
-        const enabled = config.directoryRuleEnabledByPath[path] === true
+        const gateOn = isWorkTreeDirectoryRuleGateOn(config, path)
+        const directoryRuleEnabledByPath = { ...config.directoryRuleEnabledByPath }
+        if (gateOn) {
+          directoryRuleEnabledByPath[path] = false
+        } else {
+          delete directoryRuleEnabledByPath[path]
+        }
         return {
           ...config,
-          directoryRuleEnabledByPath: { ...config.directoryRuleEnabledByPath, [path]: !enabled },
+          directoryRuleEnabledByPath,
         }
       })
       syncReactiveWorkTree()
