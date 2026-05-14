@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { VFS_ERROR_CODES } from '@/app/constants/vfsErrorCodes'
-import { renderSafeContent } from '@/app/services/vfs/renderPipeline'
+import { renderSafeMarkdownDocument } from '@/app/services/vfs/renderPipeline'
 import { toVfsErrorToast } from '@/app/utils/vfsErrorMapper'
 
 const props = defineProps<{ html: string }>()
 
 const safeHtml = computed(() => {
-  const result = renderSafeContent(props.html)
+  const result = renderSafeMarkdownDocument(props.html)
   if (!result.ok) {
     toastr.error(toVfsErrorToast(result.errorCode ?? VFS_ERROR_CODES.RENDER_FAILED, result.message))
     return ''
@@ -83,5 +83,68 @@ const safeHtml = computed(() => {
 .vfs-reader :deep(img) {
   max-width: 100%;
   height: auto;
+}
+
+.vfs-reader :deep(.vfs-md-frontmatter) {
+  margin: 0 0 14px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.18);
+  font-size: 12px;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.vfs-reader :deep(.vfs-md-frontmatter__row) {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 6px 10px;
+  margin: 6px 0;
+}
+
+.vfs-reader :deep(.vfs-md-frontmatter__row:first-child) {
+  margin-top: 0;
+}
+
+.vfs-reader :deep(.vfs-md-frontmatter__row:last-child) {
+  margin-bottom: 0;
+}
+
+.vfs-reader :deep(.vfs-md-frontmatter__key) {
+  flex: 0 0 auto;
+  max-width: 100%;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.88);
+  opacity: 0.95;
+}
+
+.vfs-reader :deep(.vfs-md-frontmatter__value) {
+  flex: 1 1 12rem;
+  min-width: 0;
+  opacity: 0.9;
+  word-break: break-word;
+}
+
+.vfs-reader :deep(.vfs-md-frontmatter__value--block) {
+  margin-top: 6px;
+  max-height: none;
+}
+
+.vfs-reader :deep(.vfs-md-frontmatter__details) {
+  flex: 1 1 12rem;
+  min-width: 0;
+}
+
+.vfs-reader :deep(.vfs-md-frontmatter__summary) {
+  cursor: pointer;
+  user-select: none;
+  opacity: 0.85;
+  list-style: none;
+}
+
+.vfs-reader :deep(.vfs-md-frontmatter__summary::-webkit-details-marker) {
+  display: none;
 }
 </style>
