@@ -201,3 +201,31 @@
   justify-content: flex-end;
   gap: 8px;
 }
+
+/*
+  Mobile / Narrow screen optimizations.
+  Breakpoint matches `VfsMainScreen.vue` (1024px).
+*/
+@media (max-width: 1023px) {
+  #st-vfs-popup.st-vfs-popup {
+    /* More aggressive filling on mobile */
+    height: 92vh;
+    max-height: 96vh;
+    border-radius: 8px;
+  }
+
+  #st-vfs-popup #st-vfs-popup-app {
+    padding: 8px;
+  }
+
+  #st-vfs-popup .st-vfs-popup__header {
+    padding: 8px 10px 0;
+  }
+
+  #st-vfs-popup .st-vfs-popup__close {
+    min-width: 32px;
+    height: 32px;
+    line-height: 32px;
+    font-size: 24px;
+  }
+}

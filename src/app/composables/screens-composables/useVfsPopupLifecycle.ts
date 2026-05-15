@@ -69,8 +69,8 @@ export function useVfsPopupLifecycle() {
     popup.id = POPUP_ID
     popup.classList.add(POPUP_CLASS)
     popup.setAttribute('role', 'dialog')
-    popup.style.width = '80vw'
-    popup.style.maxWidth = '960px'
+    popup.style.width = 'min(960px, 96vw)'
+    popup.style.maxWidth = '100vw'
     if (options?.title) {
       popup.setAttribute('aria-label', options.title)
     }
