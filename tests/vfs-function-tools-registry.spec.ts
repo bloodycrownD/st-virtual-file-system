@@ -9,6 +9,7 @@ import type { FunctionToolDefinition } from '../../global'
 import {
   registerVfsFunctionTools,
   shouldRegisterVfsTools,
+  subscribeVfsFunctionToolGateSync,
   syncVfsFunctionToolRegistration,
   unregisterVfsFunctionTools,
 } from '@/infra/sillytarvern/function-tools/vfs-function-tool-registry'
@@ -200,5 +201,65 @@ describe('vfs function tools registry', () => {
     unregisterVfsFunctionTools()
     unregisterVfsFunctionTools()
     expect(unregisterFunctionTool).toHaveBeenCalledTimes(14)
+  })
+
+  it('cold start with virtual tools off does not register (subscribeVfsFunctionToolGateSync)', () => {
+    const store = createVfsPersistenceStore(createAdapterMock())
+    store.init()
+    store.updateExtension((draft) => ({ ...draft, virtualToolCallEnabled: false }))
+    const runtime = createRuntime(store)
+
+    registerFunctionTool.mockClear()
+    unregisterFunctionTool.mockClear()
+    subscribeVfsFunctionToolGateSync(runtime, store)
+
+    expect(registerFunctionTool).not.toHaveBeenCalled()
+    expect(unregisterFunctionTool).toHaveBeenCalledTimes(7)
+  })
+
+  it('gate subscribe ignores chat-only store updates', () => {
+    const store = createVfsPersistenceStore(createAdapterMock())
+    store.init()
+    const runtime = createRuntime(store)
+
+    subscribeVfsFunctionToolGateSync(runtime, store)
+    const registerCallsAfterInit = registerFunctionTool.mock.calls.length
+
+    store.updateChat((draft) => ({
+      ...draft,
+      chatVfsLogs: [
+        ...draft.chatVfsLogs,
+        {
+          id: 'log-1',
+          timestamp: Date.now(),
+          chatId: 'c',
+          messageId: 'm',
+          batchId: 'b',
+          toolName: 'batch',
+          status: 'success',
+          durationMs: 1,
+          argsSummary: 'test',
+        },
+      ],
+    }))
+
+    expect(registerFunctionTool.mock.calls.length).toBe(registerCallsAfterInit)
+  })
+
+  it('action returns GATED_OFF without executing when tools disabled', async () => {
+    const store = createVfsPersistenceStore(createAdapterMock())
+    store.init()
+    const runtime = createRuntime(store)
+    const executeSingleTool = vi.spyOn(runtime, 'executeSingleTool')
+
+    registerVfsFunctionTools(runtime, store)
+    store.updateExtension((draft) => ({ ...draft, enabled: false }))
+    const readDef = registered.find((d) => d.name === 'vfs_read')!
+    const out = await readDef.action({ path: '/x.txt' })
+    const parsed = JSON.parse(out)
+
+    expect(parsed.ok).toBe(false)
+    expect(parsed.errorCode).toBe('VFS_TOOLS_DISABLED')
+    expect(executeSingleTool).not.toHaveBeenCalled()
   })
 })

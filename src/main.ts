@@ -34,8 +34,7 @@ import { ExtensionVfsTemplateService } from '@/app/services/vfs-runtime/extensio
 import { VirtualToolMessageHandler } from '@/app/services/message/virtual-tool-message-handler'
 import { registerVfsMacros } from '@/infra/sillytarvern/macros/register-vfs-macros'
 import {
-  registerVfsFunctionTools,
-  syncVfsFunctionToolRegistration,
+  subscribeVfsFunctionToolGateSync,
   unregisterVfsFunctionTools,
 } from '@/infra/sillytarvern/function-tools/vfs-function-tool-registry'
 import { mountVfsEntryButton } from '@/app/bootstrap/mountVfsEntry'
@@ -65,10 +64,7 @@ templateService.initializeChatFromTemplateIfNeeded()
 registerVfsChatReloadHook(templateService.initializeChatFromTemplateIfNeeded.bind(templateService))
 registerVfsMacros(vfsPersistenceStore, templateService.initializeChatFromTemplateIfNeeded.bind(templateService))
 const runtime = new ChatVfsRuntime(vfsPersistenceStore, new ToolDispatcher(), vfsCheckpointService, templateService)
-registerVfsFunctionTools(runtime, vfsPersistenceStore)
-vfsPersistenceStore.subscribe(() => {
-  syncVfsFunctionToolRegistration(runtime, vfsPersistenceStore)
-})
+const unsubscribeVfsFunctionTools = subscribeVfsFunctionToolGateSync(runtime, vfsPersistenceStore)
 const logs = new ChatVfsLogService(vfsPersistenceStore)
 const messageHandler = new VirtualToolMessageHandler(runtime, logs)
 const controller = createMessageController(createMessagePipeline(messageHandler))
@@ -77,6 +73,7 @@ mountVfsEntryButton()
 
 if (typeof window !== 'undefined') {
   window.addEventListener('beforeunload', () => {
+    unsubscribeVfsFunctionTools()
     unregisterVfsFunctionTools()
     unmountVfsEntry()
   })

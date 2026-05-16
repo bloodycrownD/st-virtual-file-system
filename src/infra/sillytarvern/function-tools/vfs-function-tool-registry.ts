@@ -38,9 +38,18 @@ export function shouldRegisterVfsTools(store: VfsPersistenceStore): boolean {
   return true
 }
 
-function createToolAction(runtime: ChatVfsRuntime, vfsName: string) {
+function createToolAction(runtime: ChatVfsRuntime, store: VfsPersistenceStore, vfsName: string) {
   const shortTool = VFS_TO_SHORT[vfsName]
   return async (args: Record<string, unknown>): Promise<string> => {
+    // Defense in depth: ST should not invoke when gated off, but block if unregister lagged.
+    if (!shouldRegisterVfsTools(store)) {
+      return JSON.stringify({
+        ok: false,
+        errorCode: 'VFS_TOOLS_DISABLED',
+        errorMessage:
+          'VFS function tools are unavailable (extension off, virtual tools off, or ST function calling unsupported).',
+      })
+    }
     try {
       const batch = runtime.executeSingleTool(shortTool, args ?? {})
       return formatFunctionToolResult(batch)
@@ -76,7 +85,7 @@ export function registerVfsFunctionTools(runtime: ChatVfsRuntime, store: VfsPers
       formatMessage: schema.formatMessage,
       stealth: false,
       shouldRegister: () => shouldRegisterVfsTools(store),
-      action: createToolAction(runtime, schema.name),
+      action: createToolAction(runtime, store, schema.name),
     })
   }
 }
@@ -108,4 +117,36 @@ export function syncVfsFunctionToolRegistration(
   } else {
     unregisterVfsFunctionTools()
   }
+}
+
+/** Tracks last gate so chat/log store updates do not re-register tools on every notify. */
+let lastRegistrationGate: boolean | null = null
+
+/**
+ * Initial sync + subscribe only when extension/ST gate flips.
+ * Chat-scoped mutations (snapshot, logs) must not unregister/register repeatedly.
+ */
+export function subscribeVfsFunctionToolGateSync(
+  runtime: ChatVfsRuntime,
+  store: VfsPersistenceStore,
+): () => void {
+  lastRegistrationGate = shouldRegisterVfsTools(store)
+  if (lastRegistrationGate) {
+    registerVfsFunctionTools(runtime, store)
+  } else {
+    unregisterVfsFunctionTools()
+  }
+
+  return store.subscribe(() => {
+    const gate = shouldRegisterVfsTools(store)
+    if (gate === lastRegistrationGate) {
+      return
+    }
+    lastRegistrationGate = gate
+    if (gate) {
+      registerVfsFunctionTools(runtime, store)
+    } else {
+      unregisterVfsFunctionTools()
+    }
+  })
 }
