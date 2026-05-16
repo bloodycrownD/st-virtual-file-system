@@ -13,6 +13,17 @@ declare global {
         [key: string]: unknown;
     }
 
+    interface FunctionToolDefinition {
+        name: string;
+        displayName?: string;
+        description: string;
+        parameters: Record<string, unknown>;
+        action: (args: Record<string, unknown>) => Promise<string> | string;
+        formatMessage?: (args: Record<string, unknown>) => string;
+        shouldRegister?: () => boolean;
+        stealth?: boolean;
+    }
+
     const SillyTavern: {
         getContext: () => {
             extensionSettings: Record<string, ExtensionSettings>;
@@ -26,6 +37,10 @@ declare global {
             event_types: EventTypes;
             registerMacro: (name: string, handler: (nonce: string) => string | unknown) => void;
             unregisterMacro: (name: string) => void;
+            registerFunctionTool: (definition: FunctionToolDefinition) => void;
+            unregisterFunctionTool: (name: string) => void;
+            isToolCallingSupported: () => boolean;
+            canPerformToolCalls?: (mode: string) => boolean;
         };
     };
 

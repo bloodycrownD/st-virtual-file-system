@@ -139,7 +139,16 @@ export class ChatVfsRuntime {
     return { ...result, checkpointId }
   }
 
+  /** Single-tool wrapper for Function Calling (`executeBatch` without `logContext`). */
+  executeSingleTool(
+    tool: string,
+    args: Record<string, unknown>,
+  ): ToolBatchExecutionResult & { checkpointId?: string } {
+    return this.executeBatch({ calls: [{ tool, args }] })
+  }
+
   isVirtualToolCallEnabled(): boolean {
-    return this.store.getState().extension.virtualToolCallEnabled
+    const ext = this.store.getState().extension
+    return ext.enabled && ext.virtualToolCallEnabled
   }
 }
