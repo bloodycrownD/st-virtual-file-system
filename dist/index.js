@@ -10793,8 +10793,15 @@ var ov = class {
 			checkpointId: s
 		};
 	}
+	executeSingleTool(e, t) {
+		return this.executeBatch({ calls: [{
+			tool: e,
+			args: t
+		}] });
+	}
 	isVirtualToolCallEnabled() {
-		return this.store.getState().extension.virtualToolCallEnabled;
+		let e = this.store.getState().extension;
+		return e.enabled && e.virtualToolCallEnabled;
 	}
 }, sv = class {
 	store;
@@ -11079,46 +11086,279 @@ function Cv(e, t) {
 	});
 }
 //#endregion
-//#region src/app/composables/screens-composables/useVfsEntryMount.ts
-var wv = "st-vfs-entry-button", Tv = ".vfsEntry", Ev = null;
+//#region src/infra/sillytarvern/function-tools/format-function-tool-result.ts
+function wv(e) {
+	let t = {
+		tool: e.tool,
+		ok: e.ok,
+		summary: e.summary
+	};
+	return e.data !== void 0 && (t.data = e.data), e.errorCode && (t.errorCode = e.errorCode), t;
+}
+function Tv(e) {
+	let t = {
+		ok: e.ok,
+		results: e.results.map(wv)
+	};
+	return e.ok || (e.errorCode && (t.errorCode = e.errorCode), e.errorMessage && (t.errorMessage = e.errorMessage)), JSON.stringify(t);
+}
+//#endregion
+//#region src/infra/sillytarvern/function-tools/vfs-function-tool-schemas.ts
+var Ev = "http://json-schema.org/draft-04/schema#";
 function Dv(e) {
+	return {
+		type: "string",
+		description: e
+	};
+}
+function Ov(e) {
+	return {
+		type: "number",
+		description: e
+	};
+}
+var kv = [
+	{
+		name: "vfs_read",
+		displayName: "VFS Read",
+		shortTool: "read",
+		description: "Read a file from the current chat virtual file system. Paths must start with `/`. Optional line/char limits tighten output.",
+		parameters: {
+			$schema: Ev,
+			type: "object",
+			properties: {
+				path: Dv("Virtual file path (required, e.g. `/notes/a.txt`)"),
+				startLine: Ov("1-based start line (default 1)"),
+				endLine: Ov("1-based end line (inclusive)"),
+				maxLines: Ov("Max lines to return (cannot exceed built-in cap)"),
+				maxChars: Ov("Max characters to return (cannot exceed built-in cap)")
+			},
+			required: ["path"]
+		},
+		formatMessage: (e) => `正在读取 ${String(e.path ?? "")}…`
+	},
+	{
+		name: "vfs_write",
+		displayName: "VFS Write",
+		shortTool: "write",
+		description: "Create or overwrite a file in the current chat virtual file system. Paths must start with `/`. Parent directories are created automatically.",
+		parameters: {
+			$schema: Ev,
+			type: "object",
+			properties: {
+				path: Dv("Virtual file path (required)"),
+				content: {
+					type: "string",
+					description: "Full file content to write (defaults to empty string)"
+				}
+			},
+			required: ["path"]
+		},
+		formatMessage: (e) => `正在写入 ${String(e.path ?? "")}…`
+	},
+	{
+		name: "vfs_append",
+		displayName: "VFS Append",
+		shortTool: "append",
+		description: "Append text to a file in the current chat virtual file system. Paths must start with `/`. Creates the file if missing.",
+		parameters: {
+			$schema: Ev,
+			type: "object",
+			properties: {
+				path: Dv("Virtual file path (required)"),
+				content: {
+					type: "string",
+					description: "Text to append (defaults to empty string)"
+				}
+			},
+			required: ["path"]
+		},
+		formatMessage: (e) => `正在追加 ${String(e.path ?? "")}…`
+	},
+	{
+		name: "vfs_delete",
+		displayName: "VFS Delete",
+		shortTool: "delete",
+		description: "Delete a file or directory in the current chat virtual file system. Set `recursive` to true only when intentionally removing a non-empty directory tree.",
+		parameters: {
+			$schema: Ev,
+			type: "object",
+			properties: {
+				path: Dv("Virtual file or directory path (required)"),
+				recursive: {
+					type: "boolean",
+					description: "Must be true to recursively delete a non-empty directory"
+				}
+			},
+			required: ["path"]
+		},
+		formatMessage: (e) => `正在删除 ${String(e.path ?? "")}…`
+	},
+	{
+		name: "vfs_update",
+		displayName: "VFS Update",
+		shortTool: "update",
+		description: "Replace a line range in a file when `expectedOldContent` exactly matches the current segment. Paths must start with `/`. Prevents silent line-drift overwrites.",
+		parameters: {
+			$schema: Ev,
+			type: "object",
+			properties: {
+				path: Dv("Virtual file path (required)"),
+				startLine: Ov("1-based start line (required, >= 1)"),
+				endLine: Ov("1-based end line (required, >= startLine)"),
+				expectedOldContent: {
+					type: "string",
+					description: "Exact text of the lines to replace (must match file)"
+				},
+				newContent: {
+					type: "string",
+					description: "Replacement content for the line range"
+				}
+			},
+			required: [
+				"path",
+				"startLine",
+				"endLine",
+				"expectedOldContent",
+				"newContent"
+			]
+		},
+		formatMessage: (e) => `正在更新 ${String(e.path ?? "")}…`
+	},
+	{
+		name: "vfs_list",
+		displayName: "VFS List",
+		shortTool: "list",
+		description: "List entries under a directory in the current chat virtual file system. Paths must start with `/`.",
+		parameters: {
+			$schema: Ev,
+			type: "object",
+			properties: { path: Dv("Virtual directory path (required)") },
+			required: ["path"]
+		},
+		formatMessage: (e) => `正在列出 ${String(e.path ?? "")}…`
+	},
+	{
+		name: "vfs_search",
+		displayName: "VFS Search",
+		shortTool: "search",
+		description: "Search file contents under a directory in the current chat virtual file system. Use `regex: true` for case-insensitive regex; otherwise substring match.",
+		parameters: {
+			$schema: Ev,
+			type: "object",
+			properties: {
+				query: {
+					type: "string",
+					description: "Search string (defaults to empty)"
+				},
+				path: {
+					type: "string",
+					description: "Root directory to search from (default `/`)"
+				},
+				regex: {
+					type: "boolean",
+					description: "When true, treat query as case-insensitive regex"
+				}
+			}
+		},
+		formatMessage: (e) => {
+			let t = typeof e.query == "string" ? e.query : "";
+			return t ? `正在搜索「${t}」…` : "正在搜索虚拟文件…";
+		}
+	}
+], Av = kv.map((e) => e.name), jv = Object.fromEntries(kv.map((e) => [e.name, e.shortTool]));
+function Mv(e) {
+	if (typeof SillyTavern > "u") return !1;
+	let t = SillyTavern.getContext();
+	if (!t.registerFunctionTool || !t.isToolCallingSupported?.()) return !1;
+	let n = e.getState().extension;
+	return !(!n.enabled || !n.virtualToolCallEnabled || t.canPerformToolCalls && !t.canPerformToolCalls("normal"));
+}
+function Nv(e, t, n) {
+	let r = jv[n];
+	return async (n) => {
+		if (!Mv(t)) return JSON.stringify({
+			ok: !1,
+			errorCode: "VFS_TOOLS_DISABLED",
+			errorMessage: "VFS function tools are unavailable (extension off, virtual tools off, or ST function calling unsupported)."
+		});
+		try {
+			return Tv(e.executeSingleTool(r, n ?? {}));
+		} catch (e) {
+			return JSON.stringify({
+				ok: !1,
+				errorMessage: e instanceof Error ? e.message : String(e)
+			});
+		}
+	};
+}
+function Pv(e, t) {
+	if (typeof SillyTavern > "u") return;
+	let n = SillyTavern.getContext();
+	if (n.registerFunctionTool) for (let r of kv) n.unregisterFunctionTool?.(r.name), n.registerFunctionTool({
+		name: r.name,
+		displayName: r.displayName,
+		description: r.description,
+		parameters: r.parameters,
+		formatMessage: r.formatMessage,
+		stealth: !1,
+		shouldRegister: () => Mv(t),
+		action: Nv(e, t, r.name)
+	});
+}
+function Fv() {
+	if (typeof SillyTavern > "u") return;
+	let e = SillyTavern.getContext();
+	if (e.unregisterFunctionTool) for (let t of Av) e.unregisterFunctionTool(t);
+}
+var Iv = null;
+function Lv(e, t) {
+	return Iv = Mv(t), Iv ? Pv(e, t) : Fv(), t.subscribe(() => {
+		let n = Mv(t);
+		n !== Iv && (Iv = n, n ? Pv(e, t) : Fv());
+	});
+}
+//#endregion
+//#region src/app/composables/screens-composables/useVfsEntryMount.ts
+var Rv = "st-vfs-entry-button", zv = ".vfsEntry", Bv = null;
+function Vv(e) {
 	if (typeof document > "u") return null;
 	let t = document.querySelector(".extraMesButtons");
 	if (!t) return null;
-	let n = t.querySelector(`#${wv}`) ?? (() => {
+	let n = t.querySelector(`#${Rv}`) ?? (() => {
 		let e = document.createElement("div");
-		return e.id = wv, e.className = "mes_button st-vfs-entry fa-solid fa-box-archive", e.title = "虚拟文件系统", e.setAttribute("aria-label", "虚拟文件系统"), e.tabIndex = 0, t.appendChild(e), e;
+		return e.id = Rv, e.className = "mes_button st-vfs-entry fa-solid fa-box-archive", e.title = "虚拟文件系统", e.setAttribute("aria-label", "虚拟文件系统"), e.tabIndex = 0, t.appendChild(e), e;
 	})();
 	n.className = "mes_button st-vfs-entry fa-solid fa-box-archive", n.title = "虚拟文件系统", n.setAttribute("aria-label", "虚拟文件系统"), n.tabIndex = 0;
-	let r = window.jQuery, i = `#${wv}`, a = `click${Tv}`, o = (t) => {
+	let r = window.jQuery, i = `#${Rv}`, a = `click${zv}`, o = (t) => {
 		t.target?.closest(i) && (t.preventDefault(), e());
 	};
 	return r ? (r(document).off(a, i), r(document).on(a, i, (t) => {
 		t?.preventDefault?.(), e();
-	})) : (Ev && document.removeEventListener("click", Ev), Ev = o, document.addEventListener("click", o)), () => {
-		r ? r(document).off(a, i) : (document.removeEventListener("click", o), Ev === o && (Ev = null)), n.remove();
+	})) : (Bv && document.removeEventListener("click", Bv), Bv = o, document.addEventListener("click", o)), () => {
+		r ? r(document).off(a, i) : (document.removeEventListener("click", o), Bv === o && (Bv = null)), n.remove();
 	};
 }
 //#endregion
 //#region src/app/bootstrap/mountVfsEntry.ts
-var Ov = null, kv = P_(), Av = null, jv = null, Mv = 0, Nv = 40, Pv = ".extraMesButtons #st-vfs-entry-button";
-function Fv() {
+var Hv = null, Uv = P_(), Wv = null, Gv = null, Kv = 0, qv = 40, Jv = ".extraMesButtons #st-vfs-entry-button";
+function Yv() {
 	let e = () => {
-		kv.open(), ud(sd);
+		Uv.open(), ud(sd);
 	}, t = () => {
-		jv &&= (window.clearInterval(jv), null);
-	}, n = () => typeof document < "u" && !!document.querySelector(Pv), r = () => {
-		if (n()) return Mv = 0, t(), !0;
-		let r = Dv(e);
-		return r ? (Ov = r, Mv = 0, t(), !0) : !1;
+		Gv &&= (window.clearInterval(Gv), null);
+	}, n = () => typeof document < "u" && !!document.querySelector(Jv), r = () => {
+		if (n()) return Kv = 0, t(), !0;
+		let r = Vv(e);
+		return r ? (Hv = r, Kv = 0, t(), !0) : !1;
 	}, i = () => {
-		jv ||= window.setInterval(() => {
-			Mv += 1, !r() && Mv >= Nv && t();
+		Gv ||= window.setInterval(() => {
+			Kv += 1, !r() && Kv >= qv && t();
 		}, 250);
 	}, a = () => {
-		Av || typeof MutationObserver > "u" || (Av = new MutationObserver(() => {
+		Wv || typeof MutationObserver > "u" || (Wv = new MutationObserver(() => {
 			n() || r() || i();
-		}), Av.observe(document.body, {
+		}), Wv.observe(document.body, {
 			childList: !0,
 			subtree: !0
 		}));
@@ -11129,23 +11369,25 @@ function Fv() {
 	}
 	typeof document > "u" || (a(), i());
 }
-function Iv() {
-	Av?.disconnect(), Av = null, jv &&= (window.clearInterval(jv), null), Mv = 0, Ov?.(), Ov = null, kv.close();
+function Xv() {
+	Wv?.disconnect(), Wv = null, Gv &&= (window.clearInterval(Gv), null), Kv = 0, Hv?.(), Hv = null, Uv.close();
 }
 //#endregion
 //#region src/app/bootstrap/unmountVfsEntry.ts
-function Lv() {
-	Iv();
+function Zv() {
+	Xv();
 }
 //#endregion
 //#region src/main.ts
-var Rv = document.createElement("div");
-Rv.id = "st-vfs-settings-root";
-var zv = document.querySelector("#extensions_settings");
-zv && (zv.appendChild(Rv), Cc(V_).mount(Rv)), nd();
-var Bv = new sv(Zu);
-Bv.initializeChatFromTemplateIfNeeded(), td(Bv.initializeChatFromTemplateIfNeeded.bind(Bv)), Cv(Zu, Bv.initializeChatFromTemplateIfNeeded.bind(Bv)), id(Ac(Bc(new hv(new ov(Zu, new rv(), Qu, Bv), new zu(Zu))))).start(), Fv(), typeof window < "u" && window.addEventListener("beforeunload", () => {
-	Lv();
+var Qv = document.createElement("div");
+Qv.id = "st-vfs-settings-root";
+var $v = document.querySelector("#extensions_settings");
+$v && ($v.appendChild(Qv), Cc(V_).mount(Qv)), nd();
+var ey = new sv(Zu);
+ey.initializeChatFromTemplateIfNeeded(), td(ey.initializeChatFromTemplateIfNeeded.bind(ey)), Cv(Zu, ey.initializeChatFromTemplateIfNeeded.bind(ey));
+var ty = new ov(Zu, new rv(), Qu, ey), ny = Lv(ty, Zu);
+id(Ac(Bc(new hv(ty, new zu(Zu))))).start(), Yv(), typeof window < "u" && window.addEventListener("beforeunload", () => {
+	ny(), Fv(), Zv();
 });
 //#endregion
 
