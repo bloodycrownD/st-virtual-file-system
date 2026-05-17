@@ -65,6 +65,15 @@ export function renderSafeMarkdownDocument(raw: string): RenderResult {
   }
 }
 
+/**
+ * Plain read surface: escape HTML, preserve newlines. No marked, no YAML FM split.
+ */
+export function renderPlainTextDocument(raw: string): RenderResult {
+  const escaped = escapeHtml(raw ?? '')
+  const html = `<pre class="vfs-plain-text">${escaped.replace(/\n/g, '<br>')}</pre>`
+  return { ok: true, html }
+}
+
 export function renderSafeContent(raw: string): RenderResult {
   return renderSafeMarkdownDocument(raw)
 }
