@@ -78,13 +78,28 @@ describe('vfs ui contracts', () => {
 
   it('sanitizes reader html through shared pipeline', async () => {
     const wrapper = mount(ReaderScreen, {
-      props: { html: '<img src=x onerror=alert(1) /><script>alert(1)</script><p>safe</p>' },
+      props: {
+        html: '<img src=x onerror=alert(1) /><script>alert(1)</script><p>safe</p>',
+        filePath: '/x.md',
+      },
     })
 
     const rendered = wrapper.find('.vfs-reader').html()
     expect(rendered).toContain('<p>safe</p>')
     expect(rendered).not.toContain('onerror=')
     expect(rendered).not.toContain('<script')
+  })
+
+  it('renders non-.md paths as plain text without markdown headings', async () => {
+    const wrapper = mount(ReaderScreen, {
+      props: {
+        html: '# not heading',
+        filePath: '/x.txt',
+      },
+    })
+
+    expect(wrapper.html()).not.toMatch(/<h1/i)
+    expect(wrapper.text()).toContain('# not heading')
   })
 
   it('emits state refresh event after rollback success', async () => {

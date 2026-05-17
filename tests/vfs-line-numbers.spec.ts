@@ -16,6 +16,7 @@ describe('vfs line numbers', () => {
   it('shows editor line numbers for logical lines', () => {
     const wrapper = mount(EditorScreen, {
       props: {
+        filePath: '/a.md',
         modelValue: '# a\nb\nc',
         previewMode: false,
         'onUpdate:modelValue': vi.fn(),
@@ -29,6 +30,7 @@ describe('vfs line numbers', () => {
   it('hides line numbers in editor preview mode', () => {
     const wrapper = mount(EditorScreen, {
       props: {
+        filePath: '/a.md',
         modelValue: 'alpha\nbeta',
         previewMode: true,
         'onUpdate:modelValue': vi.fn(),
@@ -43,6 +45,7 @@ describe('vfs line numbers', () => {
   it('recomputes editor line numbers after content changes', async () => {
     const wrapper = mount(EditorScreen, {
       props: {
+        filePath: '/a.md',
         modelValue: 'a\nb',
         previewMode: false,
         'onUpdate:modelValue': vi.fn(),
@@ -58,6 +61,7 @@ describe('vfs line numbers', () => {
   it('syncs editor gutter position with source scroll', async () => {
     const wrapper = mount(EditorScreen, {
       props: {
+        filePath: '/a.md',
         modelValue: Array.from({ length: 20 }, (_, index) => `line-${index + 1}`).join('\n'),
         previewMode: false,
         'onUpdate:modelValue': vi.fn(),
@@ -78,6 +82,7 @@ describe('vfs line numbers', () => {
     const wrapper = mount(ReaderScreen, {
       props: {
         html: 'alpha\nbeta\ngamma',
+        filePath: '/a.md',
       },
     })
 
@@ -108,6 +113,7 @@ describe('vfs line numbers', () => {
     const content = Array.from({ length: 520 }, (_, index) => `line-${index + 1}`).join('\n')
     const wrapper = mount(EditorScreen, {
       props: {
+        filePath: '/a.md',
         modelValue: content,
         previewMode: false,
         'onUpdate:modelValue': vi.fn(),

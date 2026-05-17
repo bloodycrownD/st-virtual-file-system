@@ -982,6 +982,7 @@ describe('vfs ui cr loop fixes', () => {
     const readerWrapper = mountTracked(ReaderScreen, {
       props: {
         html: '# Heading\n\nA very long line without spaces '.repeat(8),
+        filePath: '/x.md',
       },
     })
     const reader = readerWrapper.get('.vfs-reader')
