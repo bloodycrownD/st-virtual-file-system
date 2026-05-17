@@ -11032,10 +11032,6 @@ function Fv(e, t) {
 	return typeof e == "number" && Number.isFinite(e) ? Math.floor(e) : t;
 }
 function Iv(e, t) {
-	if (typeof e != "number" || !Number.isInteger(e) || e < 1) throw Error(`${t} must be a positive integer`);
-	return e;
-}
-function Lv(e, t) {
 	return e.length <= t ? {
 		text: e,
 		truncated: !1
@@ -11044,13 +11040,13 @@ function Lv(e, t) {
 		truncated: !0
 	};
 }
-function Rv(e) {
+function Lv(e) {
 	return e.split("\n");
 }
-var zv = {
+var Rv = {
 	name: "read",
 	execute(e, t) {
-		let n = 2e4, r = Pv(e.path), i = Math.max(1, Fv(e.startLine, 1)), a = Math.max(i, Fv(e.endLine, i + 499)), o = Math.max(1, Fv(e.maxLines, 500)), s = Math.max(1, Fv(e.maxChars, n)), c = Math.min(500, o), l = Math.min(n, s), u = Rv(t.vfs.readFile(r)), d = Math.min(u.length, Math.min(a, i + c - 1)), f = Lv(u.slice(i - 1, d).join("\n"), l), p = d < Math.min(u.length, a);
+		let n = 2e4, r = Pv(e.path), i = Math.max(1, Fv(e.startLine, 1)), a = Math.max(i, Fv(e.endLine, i + 499)), o = Math.max(1, Fv(e.maxLines, 500)), s = Math.max(1, Fv(e.maxChars, n)), c = Math.min(500, o), l = Math.min(n, s), u = Lv(t.vfs.readFile(r)), d = Math.min(u.length, Math.min(a, i + c - 1)), f = Iv(u.slice(i - 1, d).join("\n"), l), p = d < Math.min(u.length, a);
 		return {
 			tool: "read",
 			ok: !0,
@@ -11068,7 +11064,7 @@ var zv = {
 			}
 		};
 	}
-}, Bv = {
+}, zv = {
 	name: "write",
 	execute(e, t) {
 		let n = Pv(e.path), r = typeof e.content == "string" ? e.content : "";
@@ -11081,7 +11077,7 @@ var zv = {
 			summary: `Wrote ${n}`
 		};
 	}
-}, Vv = {
+}, Bv = {
 	name: "delete",
 	execute(e, t) {
 		let n = Pv(e.path), r = e.recursive === !0;
@@ -11091,7 +11087,7 @@ var zv = {
 			summary: `Deleted ${n}`
 		};
 	}
-}, Hv = {
+}, Vv = {
 	name: "append",
 	execute(e, t) {
 		let n = Pv(e.path), r = typeof e.content == "string" ? e.content : "", i = t.vfs.exists(n) ? t.vfs.readFile(n) : "";
@@ -11104,22 +11100,39 @@ var zv = {
 			summary: `Appended ${n}`
 		};
 	}
-}, Uv = {
-	name: "update",
+};
+function Hv(e, t) {
+	if (t.length === 0) throw Error("oldContent must be a non-empty string");
+	let n = 0, r = 0;
+	for (; r <= e.length;) {
+		let i = e.indexOf(t, r);
+		if (i === -1) break;
+		n += 1, r = i + t.length;
+	}
+	return n;
+}
+var Uv = {
+	name: "replace",
 	execute(e, t) {
-		let n = Pv(e.path), r = Iv(e.startLine, "startLine"), i = Iv(e.endLine, "endLine");
-		if (i < r) throw Error("endLine must be greater than or equal to startLine");
-		if (typeof e.expectedOldContent != "string") throw Error("expectedOldContent is required");
+		let n = Pv(e.path);
+		if (typeof e.oldContent != "string" || e.oldContent.length === 0) throw Error("oldContent must be a non-empty string");
 		if (typeof e.newContent != "string") throw Error("newContent is required");
-		let a = e.expectedOldContent, o = e.newContent, s = Rv(t.vfs.readFile(n));
-		if (s.slice(r - 1, i).join("\n") !== a) throw Error("expectedOldContent mismatch");
-		return s.splice(r - 1, i - r + 1, ...Rv(o)), t.vfs.writeFile(n, s.join("\n"), {
+		let r = e.oldContent, i = e.newContent, a = e.replaceAll === !0, o = t.vfs.readFile(n), s = Hv(o, r);
+		if (s === 0) throw Error("oldContent not found");
+		if (!a && s > 1) throw Error("oldContent is not unique; set replaceAll=true to replace every occurrence");
+		let c = a ? o.split(r).join(i) : o.replace(r, i);
+		return t.vfs.writeFile(n, c, {
 			createParents: !0,
 			updatedBy: "assistant"
 		}), {
-			tool: "update",
+			tool: "replace",
 			ok: !0,
-			summary: `Updated ${n}:${r}-${i}`
+			summary: `Replaced ${a ? `${s}` : "1"} occurrence(s) in ${n}`,
+			data: {
+				path: n,
+				occurrences: a ? s : 1,
+				replaceAll: a
+			}
 		};
 	}
 }, Wv = {
@@ -11150,11 +11163,11 @@ var zv = {
 };
 function Kv() {
 	return [
+		Rv,
 		zv,
 		Bv,
-		Vv,
 		Uv,
-		Hv,
+		Vv,
 		Wv,
 		Gv
 	];
@@ -11395,12 +11408,25 @@ function iy(e, t, n) {
 	return `${e.slice(0, t.start)}<virtual-tool-result>${r}</virtual-tool-result>${e.slice(t.end)}`;
 }
 //#endregion
-//#region src/app/services/message/virtual-tool-message-handler.ts
-var ay = /* @__PURE__ */ new Set();
-function oy(e) {
+//#region src/app/services/virtual-tools/tool-result-payload.ts
+function ay(e) {
 	return Object.keys(e).slice(0, 4).join(",");
 }
-var sy = class {
+function oy(e, t) {
+	return e.map((e) => {
+		let n = e.args ?? {};
+		return t ? {
+			tool: e.tool,
+			args: n
+		} : {
+			tool: e.tool,
+			argsSummary: ay(n)
+		};
+	});
+}
+//#endregion
+//#region src/app/services/message/virtual-tool-message-handler.ts
+var sy = /* @__PURE__ */ new Set(), cy = class {
 	runtime;
 	logs;
 	constructor(e, t) {
@@ -11408,11 +11434,11 @@ var sy = class {
 	}
 	process(e) {
 		let t = `${e.chatId}:${e.messageId}`;
-		if (ay.has(t)) return {
+		if (sy.has(t)) return {
 			handled: !1,
 			messageText: e.messageText
 		};
-		ay.add(t);
+		sy.add(t);
 		let n = Date.now(), r = ny(e.messageText);
 		try {
 			if (!this.runtime.isVirtualToolCallEnabled()) return {
@@ -11461,7 +11487,10 @@ var sy = class {
 					handled: !0,
 					messageText: iy(e.messageText, r, {
 						ok: !1,
-						calls: [],
+						calls: [{
+							tool: "(parse-error)",
+							args: { callContent: r.content }
+						}],
 						results: [],
 						errorCode: "INVALID_JSON",
 						errorMessage: i
@@ -11475,10 +11504,7 @@ var sy = class {
 				batchId: a
 			}), s = {
 				ok: o.ok,
-				calls: i.calls.map((e) => ({
-					tool: e.tool,
-					argsSummary: oy(e.args ?? {})
-				})),
+				calls: oy(i.calls, !o.ok),
 				results: o.results,
 				errorCode: o.errorCode,
 				errorMessage: o.errorMessage
@@ -11527,7 +11553,7 @@ var sy = class {
 				messageText: e.messageText
 			};
 		} finally {
-			ay.delete(t);
+			sy.delete(t);
 		}
 	}
 	logPerToolExecution(e, t, n, r) {
@@ -11544,7 +11570,7 @@ var sy = class {
 					toolName: o.tool,
 					status: "success",
 					durationMs: 0,
-					argsSummary: oy(t.args ?? {})
+					argsSummary: ay(t.args ?? {})
 				});
 				let n = o.tool === "read" && o.data && typeof o.data == "object" ? o.data : null;
 				n && "truncated" in n && n.truncated === !0 && this.logs.append({
@@ -11571,42 +11597,42 @@ var sy = class {
 				toolName: t.tool,
 				status: n.errorCode === "BATCH_TIMEOUT" ? "timeout" : "failed",
 				durationMs: 0,
-				argsSummary: oy(t.args ?? {}),
+				argsSummary: ay(t.args ?? {}),
 				errorCode: n.errorCode,
 				errorMessage: n.errorMessage
 			});
 		});
 	}
-}, cy = "├── ", ly = "└── ", uy = "│   ", dy = "    ";
-function fy(e, t) {
+}, ly = "├── ", uy = "└── ", dy = "│   ", fy = "    ";
+function py(e, t) {
 	return t.children.map((t) => e.nodes[t]).filter(Boolean).sort((e, t) => e.name.localeCompare(t.name));
 }
-function py(e) {
+function my(e) {
 	return e.type === "directory" ? e.path === "/" ? "/" : `${e.name}/` : e.name;
 }
-function my(e) {
+function hy(e) {
 	let t = e.nodes[e.rootId];
 	if (!t || t.type !== "directory") return "/";
 	let n = [];
-	n.push(py(t));
+	n.push(my(t));
 	let r = (t, i) => {
-		let a = fy(e, t);
+		let a = py(e, t);
 		a.forEach((e, t) => {
-			let o = t === a.length - 1, s = o ? ly : cy;
-			n.push(`${i}${s}${py(e)}`), e.type === "directory" && r(e, `${i}${o ? dy : uy}`);
+			let o = t === a.length - 1, s = o ? uy : ly;
+			n.push(`${i}${s}${my(e)}`), e.type === "directory" && r(e, `${i}${o ? fy : dy}`);
 		});
 	};
 	return r(t, ""), n.join("\n");
 }
 //#endregion
 //#region src/infra/sillytarvern/macros/register-vfs-macros.ts
-function hy(e, t) {
+function gy(e, t) {
 	if (typeof SillyTavern > "u") return;
 	let { registerMacro: n } = SillyTavern.getContext();
 	n("VIRTUAL_FILE_TREE", () => {
 		t?.();
 		let n = e.getState().chat.chatVfsSnapshot;
-		return my(n);
+		return hy(n);
 	}), n("VIRTUAL_WORK_TREE", () => {
 		t?.();
 		let { chatVfsSnapshot: n, workTree: r } = e.getState().chat;
@@ -11615,7 +11641,7 @@ function hy(e, t) {
 }
 //#endregion
 //#region src/infra/sillytarvern/function-tools/format-function-tool-result.ts
-function gy(e) {
+function _y(e) {
 	let t = {
 		tool: e.tool,
 		ok: e.ok,
@@ -11623,43 +11649,43 @@ function gy(e) {
 	};
 	return e.data !== void 0 && (t.data = e.data), e.errorCode && (t.errorCode = e.errorCode), t;
 }
-function _y(e) {
-	let t = {
+function vy(e, t) {
+	let n = {
 		ok: e.ok,
-		results: e.results.map(gy)
+		results: e.results.map(_y)
 	};
-	return e.ok || (e.errorCode && (t.errorCode = e.errorCode), e.errorMessage && (t.errorMessage = e.errorMessage)), JSON.stringify(t);
+	return t?.calls && (n.calls = oy(t.calls, !e.ok)), e.ok || (e.errorCode && (n.errorCode = e.errorCode), e.errorMessage && (n.errorMessage = e.errorMessage)), JSON.stringify(n);
 }
 //#endregion
 //#region src/infra/sillytarvern/function-tools/vfs-function-tool-schemas.ts
-var vy = "http://json-schema.org/draft-04/schema#";
-function yy(e) {
+var yy = "http://json-schema.org/draft-04/schema#";
+function by(e) {
 	return {
 		type: "string",
 		description: e
 	};
 }
-function by(e) {
+function xy(e) {
 	return {
 		type: "number",
 		description: e
 	};
 }
-var xy = [
+var Sy = [
 	{
 		name: "vfs_read",
 		displayName: "VFS Read",
 		shortTool: "read",
 		description: "Read a file from the current chat virtual file system. Paths must start with `/`. Optional line/char limits tighten output.",
 		parameters: {
-			$schema: vy,
+			$schema: yy,
 			type: "object",
 			properties: {
-				path: yy("Virtual file path (required, e.g. `/notes/a.txt`)"),
-				startLine: by("1-based start line (default 1)"),
-				endLine: by("1-based end line (inclusive)"),
-				maxLines: by("Max lines to return (cannot exceed built-in cap)"),
-				maxChars: by("Max characters to return (cannot exceed built-in cap)")
+				path: by("Virtual file path (required, e.g. `/notes/a.txt`)"),
+				startLine: xy("1-based start line (default 1)"),
+				endLine: xy("1-based end line (inclusive)"),
+				maxLines: xy("Max lines to return (cannot exceed built-in cap)"),
+				maxChars: xy("Max characters to return (cannot exceed built-in cap)")
 			},
 			required: ["path"]
 		},
@@ -11671,10 +11697,10 @@ var xy = [
 		shortTool: "write",
 		description: "Create or overwrite a file in the current chat virtual file system. Paths must start with `/`. Parent directories are created automatically.",
 		parameters: {
-			$schema: vy,
+			$schema: yy,
 			type: "object",
 			properties: {
-				path: yy("Virtual file path (required)"),
+				path: by("Virtual file path (required)"),
 				content: {
 					type: "string",
 					description: "Full file content to write (defaults to empty string)"
@@ -11690,10 +11716,10 @@ var xy = [
 		shortTool: "append",
 		description: "Append text to a file in the current chat virtual file system. Paths must start with `/`. Creates the file if missing.",
 		parameters: {
-			$schema: vy,
+			$schema: yy,
 			type: "object",
 			properties: {
-				path: yy("Virtual file path (required)"),
+				path: by("Virtual file path (required)"),
 				content: {
 					type: "string",
 					description: "Text to append (defaults to empty string)"
@@ -11709,10 +11735,10 @@ var xy = [
 		shortTool: "delete",
 		description: "Delete a file or directory in the current chat virtual file system. Set `recursive` to true only when intentionally removing a non-empty directory tree.",
 		parameters: {
-			$schema: vy,
+			$schema: yy,
 			type: "object",
 			properties: {
-				path: yy("Virtual file or directory path (required)"),
+				path: by("Virtual file or directory path (required)"),
 				recursive: {
 					type: "boolean",
 					description: "Must be true to recursively delete a non-empty directory"
@@ -11723,35 +11749,35 @@ var xy = [
 		formatMessage: (e) => `正在删除 ${String(e.path ?? "")}…`
 	},
 	{
-		name: "vfs_update",
-		displayName: "VFS Update",
-		shortTool: "update",
-		description: "Replace a line range in a file when `expectedOldContent` exactly matches the current segment. Paths must start with `/`. Prevents silent line-drift overwrites.",
+		name: "vfs_replace",
+		displayName: "VFS Replace",
+		shortTool: "replace",
+		description: "Replace an exact substring in a file (like search-and-replace). Paths must start with `/`. `oldContent` must appear in the file; when it appears more than once, set `replaceAll` to true or use a longer unique `oldContent`.",
 		parameters: {
-			$schema: vy,
+			$schema: yy,
 			type: "object",
 			properties: {
-				path: yy("Virtual file path (required)"),
-				startLine: by("1-based start line (required, >= 1)"),
-				endLine: by("1-based end line (required, >= startLine)"),
-				expectedOldContent: {
+				path: by("Virtual file path (required)"),
+				oldContent: {
 					type: "string",
-					description: "Exact text of the lines to replace (must match file)"
+					description: "Exact text to find in the file (required, non-empty)"
 				},
 				newContent: {
 					type: "string",
-					description: "Replacement content for the line range"
+					description: "Replacement text (required; use empty string to delete oldContent)"
+				},
+				replaceAll: {
+					type: "boolean",
+					description: "When true, replace every occurrence; default false requires a unique match"
 				}
 			},
 			required: [
 				"path",
-				"startLine",
-				"endLine",
-				"expectedOldContent",
+				"oldContent",
 				"newContent"
 			]
 		},
-		formatMessage: (e) => `正在更新 ${String(e.path ?? "")}…`
+		formatMessage: (e) => `正在替换 ${String(e.path ?? "")} 中的片段…`
 	},
 	{
 		name: "vfs_list",
@@ -11759,9 +11785,9 @@ var xy = [
 		shortTool: "list",
 		description: "List entries under a directory in the current chat virtual file system. Paths must start with `/`.",
 		parameters: {
-			$schema: vy,
+			$schema: yy,
 			type: "object",
-			properties: { path: yy("Virtual directory path (required)") },
+			properties: { path: by("Virtual directory path (required)") },
 			required: ["path"]
 		},
 		formatMessage: (e) => `正在列出 ${String(e.path ?? "")}…`
@@ -11772,7 +11798,7 @@ var xy = [
 		shortTool: "search",
 		description: "Search file contents under a directory in the current chat virtual file system. Use `regex: true` for case-insensitive regex; otherwise substring match.",
 		parameters: {
-			$schema: vy,
+			$schema: yy,
 			type: "object",
 			properties: {
 				query: {
@@ -11794,99 +11820,109 @@ var xy = [
 			return t ? `正在搜索「${t}」…` : "正在搜索虚拟文件…";
 		}
 	}
-], Sy = xy.map((e) => e.name), Cy = Object.fromEntries(xy.map((e) => [e.name, e.shortTool]));
-function wy(e) {
+], Cy = Sy.map((e) => e.name), wy = Object.fromEntries(Sy.map((e) => [e.name, e.shortTool]));
+function Ty(e) {
 	if (typeof SillyTavern > "u") return !1;
 	let t = SillyTavern.getContext();
 	if (!t.registerFunctionTool || !t.isToolCallingSupported?.()) return !1;
 	let n = e.getState().extension;
 	return !(!n.enabled || !n.virtualToolCallEnabled || t.canPerformToolCalls && !t.canPerformToolCalls("normal"));
 }
-function Ty(e, t, n) {
-	let r = Cy[n];
+function Ey(e, t, n) {
+	let r = wy[n];
 	return async (n) => {
-		if (!wy(t)) return JSON.stringify({
+		if (!Ty(t)) return vy({
 			ok: !1,
+			results: [],
 			errorCode: "VFS_TOOLS_DISABLED",
 			errorMessage: "VFS function tools are unavailable (extension off, virtual tools off, or ST function calling unsupported)."
-		});
+		}, { calls: [{
+			tool: r,
+			args: n ?? {}
+		}] });
+		let i = {
+			tool: r,
+			args: n ?? {}
+		};
 		try {
-			return _y(e.executeSingleTool(r, n ?? {}));
+			return vy(e.executeSingleTool(r, i.args), { calls: [i] });
 		} catch (e) {
-			return JSON.stringify({
+			return vy({
 				ok: !1,
+				results: [],
+				errorCode: "TOOL_EXECUTION_FAILED",
 				errorMessage: e instanceof Error ? e.message : String(e)
-			});
+			}, { calls: [i] });
 		}
 	};
 }
-function Ey(e, t) {
+function Dy(e, t) {
 	if (typeof SillyTavern > "u") return;
 	let n = SillyTavern.getContext();
-	if (n.registerFunctionTool) for (let r of xy) n.unregisterFunctionTool?.(r.name), n.registerFunctionTool({
+	if (n.registerFunctionTool) for (let r of Sy) n.unregisterFunctionTool?.(r.name), n.registerFunctionTool({
 		name: r.name,
 		displayName: r.displayName,
 		description: r.description,
 		parameters: r.parameters,
 		formatMessage: r.formatMessage,
 		stealth: !1,
-		shouldRegister: () => wy(t),
-		action: Ty(e, t, r.name)
+		shouldRegister: () => Ty(t),
+		action: Ey(e, t, r.name)
 	});
 }
-function Dy() {
+function Oy() {
 	if (typeof SillyTavern > "u") return;
 	let e = SillyTavern.getContext();
-	if (e.unregisterFunctionTool) for (let t of Sy) e.unregisterFunctionTool(t);
+	if (e.unregisterFunctionTool) for (let t of Cy) e.unregisterFunctionTool(t);
 }
-var Oy = null;
-function ky(e, t) {
-	return Oy = wy(t), Oy ? Ey(e, t) : Dy(), t.subscribe(() => {
-		let n = wy(t);
-		n !== Oy && (Oy = n, n ? Ey(e, t) : Dy());
+var ky = null;
+function Ay(e, t) {
+	return ky = Ty(t), ky ? Dy(e, t) : Oy(), t.subscribe(() => {
+		let n = Ty(t);
+		n !== ky && (ky = n, n ? Dy(e, t) : Oy());
 	});
 }
 //#endregion
 //#region src/app/composables/screens-composables/useVfsEntryMount.ts
-var Ay = "st-vfs-entry-button", jy = ".vfsEntry", My = null;
-function Ny(e) {
+var jy = "st-vfs-entry-button", My = ".vfsEntry", Ny = null;
+function Py(e) {
 	if (typeof document > "u") return null;
 	let t = document.querySelector(".extraMesButtons");
 	if (!t) return null;
-	let n = t.querySelector(`#${Ay}`) ?? (() => {
+	let n = t.querySelector(`#${jy}`) ?? (() => {
 		let e = document.createElement("div");
-		return e.id = Ay, e.className = "mes_button st-vfs-entry fa-solid fa-box-archive", e.title = "虚拟文件系统", e.setAttribute("aria-label", "虚拟文件系统"), e.tabIndex = 0, t.appendChild(e), e;
+		return e.id = jy, e.className = "mes_button st-vfs-entry fa-solid fa-box-archive", e.title = "虚拟文件系统", e.setAttribute("aria-label", "虚拟文件系统"), e.tabIndex = 0, t.appendChild(e), e;
 	})();
 	n.className = "mes_button st-vfs-entry fa-solid fa-box-archive", n.title = "虚拟文件系统", n.setAttribute("aria-label", "虚拟文件系统"), n.tabIndex = 0;
-	let r = window.jQuery, i = `#${Ay}`, a = `click${jy}`, o = (t) => {
+	let r = window.jQuery, i = `#${jy}`, a = `click${My}`, o = (t) => {
 		t.target?.closest(i) && (t.preventDefault(), e());
 	};
 	return r ? (r(document).off(a, i), r(document).on(a, i, (t) => {
 		t?.preventDefault?.(), e();
-	})) : (My && document.removeEventListener("click", My), My = o, document.addEventListener("click", o)), () => {
-		r ? r(document).off(a, i) : (document.removeEventListener("click", o), My === o && (My = null)), n.remove();
+	})) : (Ny && document.removeEventListener("click", Ny), Ny = o, document.addEventListener("click", o)), () => {
+		r ? r(document).off(a, i) : (document.removeEventListener("click", o), Ny === o && (Ny = null)), n.remove();
 	};
 }
 //#endregion
 //#region src/app/bootstrap/mountVfsEntry.ts
-var Py = null, Fy = Ev(), Iy = null, Ly = null, Ry = 0, zy = 40, By = ".extraMesButtons #st-vfs-entry-button";
-function Vy() {
+var Fy = null, Iy = Ev(), Ly = null, Ry = null, zy = 0, By = 40, Vy = ".extraMesButtons #st-vfs-entry-button";
+function Hy() {
 	let e = () => {
-		Fy.open(), Dd(wd);
+		Iy.open(), Dd(wd);
 	}, t = () => {
-		Ly &&= (window.clearInterval(Ly), null);
-	}, n = () => typeof document < "u" && !!document.querySelector(By), r = () => {
-		if (n()) return Ry = 0, t(), !0;
-		let r = Ny(e);
-		return r ? (Py = r, Ry = 0, t(), !0) : !1;
+		Ry &&= (window.clearInterval(Ry), null);
+	}, n = () => typeof document < "u" && !!document.querySelector(Vy), r = () => {
+		if (n()) return zy = 0, t(), !0;
+		let r = Py(e);
+		return r ? (Fy = r, zy = 0, t(), !0) : !1;
 	}, i = () => {
-		Ly ||= window.setInterval(() => {
-			Ry += 1, !r() && Ry >= zy && t();
+		Ry ||= window.setInterval(() => {
+			zy += 1, !r() && zy >= By && t();
 		}, 250);
 	}, a = () => {
-		Iy || typeof MutationObserver > "u" || (Iy = new MutationObserver(() => {
+		Ly || typeof MutationObserver > "u" || (Ly = new MutationObserver(() => {
 			n() || r() || i();
-		}), Iy.observe(document.body, {
+		}), Ly.observe(document.body, {
 			childList: !0,
 			subtree: !0
 		}));
@@ -11897,25 +11933,25 @@ function Vy() {
 	}
 	typeof document > "u" || (a(), i());
 }
-function Hy() {
-	Iy?.disconnect(), Iy = null, Ly &&= (window.clearInterval(Ly), null), Ry = 0, Py?.(), Py = null, Fy.close();
+function Uy() {
+	Ly?.disconnect(), Ly = null, Ry &&= (window.clearInterval(Ry), null), zy = 0, Fy?.(), Fy = null, Iy.close();
 }
 //#endregion
 //#region src/app/bootstrap/unmountVfsEntry.ts
-function Uy() {
-	Hy();
+function Wy() {
+	Uy();
 }
 //#endregion
 //#region src/main.ts
-var Wy = document.createElement("div");
-Wy.id = "st-vfs-settings-root";
-var Gy = document.querySelector("#extensions_settings");
-Gy && (Gy.appendChild(Wy), wc(Nv).mount(Wy)), yd();
-var Ky = new $v(Z);
-Ky.initializeChatFromTemplateIfNeeded(), vd(Ky.initializeChatFromTemplateIfNeeded.bind(Ky)), hy(Z, Ky.initializeChatFromTemplateIfNeeded.bind(Ky));
-var qy = new Qv(Z, new Yv(), hd, Ky), Jy = ky(qy, Z);
-xd(jc(Vc(new sy(qy, new rd(Z))))).start(), Vy(), typeof window < "u" && window.addEventListener("beforeunload", () => {
-	Jy(), Dy(), Uy();
+var Gy = document.createElement("div");
+Gy.id = "st-vfs-settings-root";
+var Ky = document.querySelector("#extensions_settings");
+Ky && (Ky.appendChild(Gy), wc(Nv).mount(Gy)), yd();
+var qy = new $v(Z);
+qy.initializeChatFromTemplateIfNeeded(), vd(qy.initializeChatFromTemplateIfNeeded.bind(qy)), gy(Z, qy.initializeChatFromTemplateIfNeeded.bind(qy));
+var Jy = new Qv(Z, new Yv(), hd, qy), Yy = Ay(Jy, Z);
+xd(jc(Vc(new cy(Jy, new rd(Z))))).start(), Hy(), typeof window < "u" && window.addEventListener("beforeunload", () => {
+	Yy(), Oy(), Wy();
 });
 //#endregion
 

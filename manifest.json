@@ -5,6 +5,6 @@
     "optional": [],
     "js": "dist/index.js",
     "author": "bloodycrownD",
-    "version": "1.0.7",
+    "version": "1.0.8",
     "homePage": "https://github.com/bloodycrownD/st-virtual-file-system"
 }
