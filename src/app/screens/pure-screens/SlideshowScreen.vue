@@ -24,7 +24,7 @@ const currentPage = computed(() => props.pages[Math.max(0, Math.min(props.pageIn
       </template>
       <template v-else>
         <section v-if="currentPage" :key="currentPage.path" class="vfs-slide-one">
-          <ReaderScreen :html="currentPage.content" />
+          <ReaderScreen :html="currentPage.content" :file-path="currentPage.path" />
         </section>
       </template>
     </article>

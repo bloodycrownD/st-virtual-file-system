@@ -1,12 +1,22 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { VFS_ERROR_CODES } from '@/app/constants/vfsErrorCodes'
-import { renderSafeMarkdownDocument } from '@/app/services/vfs/renderPipeline'
+import { renderPlainTextDocument, renderSafeMarkdownDocument } from '@/app/services/vfs/renderPipeline'
 import { toVfsErrorToast } from '@/app/utils/vfsErrorMapper'
+import { isVfsMarkdownPreviewPath } from '@/domain/vfs/is-vfs-markdown-preview-path'
 
-const props = defineProps<{ html: string }>()
+const props = defineProps<{
+  /** Raw file source (misnamed `html` historically). */
+  html: string
+  /** VFS absolute path used only to pick markdown vs plain renderer. */
+  filePath: string
+}>()
 
 const safeHtml = computed(() => {
+  // Intent: only `.md` paths use marked; all other extensions show escaped source as plain text.
+  if (!isVfsMarkdownPreviewPath(props.filePath)) {
+    return renderPlainTextDocument(props.html).html ?? ''
+  }
   const result = renderSafeMarkdownDocument(props.html)
   if (!result.ok) {
     toastr.error(toVfsErrorToast(result.errorCode ?? VFS_ERROR_CODES.RENDER_FAILED, result.message))
@@ -146,5 +156,13 @@ const safeHtml = computed(() => {
 
 .vfs-reader :deep(.vfs-md-frontmatter__summary::-webkit-details-marker) {
   display: none;
+}
+
+.vfs-reader :deep(.vfs-plain-text) {
+  margin: 0;
+  white-space: pre-wrap;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+  font-size: 14px;
+  line-height: 1.45;
 }
 </style>

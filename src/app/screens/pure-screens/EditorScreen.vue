@@ -7,6 +7,7 @@ const model = defineModel<string>({ required: true })
 const previewMode = defineModel<boolean>('previewMode', { default: false })
 const props = withDefaults(
   defineProps<{
+    filePath: string
     saveInProgress?: boolean
     /** When false, preview/save live in the parent preview chrome (e.g. VfsMainScreen top bar). */
     embedToolbar?: boolean
@@ -71,7 +72,7 @@ function requestSave(): void {
       <textarea v-model="model" class="vfs-editor" @scroll="handleEditorScroll"></textarea>
     </div>
     <div v-else class="vfs-editor-preview-pane">
-      <ReaderScreen :html="model" />
+      <ReaderScreen :html="model" :file-path="props.filePath" />
     </div>
   </section>
 </template>

@@ -61,6 +61,7 @@ import {
 import { downloadBlob } from '@/app/services/vfs-archive/trigger-browser-download'
 import { createEmptyVfsSnapshot, serializeVfsSnapshot } from '@/infra/persistence/vfs-snapshot.schema'
 import { splitYamlFrontMatter } from '@/domain/markdown/markdown-frontmatter'
+import { isVfsMarkdownPreviewPath } from '@/domain/vfs/is-vfs-markdown-preview-path'
 
 type VfsScreenScope = 'chat' | 'template'
 type VfsScreenTab = 'files' | 'history' | 'worktree'
@@ -711,12 +712,19 @@ const shouldShowPreviewMetadata = computed(() => {
   if (mode.value === 'editor') return editorPreviewMode.value
   return mode.value === 'reader' || mode.value === 'slideshow'
 })
-/** UTF-16 body length after YAML fence strip; matches PRD “正文”口径 (see `splitYamlFrontMatter`). */
+/** UTF-16 body length after YAML fence strip for `.md`; full source length for other extensions. */
 const previewCharacterCount = computed(() => {
   if (!shouldShowPreviewMetadata.value) return 0
-  const markdown =
-    mode.value === 'slideshow' ? (slideshowPages.value[viewerIndex.value]?.content ?? '') : editorContent.value
-  return splitYamlFrontMatter(markdown).body.length
+  const path =
+    mode.value === 'slideshow'
+      ? (slideshowPages.value[viewerIndex.value]?.path ?? '')
+      : (activeContextPath.value ?? '')
+  const raw =
+    mode.value === 'slideshow'
+      ? (slideshowPages.value[viewerIndex.value]?.content ?? '')
+      : editorContent.value
+  if (!isVfsMarkdownPreviewPath(path)) return raw.length
+  return splitYamlFrontMatter(raw).body.length
 })
 const previewMetaTitle = computed(
   () => `创建: ${currentViewerCreatedAtText} | 更新: ${currentViewerUpdatedAtText} | 字数: ${previewCharacterCount}`,
@@ -1496,12 +1504,18 @@ async function handleEditorSaveRequested(): Promise<void> {
             data-testid="vfs-preview-content-frame"
             data-vfs-preview-surface="shared"
           >
-            <ReaderScreen v-if="mode === 'reader'" :key="`reader-${viewRefreshToken}`" :html="readerHtml" />
+            <ReaderScreen
+              v-if="mode === 'reader'"
+              :key="`reader-${viewRefreshToken}`"
+              :html="readerHtml"
+              :file-path="activeContextPath ?? ''"
+            />
             <div v-else-if="mode === 'editor'" class="vfs-editor-stage">
               <EditorScreen
                 :key="`editor-${viewRefreshToken}`"
                 v-model="editorContent"
                 v-model:preview-mode="editorPreviewMode"
+                :file-path="activeContextPath ?? ''"
                 :save-in-progress="saveInProgress"
                 :embed-toolbar="false"
                 @update:model-value="isDirty = true"
