@@ -1,6 +1,6 @@
 /**
  * @file JSON Schema (draft-04) and LLM-facing copy for the seven `vfs_*` function tools.
- * Parameter shapes align with `docs/Tools.md`.
+ * Parameter shapes align with `.apm/kb/docs/Tools.md`.
  */
 
 const DRAFT_04 = 'http://json-schema.org/draft-04/schema#'
