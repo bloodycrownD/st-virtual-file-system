@@ -539,10 +539,13 @@ async function handleZipFileSelected(event: Event): Promise<void> {
     pendingImportSnapshot.value = next
     pendingEntityActionContext.value = null
     const scopeLabel = isTemplateScope.value ? '模板' : '当前 chat'
+    const importConfirmMessage = isTemplateScope.value
+      ? `此操作将用 ZIP 中的文件全量替换${scopeLabel} VFS 快照。此操作不可恢复，确认继续？`
+      : `此操作将用 ZIP 中的文件全量替换${scopeLabel}目录，并清空执行日志与检查点/版本历史。此操作不可恢复，确认继续？`
     confirmDialogState.value = {
       action: 'import-replace',
       title: '确认导入',
-      message: `此操作将用 ZIP 中的文件全量替换${scopeLabel}目录，并清空执行日志与检查点/版本历史。此操作不可恢复，确认继续？`,
+      message: importConfirmMessage,
     }
   } catch (error) {
     pendingImportSnapshot.value = null
