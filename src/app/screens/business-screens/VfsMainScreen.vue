@@ -1344,7 +1344,7 @@ async function handleEditorSaveRequested(): Promise<void> {
               :disabled="zipTransferInProgress"
               @click="void handleExportZip()"
             >
-              <i class="fa-solid fa-file-zip" aria-hidden="true" />
+              <i class="fa-solid fa-file-zipper" aria-hidden="true" />
             </button>
             <button
               type="button"
