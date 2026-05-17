@@ -14,6 +14,7 @@ describe('isVfsMarkdownPreviewPath', () => {
   it('T-MD-03: does not treat other extensions or directories as markdown preview', () => {
     expect(isVfsMarkdownPreviewPath('/notes/readme.txt')).toBe(false)
     expect(isVfsMarkdownPreviewPath('/')).toBe(false)
+    expect(isVfsMarkdownPreviewPath('')).toBe(false)
     expect(isVfsMarkdownPreviewPath('/dir')).toBe(false)
   })
 })
