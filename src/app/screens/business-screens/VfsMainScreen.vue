@@ -52,6 +52,13 @@ import {
   renderVirtualWorkTree,
 } from '@/domain/work-tree/work-tree-engine'
 import { mapVfsMutationError, toVfsErrorToast } from '@/app/utils/vfsErrorMapper'
+import {
+  exportSnapshotToZipBytes,
+  importZipBytesToSnapshot,
+  pruneWorkTreeForSnapshot,
+  VfsZipExportEmptyError,
+} from '@/app/services/vfs-archive/vfs-zip-archive'
+import { downloadBlob } from '@/app/services/vfs-archive/trigger-browser-download'
 import { createEmptyVfsSnapshot, serializeVfsSnapshot } from '@/infra/persistence/vfs-snapshot.schema'
 import { splitYamlFrontMatter } from '@/domain/markdown/markdown-frontmatter'
 
@@ -112,7 +119,12 @@ const unsavedDialogOpen = ref(false)
 const pendingEditorLeave = ref<PendingEditorLeave | null>(null)
 /** Preview vs source toggle for editor mode; lifted here so back + preview + save share one top bar. */
 const editorPreviewMode = ref(false)
-const confirmDialogState = ref<null | { title: string; message: string; action: 'overwrite' | 'delete' }>(null)
+const confirmDialogState = ref<
+  null | { title: string; message: string; action: 'overwrite' | 'delete' | 'import-replace' }
+>(null)
+const zipTransferInProgress = ref(false)
+const zipFileInputRef = ref<HTMLInputElement | null>(null)
+const pendingImportSnapshot = ref<VfsSnapshot | null>(null)
 const inputDialogState = ref<
   null | {
     title: string
@@ -492,6 +504,52 @@ function overwriteCurrentChatWithTemplate(): void {
     action: 'overwrite',
     title: '确认覆盖',
     message: '此操作将用模板覆盖当前 chat 目录，并清空日志与检查点历史。此操作不可恢复，确认继续？',
+  }
+}
+
+async function handleExportZip(): Promise<void> {
+  if (zipTransferInProgress.value) return
+  zipTransferInProgress.value = true
+  try {
+    const bytes = exportSnapshotToZipBytes(currentSnapshot.value, codec)
+    downloadBlob(`vfs-export-${Date.now()}.zip`, new Blob([Uint8Array.from(bytes)], { type: 'application/zip' }))
+    toastr.success('已导出')
+  } catch (error) {
+    if (error instanceof VfsZipExportEmptyError) {
+      toastr.warning('当前没有可导出的文件')
+      return
+    }
+    const message = error instanceof Error ? error.message : '导出失败'
+    toastr.error(toVfsErrorToast(VFS_ERROR_CODES.EXPORT_FAILED, message))
+  } finally {
+    zipTransferInProgress.value = false
+  }
+}
+
+async function handleZipFileSelected(event: Event): Promise<void> {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  input.value = ''
+  if (!file || zipTransferInProgress.value) return
+
+  zipTransferInProgress.value = true
+  try {
+    const buffer = await file.arrayBuffer()
+    const next = importZipBytesToSnapshot(new Uint8Array(buffer), codec)
+    pendingImportSnapshot.value = next
+    pendingEntityActionContext.value = null
+    const scopeLabel = isTemplateScope.value ? '模板' : '当前 chat'
+    confirmDialogState.value = {
+      action: 'import-replace',
+      title: '确认导入',
+      message: `此操作将用 ZIP 中的文件全量替换${scopeLabel}目录，并清空执行日志与检查点/版本历史。此操作不可恢复，确认继续？`,
+    }
+  } catch (error) {
+    pendingImportSnapshot.value = null
+    const message = error instanceof Error ? error.message : '导入失败'
+    toastr.error(toVfsErrorToast(VFS_ERROR_CODES.IMPORT_FAILED, message))
+  } finally {
+    zipTransferInProgress.value = false
   }
 }
 
@@ -908,6 +966,7 @@ function closeActionDialogs(): void {
   confirmDialogState.value = null
   inputDialogState.value = null
   pendingEntityActionContext.value = null
+  pendingImportSnapshot.value = null
   inputDialogError.value = ''
 }
 
@@ -1003,8 +1062,40 @@ function onConfirmDialogCancel(): void {
 function onConfirmDialogConfirm(): void {
   const action = confirmDialogState.value?.action
   const entity = pendingEntityActionContext.value
+  const importSnapshot = pendingImportSnapshot.value
   closeActionDialogs()
   if (!action) return
+  if (action === 'import-replace') {
+    if (!importSnapshot) return
+    try {
+      if (isTemplateScope.value) {
+        vfsPersistenceStore.updateExtension((draft) => ({
+          ...draft,
+          extensionTemplateVfsSnapshot: serializeVfsSnapshot(importSnapshot),
+        }))
+        currentSnapshot.value = importSnapshot
+      } else {
+        const state = vfsPersistenceStore.getState()
+        vfsPersistenceStore.updateChat((draft) => ({
+          ...draft,
+          chatVfsSnapshot: serializeVfsSnapshot(importSnapshot),
+          chatVfsLogs: [],
+          vfsPathVersionStore: {},
+          vfsCheckpoints: [],
+          // WHY: import replaces file tree only; prune dangling work-tree keys, do not reset template workTree.
+          workTree: pruneWorkTreeForSnapshot(state.chat.workTree ?? ensureWorkTreeConfig(null), importSnapshot),
+        }))
+        currentSnapshot.value = importSnapshot
+      }
+      activeContextPath.value = null
+      requestModeChange('list')
+      refreshAllViews()
+      toastr.success('导入成功')
+    } catch {
+      toastr.error(toVfsErrorToast(VFS_ERROR_CODES.IMPORT_FAILED, '导入失败'))
+    }
+    return
+  }
   if (action === 'overwrite') {
     const state = vfsPersistenceStore.getState()
     const template = state.extension.extensionTemplateVfsSnapshot
@@ -1241,6 +1332,35 @@ async function handleEditorSaveRequested(): Promise<void> {
             >
               <i class="fa-solid fa-download" aria-hidden="true" />
             </button>
+            <button
+              type="button"
+              class="vfs-fm-icon-button"
+              title="导出"
+              aria-label="导出"
+              data-testid="vfs-zip-export"
+              :disabled="zipTransferInProgress"
+              @click="void handleExportZip()"
+            >
+              <i class="fa-solid fa-file-zip" aria-hidden="true" />
+            </button>
+            <button
+              type="button"
+              class="vfs-fm-icon-button"
+              title="导入"
+              aria-label="导入"
+              data-testid="vfs-zip-import"
+              :disabled="zipTransferInProgress"
+              @click="zipFileInputRef?.click()"
+            >
+              <i class="fa-solid fa-file-import" aria-hidden="true" />
+            </button>
+            <input
+              ref="zipFileInputRef"
+              type="file"
+              accept=".zip,application/zip"
+              hidden
+              @change="void handleZipFileSelected($event)"
+            />
             <VfsActionMenu
               :entity="null"
               mode="global-create"
