@@ -1,4 +1,4 @@
-(function(){try{if(typeof document<`u`){var e=document.createElement(`style`);e.appendChild(document.createTextNode(`.vfs-action-menu[data-v-a111f74c]{position:relative}.vfs-action-menu__toggle[data-v-a111f74c]{cursor:pointer;-webkit-user-select:none;user-select:none;justify-content:center;align-items:center;width:28px;height:28px;padding:0;list-style:none;display:inline-flex}.vfs-action-menu__toggle i[data-v-a111f74c]{font-size:14px;line-height:1}.vfs-action-menu[data-disabled=true] .vfs-action-menu__toggle[data-v-a111f74c]{opacity:.5;cursor:not-allowed}.vfs-action-menu__list[data-v-a111f74c]{z-index:50;background:#00000040;border:1px solid #ffffff1f;border-radius:8px;min-width:180px;max-height:min(50vh,360px);margin:0;padding:8px;list-style:none;position:absolute;top:calc(100% + 8px);right:0;overflow:auto;box-shadow:0 10px 24px #00000073}.vfs-action-menu__list--entity-fixed[data-v-a111f74c],.vfs-action-menu__list--fixed-overlay[data-v-a111f74c]{top:unset;right:unset;position:fixed}.vfs-action-menu__separator[data-v-a111f74c]{border-top:1px solid #ffffff1f;margin:6px 0}.vfs-action-confirm-dialog__message[data-v-37f7685b]{color:var(--SmartThemeBodyColor,#ffffffd9);margin:0;line-height:1.45}.vfs-listbox-field[data-v-3f94c5a7]{min-width:0;position:relative}.vfs-listbox-field__trigger[data-v-3f94c5a7]{width:100%;min-height:40px;color:inherit;text-align:left;cursor:pointer;background:#0f1218eb;border:1px solid #fff3;border-radius:6px;justify-content:space-between;align-items:center;gap:8px;padding:8px 10px;font-size:1rem;line-height:1.35;display:inline-flex}.vfs-listbox-field__trigger[data-v-3f94c5a7]:disabled{opacity:.55;cursor:not-allowed}.vfs-listbox-field__trigger[data-v-3f94c5a7]:focus-visible{outline-offset:1px}.vfs-listbox-field__trigger-label[data-v-3f94c5a7]{text-overflow:ellipsis;white-space:nowrap;flex:auto;min-width:0;overflow:hidden}.vfs-listbox-field__listbox[data-v-3f94c5a7]{z-index:20;box-sizing:border-box;background:#141820fa;border:1px solid #fff3;border-radius:8px;width:max-content;min-width:100%;max-width:min(100vw - 20px,36rem);max-height:220px;margin:0;padding:4px;list-style:none;position:absolute;top:calc(100% + 6px);left:0;right:auto;overflow:hidden auto}.vfs-listbox-field__option[data-v-3f94c5a7]{width:100%;color:inherit;text-align:left;cursor:pointer;white-space:nowrap;background:0 0;border:0;border-radius:6px;padding:8px 10px;font-size:1rem;line-height:1.35;display:block}.vfs-listbox-field__option[data-active=true][data-v-3f94c5a7]{background:#ffffff24}.vfs-listbox-field__option[aria-selected=true][data-v-3f94c5a7]{font-weight:600}.vfs-listbox-field--dropdown-match-trigger .vfs-listbox-field__listbox[data-v-3f94c5a7]{width:100%;min-width:0;max-width:none;left:0;right:0}.vfs-listbox-field--compact .vfs-listbox-field__trigger[data-v-3f94c5a7]{border-radius:6px;min-height:30px;padding:4px 8px;font-size:.8rem}.vfs-listbox-field--compact .vfs-listbox-field__listbox[data-v-3f94c5a7]{max-height:200px;padding:3px}.vfs-listbox-field--compact .vfs-listbox-field__option[data-v-3f94c5a7]{padding:5px 8px;font-size:.75rem;line-height:1.3}.vfs-action-input-dialog__fields[data-v-b7ee78ed]{gap:8px;display:grid}.vfs-action-input-dialog__error[data-v-b7ee78ed]{color:#ffb3b3;margin:0;font-size:.9rem}.vfs-action-input-dialog__range-number[data-v-b7ee78ed]{grid-template-columns:1fr 92px;align-items:center;gap:8px;display:grid}.vfs-action-input-dialog__listbox-field[data-v-b7ee78ed]{width:100%}.vfs-unsaved-editor-dialog__body[data-v-b25ce526]{color:var(--SmartThemeBodyColor,#ffffffd9);margin:0;font-size:.95rem;line-height:1.45}.vfs-unsaved-editor-dialog__actions[data-v-b25ce526]{flex-wrap:wrap;justify-content:flex-end}.vfs-file-manager-panel[data-v-f2452120]{flex-direction:column;flex:auto;min-width:0;min-height:0;display:flex}.vfs-fm-header[data-v-f2452120]{flex-wrap:nowrap;flex:none;justify-content:space-between;align-items:center;gap:10px;min-width:0;margin-bottom:10px;display:flex}.vfs-fm-nav-group[data-v-f2452120]{flex:auto;align-items:center;gap:8px;min-width:0;display:flex}.vfs-fm-action-group[data-v-f2452120]{white-space:nowrap;flex-wrap:nowrap;flex:none;justify-content:flex-end;align-items:center;gap:8px;max-width:55%;display:inline-flex;overflow-x:auto}.vfs-fm-icon-button[data-v-f2452120]{width:28px;height:28px;color:inherit;background:#0003;border:1px solid #ffffff1f;border-radius:8px;flex:none;justify-content:center;align-items:center;padding:0;display:inline-flex}.vfs-fm-icon-button i[data-v-f2452120]{font-size:14px;line-height:1}.vfs-fm-icon-button[data-v-f2452120-s]{width:28px;height:28px;color:inherit;background:#0003;border:1px solid #ffffff1f;border-radius:8px;flex:none;justify-content:center;align-items:center;padding:0;display:inline-flex}.vfs-fm-icon-button i[data-v-f2452120-s]{font-size:14px;line-height:1}.vfs-fm-icon-button[data-v-f2452120]:disabled{opacity:.5;cursor:not-allowed}.vfs-fm-path-text[data-v-f2452120]{opacity:.9;text-overflow:ellipsis;white-space:nowrap;max-width:100%;overflow:hidden}.vfs-fm-list[data-v-f2452120]{flex:auto;align-content:start;gap:6px;min-width:0;min-height:0;margin:0;padding:0;list-style:none;display:grid;overflow:hidden auto}.vfs-fm-row[data-v-f2452120]{align-items:stretch;gap:6px;min-width:0;display:flex}.vfs-fm-item[data-v-f2452120]{text-align:left;background:#0000002e;border:1px solid #ffffff1f;border-radius:8px;flex:1 1 0;justify-content:space-between;align-items:center;gap:10px;min-width:0;padding:8px 10px;display:flex}.vfs-fm-item-main[data-v-f2452120]{flex:auto;align-items:center;gap:10px;min-width:0;display:flex}.vfs-fm-row-badge[data-v-f2452120]{color:#ffffff73;flex:0 auto;align-items:center;gap:4px;min-width:0;max-width:42%;font-size:11px;line-height:1.2;display:inline-flex}.vfs-fm-row-badge i[data-v-f2452120]{opacity:.95;flex-shrink:0;font-size:12px;line-height:1}.vfs-fm-row-badge-label[data-v-f2452120]{text-overflow:ellipsis;white-space:nowrap;min-width:0;font-size:12px;overflow:hidden}.vfs-fm-row-actions[data-v-f2452120]{z-index:2;flex:none;justify-content:center;align-items:center;gap:6px;display:inline-flex;position:relative}.vfs-fm-row-status[data-v-f2452120]{opacity:.95;background:#0003;border:1px solid #ffffff1f;border-radius:8px;justify-content:center;align-items:center;width:28px;min-width:28px;height:28px;display:inline-flex}.vfs-fm-row-status--on[data-v-f2452120]{color:#ffd54a;border-color:#ffd54a80;box-shadow:0 0 10px #ffd54a33}.vfs-fm-row-status--off[data-v-f2452120]{color:#fff6;filter:saturate(.2)brightness(.75);border-color:#ffffff1f}.vfs-fm-kind[data-v-f2452120]{text-align:center;width:22px}.vfs-fm-name[data-v-f2452120]{text-overflow:ellipsis;white-space:nowrap;flex:auto;min-width:0;overflow:hidden}@media (width<=1023px){.vfs-fm-header[data-v-f2452120]{flex-wrap:wrap;align-items:flex-start}.vfs-fm-action-group[data-v-f2452120]{white-space:normal;flex-wrap:wrap;justify-content:flex-start;min-width:0;max-width:100%;overflow-x:visible}.vfs-fm-item-main[data-v-f2452120]{flex:1 1 0;min-width:0;max-width:80%}}.vfs-history-screen[data-v-f7501d07]{flex-direction:column;flex:1;gap:12px;min-height:0;display:flex}.vfs-history-top[data-v-f7501d07]{flex:none}.vfs-history-status-bar[data-v-f7501d07]{background:#14182080;border:1px solid #ffffff24;border-radius:10px;align-items:center;gap:10px;padding:8px 10px;display:flex}.vfs-history-status-label[data-v-f7501d07]{opacity:.8;letter-spacing:.02em;font-size:12px}.vfs-history-status-pill[data-v-f7501d07]{background:#ffffff14;border:1px solid #fff3;border-radius:999px;align-items:center;padding:2px 8px;font-size:12px;font-weight:600;display:inline-flex}.vfs-history-status-spinner[data-v-f7501d07]{opacity:.9;margin-left:4px}.vfs-history-hint[data-v-f7501d07]{opacity:.8;margin:0;font-size:12px}.vfs-log-scrollport[data-v-f7501d07]{flex:auto;min-height:0;overflow:hidden auto}.vfs-log-list[data-v-f7501d07]{gap:8px;margin:0;padding:0;list-style:none;display:grid}.vfs-log-row[data-v-f7501d07]{background:#ffffff0a;border:1px solid #ffffff1f;border-radius:10px;justify-content:space-between;align-items:center;gap:10px;padding:8px 10px;display:flex}.vfs-log-meta[data-v-f7501d07]{flex-direction:column;gap:2px;min-width:0;display:flex}.vfs-log-line[data-v-f7501d07]{word-break:break-word;font-size:13px}.vfs-log-sub[data-v-f7501d07],.vfs-log-snap[data-v-f7501d07]{opacity:.75;word-break:break-all;font-size:12px}.vfs-log-actions[data-v-f7501d07]{flex-direction:column;flex:none;align-items:flex-end;gap:4px;display:flex}.vfs-log-rollback[data-v-f7501d07]{white-space:nowrap;flex:none}.vfs-log-rollback--disabled[data-v-f7501d07]{opacity:.65;cursor:not-allowed}.vfs-log-snapshot-missing[data-v-f7501d07]{text-align:right;flex-direction:column;align-items:flex-end;gap:2px;max-width:12rem;display:flex}.vfs-log-snapshot-missing-hint[data-v-f7501d07]{opacity:.72;word-break:break-word;font-size:11px;line-height:1.25}.vfs-log-empty[data-v-f7501d07]{opacity:.75;background:#ffffff08;border:1px dashed #fff3;border-radius:10px;margin:0;padding:12px}.vfs-line-number-gutter[data-v-3760853a]{-webkit-user-select:none;user-select:none;text-align:right;color:#ffffff52;font-variant-numeric:tabular-nums;background:0 0;border:none;flex:0 0 28px;width:28px;min-width:28px;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,Liberation Mono,Courier New,monospace;overflow:hidden}.vfs-line-number-gutter__content[data-v-3760853a]{will-change:transform;padding:0 8px 0 0}.vfs-line-number-gutter__line[data-v-3760853a]{font-size:12px;line-height:1.72;display:block}.vfs-reader[data-v-f443e033]{overflow-wrap:anywhere;word-break:break-word;width:100%;min-width:0;max-width:none;font-size:14px;line-height:1.72}.vfs-reader[data-v-f443e033] h1,.vfs-reader[data-v-f443e033] h2,.vfs-reader[data-v-f443e033] h3,.vfs-reader[data-v-f443e033] h4{margin:18px 0 10px;line-height:1.25}.vfs-reader[data-v-f443e033] p{margin:12px 0}.vfs-reader[data-v-f443e033] ul,.vfs-reader[data-v-f443e033] ol{margin:12px 0;padding-left:1.4em}.vfs-reader[data-v-f443e033] pre{background:#00000040;border:1px solid #ffffff1f;border-radius:10px;padding:10px 12px;overflow:auto}.vfs-reader[data-v-f443e033] code{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,Liberation Mono,Courier New,monospace;font-size:.95em}.vfs-reader[data-v-f443e033] blockquote{opacity:.95;border-left:3px solid #fff3;margin:12px 0;padding-left:12px}.vfs-reader[data-v-f443e033] table{border-collapse:collapse;width:100%}.vfs-reader[data-v-f443e033] th,.vfs-reader[data-v-f443e033] td{border:1px solid #ffffff1f;padding:6px 8px}.vfs-reader[data-v-f443e033] img{max-width:100%;height:auto}.vfs-reader[data-v-f443e033] .vfs-md-frontmatter{color:#ffffffc7;background:#0000002e;border:1px solid #ffffff1f;border-radius:10px;margin:0 0 14px;padding:10px 12px;font-size:12px;line-height:1.45}.vfs-reader[data-v-f443e033] .vfs-md-frontmatter__row{flex-wrap:wrap;align-items:flex-start;gap:6px 10px;margin:6px 0;display:flex}.vfs-reader[data-v-f443e033] .vfs-md-frontmatter__row:first-child{margin-top:0}.vfs-reader[data-v-f443e033] .vfs-md-frontmatter__row:last-child{margin-bottom:0}.vfs-reader[data-v-f443e033] .vfs-md-frontmatter__key{color:#ffffffe0;opacity:.95;flex:none;max-width:100%;font-weight:600}.vfs-reader[data-v-f443e033] .vfs-md-frontmatter__value{opacity:.9;word-break:break-word;flex:12rem;min-width:0}.vfs-reader[data-v-f443e033] .vfs-md-frontmatter__value--block{max-height:none;margin-top:6px}.vfs-reader[data-v-f443e033] .vfs-md-frontmatter__details{flex:12rem;min-width:0}.vfs-reader[data-v-f443e033] .vfs-md-frontmatter__summary{cursor:pointer;-webkit-user-select:none;user-select:none;opacity:.85;list-style:none}.vfs-reader[data-v-f443e033] .vfs-md-frontmatter__summary::-webkit-details-marker{display:none}.vfs-editor-screen[data-v-3e49c04d]{flex-direction:column;flex:auto;min-width:0;height:100%;min-height:0;max-height:100%;display:flex}.vfs-editor-toolbar[data-v-3e49c04d]{flex-wrap:wrap;flex:none;align-items:center;gap:8px;display:flex}.vfs-editor-toolbar__icon-button[data-v-3e49c04d]{justify-content:center;align-items:center;min-width:2.25rem;min-height:2.25rem;padding:6px 10px;display:inline-flex}.vfs-line-numbered-editor[data-v-3e49c04d]{flex:auto;min-width:0;min-height:0;display:flex;overflow:hidden}.vfs-editor[data-v-3e49c04d]{box-sizing:border-box;resize:none;border-radius:0;outline:none;flex:auto;width:100%;height:100%;min-height:0;max-height:100%;overflow:auto;box-shadow:none!important;background:0 0!important;border:0!important}.vfs-editor-preview-pane[data-v-3e49c04d]{flex:auto;min-width:0;min-height:0;overflow:auto}.vfs-slide-content[data-v-bf09533c]{gap:16px;display:grid}.vfs-slide-empty[data-v-bf09533c]{opacity:.75;margin:0}.vfs-tab-shell[data-v-7b1edd28]{flex-direction:column;flex:auto;min-width:0;min-height:0;display:flex}.vfs-tabs[data-v-7b1edd28]{background:#00000024;border:1px solid #ffffff1f;border-radius:12px;flex-wrap:wrap;flex:none;align-items:center;gap:8px;padding:6px;display:flex}.vfs-tabs__primary[data-v-7b1edd28]{flex-wrap:wrap;flex:auto;gap:6px;min-width:0;display:flex}.vfs-tabs__trailing[data-v-7b1edd28]{flex:0 auto;align-items:center;gap:6px;min-width:0;max-width:100%;margin-left:auto;display:inline-flex}@media (width<=1023px){.vfs-tabs[data-v-7b1edd28]{flex-direction:column;align-items:stretch}.vfs-tabs__primary[data-v-7b1edd28]{width:100%;overflow-x:visible}.vfs-tabs__trailing[data-v-7b1edd28]{flex-wrap:wrap;justify-content:flex-start;width:100%;max-width:none;margin-left:0}}.vfs-tabs__trailing[data-v-7b1edd28]:empty{display:none}.vfs-tab-content[data-v-7b1edd28]{flex-direction:column;flex:auto;min-width:0;min-height:0;display:flex}.vfs-tab[data-v-7b1edd28]{writing-mode:horizontal-tb;white-space:nowrap;opacity:.9;background:0 0;border:1px solid #0000;border-radius:999px;flex:none;justify-content:center;align-items:center;transition:background .12s,border-color .12s,opacity .12s;display:inline-flex}.vfs-tab[data-v-7b1edd28]:hover{opacity:1;background:#ffffff0f;border-color:#ffffff1f}.vfs-tab.active[data-v-7b1edd28]{opacity:1;background:#ffffff1f;border-color:#ffffff38;font-weight:700;box-shadow:0 6px 16px #0000002e}.vfs-worktree-screen[data-v-a1232042]{flex-direction:column;flex:auto;min-width:0;min-height:0;display:flex}.vfs-worktree-text[data-v-a1232042]{white-space:pre-wrap;overflow-wrap:anywhere;opacity:.92;background:#00000024;border:1px solid #ffffff1f;border-radius:12px;flex:auto;min-width:0;min-height:0;margin:0;padding:10px 12px;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,Liberation Mono,Courier New,monospace;font-size:12px;line-height:1.35;overflow:auto}.vfs-main-layout[data-v-93c5f777]{flex-direction:column;flex:auto;min-height:0;display:flex;position:relative}.vfs-list-only-layout[data-v-93c5f777]{flex-direction:column;flex:auto;width:100%;min-height:0;display:flex}.vfs-preview-stack[data-v-93c5f777]{flex-direction:column;flex:auto;min-height:0;display:flex}.vfs-preview-body[data-v-93c5f777]{flex-direction:column;flex:auto;gap:8px;min-height:0;display:flex}.vfs-preview-body--fullscreen[data-v-93c5f777]{box-sizing:border-box;background:var(--SmartThemeBlurTintColor,#141414eb);min-height:100dvh}.vfs-preview-top-bar[data-v-93c5f777]{flex-wrap:wrap;flex:none;align-items:center;gap:8px;display:flex;position:relative}.vfs-tabs-editor-snapshot-tools[data-v-93c5f777]{flex:none;align-items:center;gap:6px;display:inline-flex}.vfs-tabs-snapshot-listbox[data-v-93c5f777]{flex:none;width:11rem;min-width:11rem;max-width:11rem}.vfs-tabs-snapshot-rollback-button[data-v-93c5f777]{flex-shrink:0;justify-content:center;align-items:center;min-width:2.1rem;min-height:30px;padding:4px 8px;font-size:.8rem;display:inline-flex}.vfs-preview-top-bar__left[data-v-93c5f777]{flex:none;align-items:center;gap:8px;display:flex}.vfs-preview-top-bar__title[data-v-93c5f777]{flex:auto;min-width:0}.vfs-preview-chrome-actions[data-v-93c5f777]{flex-wrap:wrap;align-items:center;gap:8px;min-width:0;margin-left:auto;display:inline-flex}.vfs-preview-chrome-button[data-v-93c5f777]{justify-content:center;align-items:center;min-width:2.25rem;min-height:2.25rem;padding:6px 10px;display:inline-flex}.vfs-preview-file-title[data-v-93c5f777]{text-overflow:ellipsis;white-space:nowrap;pointer-events:none;opacity:.92;margin:0;font-size:1.08rem;font-weight:700;line-height:1.2;overflow:hidden}.vfs-preview-body[data-v-93c5f777]>:not(.vfs-preview-top-bar){flex:auto;min-width:0;min-height:0}.vfs-preview-content-frame[data-v-93c5f777]{background:#00000024;border:1px solid #ffffff29;border-radius:12px;flex-direction:column;flex:auto;min-width:0;min-height:0;padding:10px 12px;display:flex;position:relative}.vfs-preview-content-frame--meta-anchored[data-v-93c5f777]{padding-bottom:52px}.vfs-editor-stage[data-v-93c5f777]{flex-direction:column;flex:auto;min-width:0;min-height:0;display:flex}.vfs-preview-back-button[data-v-93c5f777]{justify-content:center;align-items:center;min-width:2.25rem;min-height:2.25rem;padding:6px 10px;display:inline-flex}.vfs-preview-meta[data-v-93c5f777]{opacity:.72;text-align:right;flex-wrap:wrap;justify-content:flex-end;align-items:center;gap:6px 10px;max-width:100%;font-size:12px;line-height:1.3;display:flex}.vfs-preview-meta--anchored[data-v-93c5f777]{position:absolute;bottom:8px;right:12px}.vfs-preview-meta--flow[data-v-93c5f777]{margin-top:8px;margin-left:auto}[data-layout=mobile] .vfs-preview-top-bar[data-v-93c5f777]{flex-flow:wrap;align-items:center;min-width:0}[data-layout=mobile] .vfs-preview-top-bar__left[data-v-93c5f777]{flex:none;order:-1}[data-layout=mobile] .vfs-preview-chrome-actions[data-v-93c5f777]{box-sizing:border-box;flex-wrap:nowrap;flex:1 1 0;order:-1;justify-content:flex-end;min-width:0;margin-left:0}[data-layout=mobile] .vfs-preview-top-bar__title[data-v-93c5f777]{text-align:center;flex:0 0 100%;order:0;width:100%;min-width:0;max-width:100%}[data-layout=mobile] .vfs-preview-file-title[data-v-93c5f777]{text-align:center}@media (width<=1023px){.vfs-tabs-editor-snapshot-tools[data-v-93c5f777],.vfs-tabs-snapshot-listbox[data-v-93c5f777]{flex:auto;width:100%;min-width:0;max-width:100%}}.vfs-settings-root[data-v-a415a9a8],.inline-drawer[data-v-a415a9a8],.inline-drawer-content[data-v-a415a9a8]{width:100%}.vfs-title-row[data-v-a415a9a8]{align-items:center;gap:10px;display:flex}.vfs-panel[data-v-a415a9a8]{padding:10px}.vfs-field[data-v-a415a9a8]{flex-direction:column;gap:6px;margin-top:12px;display:flex}.vfs-field-label[data-v-a415a9a8]{opacity:.9;font-size:.95em}.vfs-number-input[data-v-a415a9a8]{max-width:120px}.vfs-actions[data-v-a415a9a8]{flex-wrap:wrap;gap:8px;margin-top:10px;display:flex}.vfs-actions .menu_button[data-v-a415a9a8]{writing-mode:horizontal-tb;white-space:nowrap}#st-vfs-popup.st-vfs-popup{z-index:10000;height:70vh;max-height:85vh;color:var(--SmartThemeBodyColor,#ffffffeb);background:var(--SmartThemeBlurTintColor,#141414eb);border:1px solid #ffffff1f;border-radius:12px;flex-direction:column;padding:0;display:flex;position:fixed;overflow:hidden;box-shadow:0 12px 40px #0000008c;pointer-events:auto!important}#st-vfs-popup.st-vfs-popup::backdrop{pointer-events:none;background:#0000008c}#st-vfs-popup #st-vfs-popup-app{flex-direction:column;flex:auto;min-height:0;padding:12px;display:flex;pointer-events:auto!important}#st-vfs-popup #st-vfs-popup-app>*{flex:auto;min-height:0}#st-vfs-popup #st-vfs-action-menu-teleport{z-index:80;position:absolute;inset:0;pointer-events:none!important}#st-vfs-popup #st-vfs-action-menu-teleport>*,#st-vfs-popup.st-vfs-popup *{pointer-events:auto!important}#st-vfs-popup .st-vfs-popup__header{justify-content:space-between;align-items:center;gap:10px;padding:10px 12px 0;display:flex}#st-vfs-popup .st-vfs-popup__header-actions{align-items:center;gap:8px;display:inline-flex}#st-vfs-popup .st-vfs-popup__title{opacity:.95;text-overflow:ellipsis;white-space:nowrap;font-weight:700;overflow:hidden}#st-vfs-popup .st-vfs-popup__close{min-width:36px;height:36px;box-shadow:none;color:inherit;background:0 0;border:0;padding:0;font-size:28px;font-weight:500;line-height:36px}#st-vfs-popup .st-vfs-popup__close:hover{opacity:.85;background:0 0;border:0}#st-vfs-popup button,#st-vfs-popup .menu_button,#st-vfs-popup summary{writing-mode:horizontal-tb;white-space:nowrap}#st-vfs-popup button.vfs-fm-item{white-space:normal}#st-vfs-popup .vfs-action-menu__toggle{cursor:pointer;-webkit-user-select:none;user-select:none;background:#0003;border:1px solid #ffffff1f;border-radius:8px;align-items:center;gap:8px;padding:6px 10px;display:inline-flex}#st-vfs-popup summary.vfs-action-menu__toggle::-webkit-details-marker{display:none}#st-vfs-popup .vfs-action-menu__list button[role=menuitem]{text-align:left;width:100%;color:var(--SmartThemeBodyColor,#ffffffeb);border-radius:8px;justify-content:flex-start;padding:6px 10px}#st-vfs-popup .vfs-action-menu__list button[role=menuitem].menu_button{min-width:100%}#st-vfs-popup .vfs-create-modal__overlay{z-index:30;background:#00000073;justify-content:center;align-items:center;display:flex;position:absolute;inset:0}#st-vfs-popup .vfs-create-modal__card{background:var(--SmartThemeBlurTintColor,#141414f0);border:1px solid #ffffff29;border-radius:10px;width:min(420px,100% - 24px);padding:14px;box-shadow:0 10px 30px #00000073}#st-vfs-popup .vfs-create-modal__title{margin:0 0 10px}#st-vfs-popup .vfs-create-modal__field{gap:6px;display:grid}#st-vfs-popup .vfs-create-modal__actions{justify-content:flex-end;gap:8px;margin-top:12px;display:flex}@media (width<=1023px){#st-vfs-popup.st-vfs-popup{border-radius:8px;height:92vh;max-height:96vh}#st-vfs-popup #st-vfs-popup-app{padding:8px}#st-vfs-popup .st-vfs-popup__header{padding:8px 10px 0}#st-vfs-popup .st-vfs-popup__close{min-width:32px;height:32px;font-size:24px;line-height:32px}}.extraMesButtons #st-vfs-entry-button.st-vfs-entry{justify-content:center;align-items:flex-start;min-width:22px;height:28px;min-height:28px;padding:2px 0 0;font-size:14px;line-height:1;display:inline-flex}#st-vfs-settings-root .checkbox_label{color:var(--SmartThemeBodyColor,#ffffffeb);align-items:center;gap:8px;display:inline-flex}#st-vfs-settings-root .checkbox_label input[type=checkbox]{width:16px;height:16px;accent-color:var(--SmartThemeQuoteColor,#7aa2ff);flex:none}#st-vfs-settings-root .vfs-number-input{box-sizing:border-box;color:var(--SmartThemeBodyColor,#ffffffeb);background:#0003;border:1px solid #ffffff1f;border-radius:8px;padding:6px 10px}#st-vfs-settings-root .vfs-number-input:focus-visible{outline-offset:1px;outline:2px solid #7aa2ff73}#st-vfs-settings-root .menu_button{color:var(--SmartThemeBodyColor,#ffffffeb);background:#0003;border:1px solid #ffffff1f;border-radius:8px;padding:6px 10px}#st-vfs-settings-root .menu_button:hover{background:#ffffff0f;border-color:#ffffff29}
+(function(){try{if(typeof document<`u`){var e=document.createElement(`style`);e.appendChild(document.createTextNode(`.vfs-action-menu[data-v-a111f74c]{position:relative}.vfs-action-menu__toggle[data-v-a111f74c]{cursor:pointer;-webkit-user-select:none;user-select:none;justify-content:center;align-items:center;width:28px;height:28px;padding:0;list-style:none;display:inline-flex}.vfs-action-menu__toggle i[data-v-a111f74c]{font-size:14px;line-height:1}.vfs-action-menu[data-disabled=true] .vfs-action-menu__toggle[data-v-a111f74c]{opacity:.5;cursor:not-allowed}.vfs-action-menu__list[data-v-a111f74c]{z-index:50;background:#00000040;border:1px solid #ffffff1f;border-radius:8px;min-width:180px;max-height:min(50vh,360px);margin:0;padding:8px;list-style:none;position:absolute;top:calc(100% + 8px);right:0;overflow:auto;box-shadow:0 10px 24px #00000073}.vfs-action-menu__list--entity-fixed[data-v-a111f74c],.vfs-action-menu__list--fixed-overlay[data-v-a111f74c]{top:unset;right:unset;position:fixed}.vfs-action-menu__separator[data-v-a111f74c]{border-top:1px solid #ffffff1f;margin:6px 0}.vfs-action-confirm-dialog__message[data-v-37f7685b]{color:var(--SmartThemeBodyColor,#ffffffd9);margin:0;line-height:1.45}.vfs-listbox-field[data-v-3f94c5a7]{min-width:0;position:relative}.vfs-listbox-field__trigger[data-v-3f94c5a7]{width:100%;min-height:40px;color:inherit;text-align:left;cursor:pointer;background:#0f1218eb;border:1px solid #fff3;border-radius:6px;justify-content:space-between;align-items:center;gap:8px;padding:8px 10px;font-size:1rem;line-height:1.35;display:inline-flex}.vfs-listbox-field__trigger[data-v-3f94c5a7]:disabled{opacity:.55;cursor:not-allowed}.vfs-listbox-field__trigger[data-v-3f94c5a7]:focus-visible{outline-offset:1px}.vfs-listbox-field__trigger-label[data-v-3f94c5a7]{text-overflow:ellipsis;white-space:nowrap;flex:auto;min-width:0;overflow:hidden}.vfs-listbox-field__listbox[data-v-3f94c5a7]{z-index:20;box-sizing:border-box;background:#141820fa;border:1px solid #fff3;border-radius:8px;width:max-content;min-width:100%;max-width:min(100vw - 20px,36rem);max-height:220px;margin:0;padding:4px;list-style:none;position:absolute;top:calc(100% + 6px);left:0;right:auto;overflow:hidden auto}.vfs-listbox-field__option[data-v-3f94c5a7]{width:100%;color:inherit;text-align:left;cursor:pointer;white-space:nowrap;background:0 0;border:0;border-radius:6px;padding:8px 10px;font-size:1rem;line-height:1.35;display:block}.vfs-listbox-field__option[data-active=true][data-v-3f94c5a7]{background:#ffffff24}.vfs-listbox-field__option[aria-selected=true][data-v-3f94c5a7]{font-weight:600}.vfs-listbox-field--dropdown-match-trigger .vfs-listbox-field__listbox[data-v-3f94c5a7]{width:100%;min-width:0;max-width:none;left:0;right:0}.vfs-listbox-field--compact .vfs-listbox-field__trigger[data-v-3f94c5a7]{border-radius:6px;min-height:30px;padding:4px 8px;font-size:.8rem}.vfs-listbox-field--compact .vfs-listbox-field__listbox[data-v-3f94c5a7]{max-height:200px;padding:3px}.vfs-listbox-field--compact .vfs-listbox-field__option[data-v-3f94c5a7]{padding:5px 8px;font-size:.75rem;line-height:1.3}.vfs-action-input-dialog__fields[data-v-b7ee78ed]{gap:8px;display:grid}.vfs-action-input-dialog__error[data-v-b7ee78ed]{color:#ffb3b3;margin:0;font-size:.9rem}.vfs-action-input-dialog__range-number[data-v-b7ee78ed]{grid-template-columns:1fr 92px;align-items:center;gap:8px;display:grid}.vfs-action-input-dialog__listbox-field[data-v-b7ee78ed]{width:100%}.vfs-unsaved-editor-dialog__body[data-v-b25ce526]{color:var(--SmartThemeBodyColor,#ffffffd9);margin:0;font-size:.95rem;line-height:1.45}.vfs-unsaved-editor-dialog__actions[data-v-b25ce526]{flex-wrap:wrap;justify-content:flex-end}.vfs-file-manager-panel[data-v-f2452120]{flex-direction:column;flex:auto;min-width:0;min-height:0;display:flex}.vfs-fm-header[data-v-f2452120]{flex-wrap:nowrap;flex:none;justify-content:space-between;align-items:center;gap:10px;min-width:0;margin-bottom:10px;display:flex}.vfs-fm-nav-group[data-v-f2452120]{flex:auto;align-items:center;gap:8px;min-width:0;display:flex}.vfs-fm-action-group[data-v-f2452120]{white-space:nowrap;flex-wrap:nowrap;flex:none;justify-content:flex-end;align-items:center;gap:8px;max-width:55%;display:inline-flex;overflow-x:auto}.vfs-fm-icon-button[data-v-f2452120]{width:28px;height:28px;color:inherit;background:#0003;border:1px solid #ffffff1f;border-radius:8px;flex:none;justify-content:center;align-items:center;padding:0;display:inline-flex}.vfs-fm-icon-button i[data-v-f2452120]{font-size:14px;line-height:1}.vfs-fm-icon-button[data-v-f2452120-s]{width:28px;height:28px;color:inherit;background:#0003;border:1px solid #ffffff1f;border-radius:8px;flex:none;justify-content:center;align-items:center;padding:0;display:inline-flex}.vfs-fm-icon-button i[data-v-f2452120-s]{font-size:14px;line-height:1}.vfs-fm-icon-button[data-v-f2452120]:disabled{opacity:.5;cursor:not-allowed}.vfs-fm-path-text[data-v-f2452120]{opacity:.9;text-overflow:ellipsis;white-space:nowrap;max-width:100%;overflow:hidden}.vfs-fm-list[data-v-f2452120]{flex:auto;align-content:start;gap:6px;min-width:0;min-height:0;margin:0;padding:0;list-style:none;display:grid;overflow:hidden auto}.vfs-fm-row[data-v-f2452120]{align-items:stretch;gap:6px;min-width:0;display:flex}.vfs-fm-item[data-v-f2452120]{text-align:left;background:#0000002e;border:1px solid #ffffff1f;border-radius:8px;flex:1 1 0;justify-content:space-between;align-items:center;gap:10px;min-width:0;padding:8px 10px;display:flex}.vfs-fm-item-main[data-v-f2452120]{flex:auto;align-items:center;gap:10px;min-width:0;display:flex}.vfs-fm-row-badge[data-v-f2452120]{color:#ffffff73;flex:0 auto;align-items:center;gap:4px;min-width:0;max-width:42%;font-size:11px;line-height:1.2;display:inline-flex}.vfs-fm-row-badge i[data-v-f2452120]{opacity:.95;flex-shrink:0;font-size:12px;line-height:1}.vfs-fm-row-badge-label[data-v-f2452120]{text-overflow:ellipsis;white-space:nowrap;min-width:0;font-size:12px;overflow:hidden}.vfs-fm-row-actions[data-v-f2452120]{z-index:2;flex:none;justify-content:center;align-items:center;gap:6px;display:inline-flex;position:relative}.vfs-fm-row-status[data-v-f2452120]{opacity:.95;background:#0003;border:1px solid #ffffff1f;border-radius:8px;justify-content:center;align-items:center;width:28px;min-width:28px;height:28px;display:inline-flex}.vfs-fm-row-status--on[data-v-f2452120]{color:#ffd54a;border-color:#ffd54a80;box-shadow:0 0 10px #ffd54a33}.vfs-fm-row-status--off[data-v-f2452120]{color:#fff6;filter:saturate(.2)brightness(.75);border-color:#ffffff1f}.vfs-fm-kind[data-v-f2452120]{text-align:center;width:22px}.vfs-fm-name[data-v-f2452120]{text-overflow:ellipsis;white-space:nowrap;flex:auto;min-width:0;overflow:hidden}@media (width<=1023px){.vfs-fm-header[data-v-f2452120]{flex-wrap:wrap;align-items:flex-start}.vfs-fm-action-group[data-v-f2452120]{white-space:normal;flex-wrap:wrap;justify-content:flex-start;min-width:0;max-width:100%;overflow-x:visible}.vfs-fm-item-main[data-v-f2452120]{flex:1 1 0;min-width:0;max-width:80%}}.vfs-history-screen[data-v-f7501d07]{flex-direction:column;flex:1;gap:12px;min-height:0;display:flex}.vfs-history-top[data-v-f7501d07]{flex:none}.vfs-history-status-bar[data-v-f7501d07]{background:#14182080;border:1px solid #ffffff24;border-radius:10px;align-items:center;gap:10px;padding:8px 10px;display:flex}.vfs-history-status-label[data-v-f7501d07]{opacity:.8;letter-spacing:.02em;font-size:12px}.vfs-history-status-pill[data-v-f7501d07]{background:#ffffff14;border:1px solid #fff3;border-radius:999px;align-items:center;padding:2px 8px;font-size:12px;font-weight:600;display:inline-flex}.vfs-history-status-spinner[data-v-f7501d07]{opacity:.9;margin-left:4px}.vfs-history-hint[data-v-f7501d07]{opacity:.8;margin:0;font-size:12px}.vfs-log-scrollport[data-v-f7501d07]{flex:auto;min-height:0;overflow:hidden auto}.vfs-log-list[data-v-f7501d07]{gap:8px;margin:0;padding:0;list-style:none;display:grid}.vfs-log-row[data-v-f7501d07]{background:#ffffff0a;border:1px solid #ffffff1f;border-radius:10px;justify-content:space-between;align-items:center;gap:10px;padding:8px 10px;display:flex}.vfs-log-meta[data-v-f7501d07]{flex-direction:column;gap:2px;min-width:0;display:flex}.vfs-log-line[data-v-f7501d07]{word-break:break-word;font-size:13px}.vfs-log-sub[data-v-f7501d07],.vfs-log-snap[data-v-f7501d07]{opacity:.75;word-break:break-all;font-size:12px}.vfs-log-actions[data-v-f7501d07]{flex-direction:column;flex:none;align-items:flex-end;gap:4px;display:flex}.vfs-log-rollback[data-v-f7501d07]{white-space:nowrap;flex:none}.vfs-log-rollback--disabled[data-v-f7501d07]{opacity:.65;cursor:not-allowed}.vfs-log-snapshot-missing[data-v-f7501d07]{text-align:right;flex-direction:column;align-items:flex-end;gap:2px;max-width:12rem;display:flex}.vfs-log-snapshot-missing-hint[data-v-f7501d07]{opacity:.72;word-break:break-word;font-size:11px;line-height:1.25}.vfs-log-empty[data-v-f7501d07]{opacity:.75;background:#ffffff08;border:1px dashed #fff3;border-radius:10px;margin:0;padding:12px}.vfs-line-number-gutter[data-v-3ddd70c5]{-webkit-user-select:none;user-select:none;color:#ffffff52;font-variant-numeric:tabular-nums;background:0 0;border:none;flex:0 0 35px;width:35px;min-width:35px;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,Liberation Mono,Courier New,monospace;overflow:hidden}.vfs-line-number-gutter__content[data-v-3ddd70c5]{will-change:transform}.vfs-line-number-gutter__row[data-v-3ddd70c5]{box-sizing:border-box;text-align:right;padding-right:8px;font-size:12px;display:block}.vfs-reader[data-v-26a4b717]{overflow-wrap:anywhere;word-break:break-word;width:100%;min-width:0;max-width:none;font-size:14px;line-height:1.72}.vfs-reader[data-v-26a4b717] h1,.vfs-reader[data-v-26a4b717] h2,.vfs-reader[data-v-26a4b717] h3,.vfs-reader[data-v-26a4b717] h4{margin:18px 0 10px;line-height:1.25}.vfs-reader[data-v-26a4b717] p{margin:12px 0}.vfs-reader[data-v-26a4b717] ul,.vfs-reader[data-v-26a4b717] ol{margin:12px 0;padding-left:1.4em}.vfs-reader[data-v-26a4b717] pre:not(.vfs-plain-text){background:#00000040;border:1px solid #ffffff1f;border-radius:10px;padding:10px 12px;overflow:auto}.vfs-reader[data-v-26a4b717] code{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,Liberation Mono,Courier New,monospace;font-size:.95em}.vfs-reader[data-v-26a4b717] blockquote{opacity:.95;border-left:3px solid #fff3;margin:12px 0;padding-left:12px}.vfs-reader[data-v-26a4b717] table{border-collapse:collapse;width:100%}.vfs-reader[data-v-26a4b717] th,.vfs-reader[data-v-26a4b717] td{border:1px solid #ffffff1f;padding:6px 8px}.vfs-reader[data-v-26a4b717] img{max-width:100%;height:auto}.vfs-reader[data-v-26a4b717] .vfs-md-frontmatter{color:#ffffffc7;background:#0000002e;border:1px solid #ffffff1f;border-radius:10px;margin:0 0 14px;padding:10px 12px;font-size:12px;line-height:1.45}.vfs-reader[data-v-26a4b717] .vfs-md-frontmatter__row{flex-wrap:wrap;align-items:flex-start;gap:6px 10px;margin:6px 0;display:flex}.vfs-reader[data-v-26a4b717] .vfs-md-frontmatter__row:first-child{margin-top:0}.vfs-reader[data-v-26a4b717] .vfs-md-frontmatter__row:last-child{margin-bottom:0}.vfs-reader[data-v-26a4b717] .vfs-md-frontmatter__key{color:#ffffffe0;opacity:.95;flex:none;max-width:100%;font-weight:600}.vfs-reader[data-v-26a4b717] .vfs-md-frontmatter__value{opacity:.9;word-break:break-word;flex:12rem;min-width:0}.vfs-reader[data-v-26a4b717] .vfs-md-frontmatter__value--block{max-height:none;margin-top:6px}.vfs-reader[data-v-26a4b717] .vfs-md-frontmatter__details{flex:12rem;min-width:0}.vfs-reader[data-v-26a4b717] .vfs-md-frontmatter__summary{cursor:pointer;-webkit-user-select:none;user-select:none;opacity:.85;list-style:none}.vfs-reader[data-v-26a4b717] .vfs-md-frontmatter__summary::-webkit-details-marker{display:none}.vfs-reader[data-v-26a4b717] .vfs-plain-text{white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;color:inherit;background:0 0;border:none;border-radius:0;margin:0;padding:0;font-family:inherit;font-size:14px;line-height:1.72}.vfs-editor-screen[data-v-162fe7ff]{flex-direction:column;flex:auto;min-width:0;height:100%;min-height:0;max-height:100%;display:flex}.vfs-editor-toolbar[data-v-162fe7ff]{flex-wrap:wrap;flex:none;align-items:center;gap:8px;display:flex}.vfs-editor-toolbar__icon-button[data-v-162fe7ff]{justify-content:center;align-items:center;min-width:2.25rem;min-height:2.25rem;padding:6px 10px;display:inline-flex}.vfs-line-numbered-editor[data-v-162fe7ff]{flex:auto;min-width:0;min-height:0;display:flex;overflow:hidden}.vfs-editor-wrap[data-v-162fe7ff]{flex:auto;min-width:0;min-height:0;position:relative;overflow:hidden}.vfs-editor-line-mirror[data-v-162fe7ff]{visibility:hidden;pointer-events:none;box-sizing:content-box;white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;margin:0;padding:0;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,Liberation Mono,Courier New,monospace;font-size:12px;line-height:1.72;position:absolute;top:0;left:0;overflow:visible}.vfs-editor-line-mirror__line[data-v-162fe7ff]{width:100%;min-width:0;display:block}.vfs-editor[data-v-162fe7ff]{z-index:1;box-sizing:border-box;resize:none;white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;border-radius:0;outline:none;flex:auto;width:100%;height:100%;min-height:0;max-height:100%;padding:8px 10px;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,Liberation Mono,Courier New,monospace;font-size:12px;line-height:1.72;position:relative;overflow:auto;box-shadow:none!important;background:0 0!important;border:0!important}.vfs-editor-preview-pane[data-v-162fe7ff]{flex:auto;min-width:0;min-height:0;overflow:auto}.vfs-slide-content[data-v-0649f89e]{gap:16px;display:grid}.vfs-slide-empty[data-v-0649f89e]{opacity:.75;margin:0}.vfs-tab-shell[data-v-7b1edd28]{flex-direction:column;flex:auto;min-width:0;min-height:0;display:flex}.vfs-tabs[data-v-7b1edd28]{background:#00000024;border:1px solid #ffffff1f;border-radius:12px;flex-wrap:wrap;flex:none;align-items:center;gap:8px;padding:6px;display:flex}.vfs-tabs__primary[data-v-7b1edd28]{flex-wrap:wrap;flex:auto;gap:6px;min-width:0;display:flex}.vfs-tabs__trailing[data-v-7b1edd28]{flex:0 auto;align-items:center;gap:6px;min-width:0;max-width:100%;margin-left:auto;display:inline-flex}@media (width<=1023px){.vfs-tabs[data-v-7b1edd28]{flex-direction:column;align-items:stretch}.vfs-tabs__primary[data-v-7b1edd28]{width:100%;overflow-x:visible}.vfs-tabs__trailing[data-v-7b1edd28]{flex-wrap:wrap;justify-content:flex-start;width:100%;max-width:none;margin-left:0}}.vfs-tabs__trailing[data-v-7b1edd28]:empty{display:none}.vfs-tab-content[data-v-7b1edd28]{flex-direction:column;flex:auto;min-width:0;min-height:0;display:flex}.vfs-tab[data-v-7b1edd28]{writing-mode:horizontal-tb;white-space:nowrap;opacity:.9;background:0 0;border:1px solid #0000;border-radius:999px;flex:none;justify-content:center;align-items:center;transition:background .12s,border-color .12s,opacity .12s;display:inline-flex}.vfs-tab[data-v-7b1edd28]:hover{opacity:1;background:#ffffff0f;border-color:#ffffff1f}.vfs-tab.active[data-v-7b1edd28]{opacity:1;background:#ffffff1f;border-color:#ffffff38;font-weight:700;box-shadow:0 6px 16px #0000002e}.vfs-worktree-screen[data-v-a1232042]{flex-direction:column;flex:auto;min-width:0;min-height:0;display:flex}.vfs-worktree-text[data-v-a1232042]{white-space:pre-wrap;overflow-wrap:anywhere;opacity:.92;background:#00000024;border:1px solid #ffffff1f;border-radius:12px;flex:auto;min-width:0;min-height:0;margin:0;padding:10px 12px;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,Liberation Mono,Courier New,monospace;font-size:12px;line-height:1.35;overflow:auto}.vfs-main-layout[data-v-124536bd]{flex-direction:column;flex:auto;min-height:0;display:flex;position:relative}.vfs-list-only-layout[data-v-124536bd]{flex-direction:column;flex:auto;width:100%;min-height:0;display:flex}.vfs-preview-stack[data-v-124536bd]{flex-direction:column;flex:auto;min-height:0;display:flex}.vfs-preview-body[data-v-124536bd]{flex-direction:column;flex:auto;gap:8px;min-height:0;display:flex}.vfs-preview-body--fullscreen[data-v-124536bd]{box-sizing:border-box;background:var(--SmartThemeBlurTintColor,#141414eb);min-height:100dvh}.vfs-preview-top-bar[data-v-124536bd]{flex-wrap:wrap;flex:none;align-items:center;gap:8px;display:flex;position:relative}.vfs-tabs-editor-snapshot-tools[data-v-124536bd]{flex:none;align-items:center;gap:6px;display:inline-flex}.vfs-tabs-snapshot-listbox[data-v-124536bd]{flex:none;width:11rem;min-width:11rem;max-width:11rem}.vfs-tabs-snapshot-rollback-button[data-v-124536bd]{flex-shrink:0;justify-content:center;align-items:center;min-width:2.1rem;min-height:30px;padding:4px 8px;font-size:.8rem;display:inline-flex}.vfs-preview-top-bar__left[data-v-124536bd]{flex:none;align-items:center;gap:8px;display:flex}.vfs-preview-top-bar__title[data-v-124536bd]{flex:auto;min-width:0}.vfs-preview-chrome-actions[data-v-124536bd]{flex-wrap:wrap;align-items:center;gap:8px;min-width:0;margin-left:auto;display:inline-flex}.vfs-preview-chrome-button[data-v-124536bd]{justify-content:center;align-items:center;min-width:2.25rem;min-height:2.25rem;padding:6px 10px;display:inline-flex}.vfs-preview-file-title[data-v-124536bd]{text-overflow:ellipsis;white-space:nowrap;pointer-events:none;opacity:.92;margin:0;font-size:1.08rem;font-weight:700;line-height:1.2;overflow:hidden}.vfs-preview-body[data-v-124536bd]>:not(.vfs-preview-top-bar){flex:auto;min-width:0;min-height:0}.vfs-preview-content-frame[data-v-124536bd]{background:#00000024;border:1px solid #ffffff29;border-radius:12px;flex-direction:column;flex:auto;min-width:0;min-height:0;padding:10px 12px;display:flex;position:relative}.vfs-preview-content-frame--meta-anchored[data-v-124536bd]{padding-bottom:52px}.vfs-editor-stage[data-v-124536bd]{flex-direction:column;flex:auto;min-width:0;min-height:0;display:flex}.vfs-preview-back-button[data-v-124536bd]{justify-content:center;align-items:center;min-width:2.25rem;min-height:2.25rem;padding:6px 10px;display:inline-flex}.vfs-preview-meta[data-v-124536bd]{opacity:.72;text-align:right;flex-wrap:wrap;justify-content:flex-end;align-items:center;gap:6px 10px;max-width:100%;font-size:12px;line-height:1.3;display:flex}.vfs-preview-meta--anchored[data-v-124536bd]{position:absolute;bottom:8px;right:12px}.vfs-preview-meta--flow[data-v-124536bd]{margin-top:8px;margin-left:auto}[data-layout=mobile] .vfs-preview-top-bar[data-v-124536bd]{flex-flow:wrap;align-items:center;min-width:0}[data-layout=mobile] .vfs-preview-top-bar__left[data-v-124536bd]{flex:none;order:-1}[data-layout=mobile] .vfs-preview-chrome-actions[data-v-124536bd]{box-sizing:border-box;flex-wrap:nowrap;flex:1 1 0;order:-1;justify-content:flex-end;min-width:0;margin-left:0}[data-layout=mobile] .vfs-preview-top-bar__title[data-v-124536bd]{text-align:center;flex:0 0 100%;order:0;width:100%;min-width:0;max-width:100%}[data-layout=mobile] .vfs-preview-file-title[data-v-124536bd]{text-align:center}@media (width<=1023px){.vfs-tabs-editor-snapshot-tools[data-v-124536bd],.vfs-tabs-snapshot-listbox[data-v-124536bd]{flex:auto;width:100%;min-width:0;max-width:100%}}.vfs-settings-root[data-v-a415a9a8],.inline-drawer[data-v-a415a9a8],.inline-drawer-content[data-v-a415a9a8]{width:100%}.vfs-title-row[data-v-a415a9a8]{align-items:center;gap:10px;display:flex}.vfs-panel[data-v-a415a9a8]{padding:10px}.vfs-field[data-v-a415a9a8]{flex-direction:column;gap:6px;margin-top:12px;display:flex}.vfs-field-label[data-v-a415a9a8]{opacity:.9;font-size:.95em}.vfs-number-input[data-v-a415a9a8]{max-width:120px}.vfs-actions[data-v-a415a9a8]{flex-wrap:wrap;gap:8px;margin-top:10px;display:flex}.vfs-actions .menu_button[data-v-a415a9a8]{writing-mode:horizontal-tb;white-space:nowrap}#st-vfs-popup.st-vfs-popup{z-index:10000;height:70vh;max-height:85vh;color:var(--SmartThemeBodyColor,#ffffffeb);background:var(--SmartThemeBlurTintColor,#141414eb);border:1px solid #ffffff1f;border-radius:12px;flex-direction:column;padding:0;display:flex;position:fixed;overflow:hidden;box-shadow:0 12px 40px #0000008c;pointer-events:auto!important}#st-vfs-popup.st-vfs-popup::backdrop{pointer-events:none;background:#0000008c}#st-vfs-popup #st-vfs-popup-app{flex-direction:column;flex:auto;min-height:0;padding:12px;display:flex;pointer-events:auto!important}#st-vfs-popup #st-vfs-popup-app>*{flex:auto;min-height:0}#st-vfs-popup #st-vfs-action-menu-teleport{z-index:80;position:absolute;inset:0;pointer-events:none!important}#st-vfs-popup #st-vfs-action-menu-teleport>*,#st-vfs-popup.st-vfs-popup *{pointer-events:auto!important}#st-vfs-popup .st-vfs-popup__header{justify-content:space-between;align-items:center;gap:10px;padding:10px 12px 0;display:flex}#st-vfs-popup .st-vfs-popup__header-actions{align-items:center;gap:8px;display:inline-flex}#st-vfs-popup .st-vfs-popup__title{opacity:.95;text-overflow:ellipsis;white-space:nowrap;font-weight:700;overflow:hidden}#st-vfs-popup .st-vfs-popup__close{min-width:36px;height:36px;box-shadow:none;color:inherit;background:0 0;border:0;padding:0;font-size:28px;font-weight:500;line-height:36px}#st-vfs-popup .st-vfs-popup__close:hover{opacity:.85;background:0 0;border:0}#st-vfs-popup button,#st-vfs-popup .menu_button,#st-vfs-popup summary{writing-mode:horizontal-tb;white-space:nowrap}#st-vfs-popup button.vfs-fm-item{white-space:normal}#st-vfs-popup .vfs-action-menu__toggle{cursor:pointer;-webkit-user-select:none;user-select:none;background:#0003;border:1px solid #ffffff1f;border-radius:8px;align-items:center;gap:8px;padding:6px 10px;display:inline-flex}#st-vfs-popup summary.vfs-action-menu__toggle::-webkit-details-marker{display:none}#st-vfs-popup .vfs-action-menu__list button[role=menuitem]{text-align:left;width:100%;color:var(--SmartThemeBodyColor,#ffffffeb);border-radius:8px;justify-content:flex-start;padding:6px 10px}#st-vfs-popup .vfs-action-menu__list button[role=menuitem].menu_button{min-width:100%}#st-vfs-popup .vfs-create-modal__overlay{z-index:30;background:#00000073;justify-content:center;align-items:center;display:flex;position:absolute;inset:0}#st-vfs-popup .vfs-create-modal__card{background:var(--SmartThemeBlurTintColor,#141414f0);border:1px solid #ffffff29;border-radius:10px;width:min(420px,100% - 24px);padding:14px;box-shadow:0 10px 30px #00000073}#st-vfs-popup .vfs-create-modal__title{margin:0 0 10px}#st-vfs-popup .vfs-create-modal__field{gap:6px;display:grid}#st-vfs-popup .vfs-create-modal__actions{justify-content:flex-end;gap:8px;margin-top:12px;display:flex}@media (width<=1023px){#st-vfs-popup.st-vfs-popup{border-radius:8px;height:92vh;max-height:96vh}#st-vfs-popup #st-vfs-popup-app{padding:8px}#st-vfs-popup .st-vfs-popup__header{padding:8px 10px 0}#st-vfs-popup .st-vfs-popup__close{min-width:32px;height:32px;font-size:24px;line-height:32px}}.extraMesButtons #st-vfs-entry-button.st-vfs-entry{justify-content:center;align-items:flex-start;min-width:22px;height:28px;min-height:28px;padding:2px 0 0;font-size:14px;line-height:1;display:inline-flex}#st-vfs-settings-root .checkbox_label{color:var(--SmartThemeBodyColor,#ffffffeb);align-items:center;gap:8px;display:inline-flex}#st-vfs-settings-root .checkbox_label input[type=checkbox]{width:16px;height:16px;accent-color:var(--SmartThemeQuoteColor,#7aa2ff);flex:none}#st-vfs-settings-root .vfs-number-input{box-sizing:border-box;color:var(--SmartThemeBodyColor,#ffffffeb);background:#0003;border:1px solid #ffffff1f;border-radius:8px;padding:6px 10px}#st-vfs-settings-root .vfs-number-input:focus-visible{outline-offset:1px;outline:2px solid #7aa2ff73}#st-vfs-settings-root .menu_button{color:var(--SmartThemeBodyColor,#ffffffeb);background:#0003;border:1px solid #ffffff1f;border-radius:8px;padding:6px 10px}#st-vfs-settings-root .menu_button:hover{background:#ffffff0f;border-color:#ffffff29}
 /*$vite$:1*/`)),document.head.appendChild(e)}}catch(e){console.error(`vite-plugin-css-injected-by-js`,e)}})();var e = globalThis.process || (globalThis.process = { env: {} });
 //#region node_modules/@vue/shared/dist/shared.esm-bundler.js
 /* @__NO_SIDE_EFFECTS__ */
@@ -6954,19 +6954,43 @@ var ep = { class: "vfs-history-screen" }, tp = { class: "vfs-history-top" }, np 
 	__name: "LineNumberGutter",
 	props: {
 		lineCount: {},
-		scrollTop: {}
+		scrollTop: {},
+		visualRowHeightPx: { default: 21 },
+		visualRowLineHeight: {},
+		visualRowCounts: {},
+		contentPadding: { default: "8px 10px" }
 	},
 	setup(e) {
-		let t = e, n = J(() => Math.max(1, Math.floor(t.lineCount))), r = J(() => Array.from({ length: n.value }, (e, t) => t + 1));
-		return (t, n) => (G(), K("aside", vp, [q("div", {
+		let t = e, n = J(() => Math.max(1, Math.floor(t.lineCount))), r = J(() => {
+			let e = [], r = t.visualRowCounts ?? [], i = Math.max(n.value, r.length);
+			for (let t = 0; t < i; t += 1) {
+				let n = Math.max(1, r[t] ?? 1);
+				for (let r = 0; r < n; r += 1) e.push({
+					key: `${t}-${r}`,
+					label: r === 0 ? String(t + 1) : ""
+				});
+			}
+			return e.length === 0 && e.push({
+				key: "0-0",
+				label: "1"
+			}), e;
+		}), i = J(() => ({
+			height: `${t.visualRowHeightPx}px`,
+			lineHeight: t.visualRowLineHeight ?? `${t.visualRowHeightPx}px`
+		})), a = J(() => ({
+			transform: `translateY(-${t.scrollTop}px)`,
+			padding: t.contentPadding
+		}));
+		return (e, t) => (G(), K("aside", vp, [q("div", {
 			class: "vfs-line-number-gutter__content",
-			style: I({ transform: `translateY(-${e.scrollTop}px)` })
+			style: I(a.value)
 		}, [(G(!0), K(mo, null, Ci(r.value, (e) => (G(), K("span", {
-			key: e,
-			class: "vfs-line-number-gutter__line"
-		}, B(e), 1))), 128))], 4)]));
+			key: e.key,
+			class: z(["vfs-line-number-gutter__row", { "vfs-line-number-gutter__row--continuation": !e.label }]),
+			style: I(i.value)
+		}, B(e.label), 7))), 128))], 4)]));
 	}
-}), [["__scopeId", "data-v-3760853a"]]);
+}), [["__scopeId", "data-v-3ddd70c5"]]);
 //#endregion
 //#region node_modules/dompurify/dist/purify.es.mjs
 function bp(e, t) {
@@ -9173,46 +9197,176 @@ function Dg(e) {
 		};
 	}
 }
+function Og(e) {
+	return {
+		ok: !0,
+		html: `<div class="vfs-plain-text">${Gm(e ?? "")}</div>`
+	};
+}
+//#endregion
+//#region src/domain/vfs/is-vfs-markdown-preview-path.ts
+function kg(e) {
+	return e?.trim() ? el(e).toLowerCase().endsWith(".md") : !1;
+}
 //#endregion
 //#region src/app/screens/pure-screens/ReaderScreen.vue?vue&type=script&setup=true&lang.ts
-var Og = ["innerHTML"], kg = /* @__PURE__ */ Zd(/* @__PURE__ */ Zr({
+var Ag = ["innerHTML"], jg = /* @__PURE__ */ Zd(/* @__PURE__ */ Zr({
 	__name: "ReaderScreen",
-	props: { html: {} },
+	props: {
+		html: {},
+		filePath: {}
+	},
 	setup(e) {
 		let t = e, n = J(() => {
+			if (!kg(t.filePath)) return Og(t.html).html ?? "";
 			let e = Dg(t.html);
 			return e.ok ? e.html ?? "" : (toastr.error(Zf(e.errorCode ?? Jf.RENDER_FAILED, e.message)), "");
 		});
 		return (e, t) => (G(), K("article", {
 			class: "vfs-reader prose",
 			innerHTML: n.value
-		}, null, 8, Og));
+		}, null, 8, Ag));
 	}
-}), [["__scopeId", "data-v-f443e033"]]), Ag = { class: "vfs-editor-screen" }, jg = {
+}), [["__scopeId", "data-v-26a4b717"]]), Mg = [
+	"font",
+	"fontSize",
+	"fontFamily",
+	"fontWeight",
+	"fontStyle",
+	"lineHeight",
+	"letterSpacing",
+	"wordSpacing",
+	"whiteSpace",
+	"overflowWrap",
+	"wordBreak",
+	"tabSize"
+];
+function Ng(e) {
+	let t = getComputedStyle(e), n = Number.parseFloat(t.paddingLeft) || 0, r = Number.parseFloat(t.paddingRight) || 0, i = (e) => Math.max(0, e - n - r);
+	if (e.clientWidth > 0) return i(e.clientWidth);
+	let a = Number.parseFloat(t.width);
+	return Number.isFinite(a) && a > 0 ? i(a) : e.offsetWidth > 0 ? i(e.offsetWidth) : 0;
+}
+function Pg(e) {
+	let t = getComputedStyle(e);
+	if (t.lineHeight.endsWith("px")) {
+		let e = Number.parseFloat(t.lineHeight);
+		if (Number.isFinite(e) && e > 0) return e;
+	}
+	let n = document.createElement("div");
+	n.textContent = "X", n.style.cssText = [
+		"position:absolute",
+		"visibility:hidden",
+		"white-space:pre",
+		"padding:0",
+		"border:0",
+		`font:${t.font}`,
+		`font-size:${t.fontSize}`,
+		`line-height:${t.lineHeight}`,
+		`font-family:${t.fontFamily}`
+	].join(";"), document.body.appendChild(n);
+	let r = n.offsetHeight;
+	return document.body.removeChild(n), r > 0 ? r : 21;
+}
+function Fg(e, t) {
+	let n = getComputedStyle(e), r = Ng(e);
+	t.style.boxSizing = "content-box", t.style.width = `${r}px`, t.style.maxWidth = `${r}px`, t.style.minWidth = "0", t.style.padding = "0", t.style.margin = "0", t.style.border = "0";
+	for (let e of Mg) t.style[e] = n[e];
+	return t.offsetWidth, r;
+}
+var Ig = 48;
+function Lg(e, t) {
+	for (let n of Mg) e.style[n] = t[n];
+}
+function Rg(e, t, n, r) {
+	let i = document.createElement("div");
+	i.textContent = e, i.style.position = "absolute", i.style.visibility = "hidden", i.style.left = "-100000px", i.style.top = "0", i.style.width = `${t}px`, i.style.boxSizing = "content-box", i.style.padding = "0", i.style.margin = "0", i.style.border = "0", Lg(i, n), document.body.appendChild(i), i.offsetWidth;
+	let a = i.getBoundingClientRect().height;
+	return document.body.removeChild(i), Math.max(1, Math.ceil(a / r));
+}
+function zg(e) {
+	let t = getComputedStyle(e.textarea), n = e.mirror.querySelectorAll(".vfs-editor-line-mirror__line");
+	return e.lines.length === 0 ? [1] : e.lines.map((r, i) => {
+		let a = n[i], o = a ? Math.max(1, Math.ceil(a.getBoundingClientRect().height / e.rowHeightPx)) : 1;
+		return o === 1 && r.length >= Ig && e.contentWidthPx > 0 ? Rg(r, e.contentWidthPx, t, e.rowHeightPx) : o;
+	});
+}
+//#endregion
+//#region src/app/composables/components-composables/useEditorLineHeightSync.ts
+var Bg = 21;
+function Vg(e, t, n, r) {
+	let i = /* @__PURE__ */ U(Bg), a = /* @__PURE__ */ U("1.72"), o = /* @__PURE__ */ U([1]), s = /* @__PURE__ */ U("8px 10px"), c = 0;
+	async function l() {
+		let r = ++c;
+		if (await Fn(), r !== c) return;
+		let l = t.value, u = n.value;
+		if (!l || !u) return;
+		let d = getComputedStyle(l);
+		s.value = `${d.paddingTop} ${d.paddingRight} ${d.paddingBottom} ${d.paddingLeft}`;
+		let f = Fg(l, u);
+		if (f <= 0) return;
+		a.value = d.lineHeight;
+		let p = Pg(l);
+		i.value = p, o.value = zg({
+			textarea: l,
+			mirror: u,
+			lines: e.value.split("\n"),
+			rowHeightPx: p,
+			contentWidthPx: f
+		});
+	}
+	function u() {
+		l(), requestAnimationFrame(() => {
+			l();
+		});
+	}
+	let d = null;
+	return pi(() => {
+		typeof ResizeObserver < "u" && (d = new ResizeObserver(() => {
+			u();
+		}), t.value && d.observe(t.value), r?.value && d.observe(r.value)), u();
+	}), _i(() => {
+		d?.disconnect(), d = null;
+	}), jr(e, () => {
+		u();
+	}), jr(() => t.value, (e) => {
+		!e || !d || (d.observe(e), u());
+	}), {
+		visualRowHeightPx: i,
+		visualRowLineHeight: a,
+		visualRowCounts: o,
+		contentPadding: s,
+		remeasure: l
+	};
+}
+//#endregion
+//#region src/app/screens/pure-screens/EditorScreen.vue?vue&type=script&setup=true&lang.ts
+var Hg = { class: "vfs-editor-screen" }, Ug = {
 	key: 0,
 	class: "vfs-editor-toolbar"
-}, Mg = ["title", "aria-label"], Ng = [
+}, Wg = ["title", "aria-label"], Gg = [
 	"title",
 	"aria-label",
 	"disabled",
 	"aria-busy"
-], Pg = {
+], Kg = {
 	key: 0,
 	class: "fa-solid fa-spinner fa-spin",
 	"aria-hidden": "true"
-}, Fg = {
+}, qg = {
 	key: 1,
 	class: "fa-solid fa-floppy-disk",
 	"aria-hidden": "true"
-}, Ig = {
+}, Jg = {
 	key: 1,
 	class: "vfs-line-numbered-editor"
-}, Lg = {
+}, Yg = {
 	key: 2,
 	class: "vfs-editor-preview-pane"
-}, Rg = /* @__PURE__ */ Zd(/* @__PURE__ */ Zr({
+}, Xg = /* @__PURE__ */ Zd(/* @__PURE__ */ Zr({
 	__name: "EditorScreen",
 	props: /* @__PURE__ */ Fi({
+		filePath: {},
 		saveInProgress: {
 			type: Boolean,
 			default: !1
@@ -9232,14 +9386,14 @@ var Og = ["innerHTML"], kg = /* @__PURE__ */ Zd(/* @__PURE__ */ Zr({
 	}),
 	emits: /* @__PURE__ */ Fi(["saveRequested"], ["update:modelValue", "update:previewMode"]),
 	setup(e, { emit: t }) {
-		let n = na(e, "modelValue"), r = na(e, "previewMode"), i = e, a = t, o = /* @__PURE__ */ U(0), s = J(() => Math.max(1, n.value.split("\n").length));
-		function c(e) {
+		let n = na(e, "modelValue"), r = na(e, "previewMode"), i = e, a = t, o = /* @__PURE__ */ U(0), s = /* @__PURE__ */ U(null), c = /* @__PURE__ */ U(null), l = /* @__PURE__ */ U(null), u = J(() => Math.max(1, n.value.split("\n").length)), d = J(() => n.value.split("\n")), { visualRowHeightPx: f, visualRowLineHeight: p, visualRowCounts: m, contentPadding: h } = Vg(n, c, l, s);
+		function g(e) {
 			o.value = e.target?.scrollTop ?? 0;
 		}
-		function l() {
+		function _() {
 			a("saveRequested");
 		}
-		return (e, t) => (G(), K("section", Ag, [i.embedToolbar ? (G(), K("header", jg, [q("button", {
+		return (e, t) => (G(), K("section", Hg, [i.embedToolbar ? (G(), K("header", Ug, [q("button", {
 			type: "button",
 			class: "menu_button vfs-editor-toolbar__icon-button",
 			title: r.value ? "查看源码" : "预览渲染",
@@ -9248,7 +9402,7 @@ var Og = ["innerHTML"], kg = /* @__PURE__ */ Zd(/* @__PURE__ */ Zr({
 		}, [q("i", {
 			class: z(r.value ? "fa-solid fa-code" : "fa-solid fa-eye"),
 			"aria-hidden": "true"
-		}, null, 2)], 8, Mg), q("button", {
+		}, null, 2)], 8, Wg), q("button", {
 			"data-testid": "editor-save-submit",
 			type: "button",
 			class: "menu_button vfs-editor-toolbar__icon-button",
@@ -9256,23 +9410,51 @@ var Og = ["innerHTML"], kg = /* @__PURE__ */ Zd(/* @__PURE__ */ Zr({
 			"aria-label": i.saveInProgress ? "保存中" : "保存",
 			disabled: i.saveInProgress,
 			"aria-busy": i.saveInProgress ? "true" : void 0,
-			onClick: l
-		}, [i.saveInProgress ? (G(), K("i", Pg)) : (G(), K("i", Fg))], 8, Ng)])) : Lo("", !0), r.value ? (G(), K("div", Lg, [jo(kg, { html: n.value }, null, 8, ["html"])])) : (G(), K("div", Ig, [jo(yp, {
-			"line-count": s.value,
+			onClick: _
+		}, [i.saveInProgress ? (G(), K("i", Kg)) : (G(), K("i", qg))], 8, Gg)])) : Lo("", !0), r.value ? (G(), K("div", Yg, [jo(jg, {
+			html: n.value,
+			"file-path": i.filePath
+		}, null, 8, ["html", "file-path"])])) : (G(), K("div", Jg, [jo(yp, {
+			"line-count": u.value,
+			"visual-row-height-px": $t(f),
+			"visual-row-line-height": $t(p),
+			"visual-row-counts": $t(m),
+			"content-padding": $t(h),
 			"scroll-top": o.value
-		}, null, 8, ["line-count", "scroll-top"]), wr(q("textarea", {
+		}, null, 8, [
+			"line-count",
+			"visual-row-height-px",
+			"visual-row-line-height",
+			"visual-row-counts",
+			"content-padding",
+			"scroll-top"
+		]), q("div", {
+			ref_key: "editorWrapRef",
+			ref: s,
+			class: "vfs-editor-wrap"
+		}, [q("div", {
+			ref_key: "mirrorRef",
+			ref: l,
+			class: "vfs-editor-line-mirror",
+			"aria-hidden": "true"
+		}, [(G(!0), K(mo, null, Ci(d.value, (e, t) => (G(), K("div", {
+			key: t,
+			class: "vfs-editor-line-mirror__line"
+		}, B(e.length === 0 ? "\xA0" : e), 1))), 128))], 512), wr(q("textarea", {
+			ref_key: "textareaRef",
+			ref: c,
 			"onUpdate:modelValue": t[1] ||= (e) => n.value = e,
 			class: "vfs-editor",
-			onScroll: c
-		}, null, 544), [[pc, n.value]])]))]));
+			onScroll: g
+		}, null, 544), [[pc, n.value]])], 512)]))]));
 	}
-}), [["__scopeId", "data-v-3e49c04d"]]), zg = { class: "vfs-slideshow-screen" }, Bg = {
+}), [["__scopeId", "data-v-162fe7ff"]]), Zg = { class: "vfs-slideshow-screen" }, Qg = {
 	class: "vfs-slide-content",
 	"data-testid": "vfs-slide-content"
-}, Vg = {
+}, $g = {
 	key: 0,
 	class: "vfs-slide-empty"
-}, Hg = /* @__PURE__ */ Zd(/* @__PURE__ */ Zr({
+}, e_ = /* @__PURE__ */ Zd(/* @__PURE__ */ Zr({
 	__name: "SlideshowScreen",
 	props: {
 		pages: {},
@@ -9280,23 +9462,26 @@ var Og = ["innerHTML"], kg = /* @__PURE__ */ Zd(/* @__PURE__ */ Zr({
 	},
 	setup(e) {
 		let t = e, n = J(() => t.pages[Math.max(0, Math.min(t.pageIndex, t.pages.length - 1))] ?? null);
-		return (t, r) => (G(), K("section", zg, [q("article", Bg, [e.pages.length === 0 ? (G(), K("p", Vg, "No readable pages in this directory.")) : (G(), K(mo, { key: 1 }, [n.value ? (G(), K("section", {
+		return (t, r) => (G(), K("section", Zg, [q("article", Qg, [e.pages.length === 0 ? (G(), K("p", $g, "No readable pages in this directory.")) : (G(), K(mo, { key: 1 }, [n.value ? (G(), K("section", {
 			key: n.value.path,
 			class: "vfs-slide-one"
-		}, [jo(kg, { html: n.value.content }, null, 8, ["html"])])) : Lo("", !0)], 64))])]));
+		}, [jo(jg, {
+			html: n.value.content,
+			"file-path": n.value.path
+		}, null, 8, ["html", "file-path"])])) : Lo("", !0)], 64))])]));
 	}
-}), [["__scopeId", "data-v-bf09533c"]]), Ug = { class: "vfs-tab-shell" }, Wg = {
+}), [["__scopeId", "data-v-0649f89e"]]), t_ = { class: "vfs-tab-shell" }, n_ = {
 	key: 0,
 	class: "vfs-tabs"
-}, Gg = {
+}, r_ = {
 	class: "vfs-tabs__primary",
 	role: "tablist",
 	"aria-label": "虚拟文件系统"
-}, Kg = [
+}, i_ = [
 	"title",
 	"aria-label",
 	"onClick"
-], qg = { class: "vfs-tabs__trailing" }, Jg = { class: "vfs-tab-content" }, Yg = /* @__PURE__ */ Zd(/* @__PURE__ */ Zr({
+], a_ = { class: "vfs-tabs__trailing" }, o_ = { class: "vfs-tab-content" }, s_ = /* @__PURE__ */ Zd(/* @__PURE__ */ Zr({
 	__name: "VfsTabShellScreen",
 	props: {
 		tabs: {},
@@ -9325,7 +9510,7 @@ var Og = ["innerHTML"], kg = /* @__PURE__ */ Zd(/* @__PURE__ */ Zr({
 		function d(e) {
 			e !== i.value && (i.value = e, s("tabChanged", e));
 		}
-		return t({ forceSwitchTab: d }), (e, t) => (G(), K("section", Ug, [l.value ? (G(), K("header", Wg, [q("div", Gg, [(G(!0), K(mo, null, Ci(c(), (e) => (G(), K("button", {
+		return t({ forceSwitchTab: d }), (e, t) => (G(), K("section", t_, [l.value ? (G(), K("header", n_, [q("div", r_, [(G(!0), K(mo, null, Ci(c(), (e) => (G(), K("button", {
 			key: e,
 			type: "button",
 			class: z([
@@ -9336,66 +9521,66 @@ var Og = ["innerHTML"], kg = /* @__PURE__ */ Zd(/* @__PURE__ */ Zr({
 			title: a[e],
 			"aria-label": a[e],
 			onClick: (t) => void u(e)
-		}, [q("span", null, B(a[e]), 1)], 10, Kg))), 128))]), q("div", qg, [wi(e.$slots, "tabs-trailing", { activeTab: i.value }, void 0, !0)])])) : Lo("", !0), q("div", Jg, [wi(e.$slots, "default", { activeTab: i.value }, void 0, !0)])]));
+		}, [q("span", null, B(a[e]), 1)], 10, i_))), 128))]), q("div", a_, [wi(e.$slots, "tabs-trailing", { activeTab: i.value }, void 0, !0)])])) : Lo("", !0), q("div", o_, [wi(e.$slots, "default", { activeTab: i.value }, void 0, !0)])]));
 	}
-}), [["__scopeId", "data-v-7b1edd28"]]), Xg = {
+}), [["__scopeId", "data-v-7b1edd28"]]), c_ = {
 	class: "vfs-worktree-screen",
 	"data-testid": "vfs-worktree-screen"
-}, Zg = {
+}, l_ = {
 	class: "vfs-worktree-text",
 	"data-testid": "vfs-worktree-text"
-}, Qg = /* @__PURE__ */ Zd(/* @__PURE__ */ Zr({
+}, u_ = /* @__PURE__ */ Zd(/* @__PURE__ */ Zr({
 	__name: "WorkTreeScreen",
 	props: { text: {} },
 	setup(e) {
-		return (t, n) => (G(), K("section", Xg, [q("pre", Zg, B(e.text), 1)]));
+		return (t, n) => (G(), K("section", c_, [q("pre", l_, B(e.text), 1)]));
 	}
-}), [["__scopeId", "data-v-a1232042"]]), $g = new td();
-function e_(e) {
+}), [["__scopeId", "data-v-a1232042"]]), d_ = new td();
+function f_(e) {
 	let t = new Date(e), n = (e) => String(e).padStart(2, "0");
 	return `${t.getFullYear()}-${n(t.getMonth() + 1)}-${n(t.getDate())} ${n(t.getHours())}:${n(t.getMinutes())}:${n(t.getSeconds())}`;
 }
-function t_(e) {
+function p_(e) {
 	return e.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
 }
-function n_(e, t) {
+function m_(e, t) {
 	let n = X(t);
 	for (let t of Object.values(e.nodes)) if (t.path === n) return t;
 }
-function r_(e, t) {
-	let n = n_(e, t);
+function h_(e, t) {
+	let n = m_(e, t);
 	if (!n || n.type !== "directory") throw Error(`Not a directory: ${t}`);
 	return n;
 }
-function i_(e, t) {
-	let n = r_(e, t), r = [];
+function g_(e, t) {
+	let n = h_(e, t), r = [];
 	for (let t of n.children) {
 		let n = e.nodes[t];
 		n?.type === "file" && r.push(n);
 	}
 	return r;
 }
-function a_(e, t) {
+function __(e, t) {
 	return t === "name" ? e.name : t === "ctime" ? e.ctime : e.mtime;
 }
-function o_(e, t) {
+function v_(e, t) {
 	let n = t.sortDirection === "desc" ? -1 : 1;
 	return [...e].sort((e, r) => {
-		let i = a_(e, t.sortField), a = a_(r, t.sortField), o = 0;
+		let i = __(e, t.sortField), a = __(r, t.sortField), o = 0;
 		return o = typeof i == "number" && typeof a == "number" ? i === a ? 0 : i < a ? -1 : 1 : String(i).localeCompare(String(a)), o === 0 && (o = e.path.localeCompare(r.path)), o * n;
 	});
 }
-function s_(e, t, n) {
+function y_(e, t, n) {
 	let r = Math.min(1e3, Math.max(0, t)), i = Math.min(1e3, Math.max(0, n)), a = /* @__PURE__ */ new Set();
 	for (let t of e.slice(0, r)) a.add(t.path);
 	if (i > 0) for (let t of e.slice(Math.max(0, e.length - i))) a.add(t.path);
 	return a;
 }
-function c_(e) {
+function b_(e) {
 	let t = el(e).toLowerCase();
 	return t.endsWith(".md") || t.endsWith(".markdown");
 }
-function l_(e) {
+function x_(e) {
 	let t = e.split("\n");
 	if (t[0]?.trim() !== "---") return null;
 	let n = -1;
@@ -9407,25 +9592,25 @@ function l_(e) {
 	let r = t.slice(0, n + 1);
 	return r.push("正文省略...."), r;
 }
-function u_(e, t) {
+function S_(e, t) {
 	return e.fileInclusionByPath[t] ?? "follow-parent";
 }
-function d_(e, t) {
-	return u_(hl(e), X(t));
+function C_(e, t) {
+	return S_(hl(e), X(t));
 }
-function f_(e, t) {
+function w_(e, t) {
 	return {
 		...rl,
 		...e.directoryRuleByPath[t]
 	};
 }
-function p_(e, t, n) {
-	let r = X(n), i = n_(e, r);
+function T_(e, t, n) {
+	let r = X(n), i = m_(e, r);
 	if (!i || i.type !== "file") return {
 		included: !1,
 		renderMode: "full"
 	};
-	let a = hl(t), o = u_(a, r);
+	let a = hl(t), o = S_(a, r);
 	if (o === "explicit-exclude") return {
 		included: !1,
 		renderMode: "full"
@@ -9439,8 +9624,8 @@ function p_(e, t, n) {
 		included: !1,
 		renderMode: "full"
 	};
-	let c = f_(a, s);
-	return s_(o_(i_(e, s).filter((e) => u_(a, e.path) === "follow-parent"), c), c.headCount, c.tailCount).has(r) ? {
+	let c = w_(a, s);
+	return y_(v_(g_(e, s).filter((e) => S_(a, e.path) === "follow-parent"), c), c.headCount, c.tailCount).has(r) ? {
 		included: !0,
 		renderMode: "full"
 	} : c.fill === "omit" ? {
@@ -9449,7 +9634,7 @@ function p_(e, t, n) {
 	} : c.fill === "filename" ? {
 		included: !0,
 		renderMode: "filename"
-	} : c.fill === "frontmatter" && c_(r) ? {
+	} : c.fill === "frontmatter" && b_(r) ? {
 		included: !0,
 		renderMode: "frontmatter"
 	} : {
@@ -9457,22 +9642,22 @@ function p_(e, t, n) {
 		renderMode: "full"
 	};
 }
-function m_(e, t, n) {
-	return p_(e, hl(t), n).included;
+function E_(e, t, n) {
+	return T_(e, hl(t), n).included;
 }
-function h_(e, t) {
+function D_(e, t) {
 	let n = /* @__PURE__ */ new Map(), r = hl(t);
 	for (let t of Object.values(e.nodes)) {
 		if (t.type !== "file") continue;
-		let i = p_(e, r, t.path);
+		let i = T_(e, r, t.path);
 		i.included && n.set(t.path, i.renderMode);
 	}
 	return n;
 }
-function g_(e, t, n) {
+function O_(e, t, n) {
 	let r = hl(t), i = e.nodes[e.rootId];
 	if (!i || i.type !== "directory") return [];
-	let a = [], o = (e) => e === "/" ? f_(r, "/") : nl(r, e) ? f_(r, e) : {
+	let a = [], o = (e) => e === "/" ? w_(r, "/") : nl(r, e) ? w_(r, e) : {
 		...rl,
 		sortField: "name",
 		sortDirection: "asc"
@@ -9486,97 +9671,97 @@ function g_(e, t, n) {
 	};
 	return l(i), a;
 }
-function __(e) {
+function k_(e) {
 	return e.map((e, t) => `${t + 1}|${e}`).join("\n");
 }
-function v_(e) {
+function A_(e) {
 	return `文件名${el(e)}，FrontMatter解析失败`;
 }
-function y_(e, t, n) {
-	let r = n_(e, t);
+function j_(e, t, n) {
+	let r = m_(e, t);
 	if (!r || r.type !== "file") return null;
-	let i = e_(r.mtime), a = e_(r.ctime), o = r.updatedBy, s = t_(t);
-	if (n === "filename") return `<file path="${s}" updatedAt="${i}" createdAt="${a}" updatedBy="${o}">\n${__([el(t)])}\n</file>`;
-	let c = $g.decode(r.content);
-	return n === "frontmatter" ? c_(t) ? `<file path="${s}" updatedAt="${i}" createdAt="${a}" updatedBy="${o}">\n${__(l_(c) ?? [v_(t)])}\n</file>` : null : `<file path="${s}" updatedAt="${i}" createdAt="${a}" updatedBy="${o}">\n${__(c.split("\n"))}\n</file>`;
+	let i = f_(r.mtime), a = f_(r.ctime), o = r.updatedBy, s = p_(t);
+	if (n === "filename") return `<file path="${s}" updatedAt="${i}" createdAt="${a}" updatedBy="${o}">\n${k_([el(t)])}\n</file>`;
+	let c = d_.decode(r.content);
+	return n === "frontmatter" ? b_(t) ? `<file path="${s}" updatedAt="${i}" createdAt="${a}" updatedBy="${o}">\n${k_(x_(c) ?? [A_(t)])}\n</file>` : null : `<file path="${s}" updatedAt="${i}" createdAt="${a}" updatedBy="${o}">\n${k_(c.split("\n"))}\n</file>`;
 }
-function b_(e, t) {
-	let n = hl(t), r = h_(e, n), i = g_(e, n, r), a = [];
+function M_(e, t) {
+	let n = hl(t), r = D_(e, n), i = O_(e, n, r), a = [];
 	for (let t of i) {
 		let n = r.get(t);
 		if (!n) continue;
-		let i = y_(e, t, n);
+		let i = j_(e, t, n);
 		i && a.push(i);
 	}
 	return a.join("\n\n");
 }
 //#endregion
 //#region src/app/services/vfs-archive/vfs-zip-path.ts
-var x_ = class extends Y {};
-function S_(e) {
+var N_ = class extends Y {};
+function P_(e) {
 	let t = X(e);
 	if (t === "/") throw new Y("Cannot export root as a file entry");
 	return t.slice(1);
 }
-function C_(e) {
-	return T_(e), X(`/${e.replace(/\\/g, "/")}`);
+function F_(e) {
+	return L_(e), X(`/${e.replace(/\\/g, "/")}`);
 }
-function w_(e) {
+function I_(e) {
 	let t = e.replace(/\\/g, "/");
 	if (!t || t.endsWith("/") || t.startsWith("__MACOSX/") || t.includes("/__MACOSX/")) return !0;
 	let n = t.split("/").at(-1) ?? t;
 	return n === ".DS_Store" || n === "Thumbs.db";
 }
-function T_(e) {
-	if (!e || !e.trim()) throw new x_("ZIP entry name cannot be empty");
-	if (e.includes("\0")) throw new x_("ZIP entry name cannot contain null bytes");
+function L_(e) {
+	if (!e || !e.trim()) throw new N_("ZIP entry name cannot be empty");
+	if (e.includes("\0")) throw new N_("ZIP entry name cannot contain null bytes");
 	let t = e.replace(/\\/g, "/");
-	if (t.startsWith("/")) throw new x_("ZIP entry name cannot be absolute");
-	if (t.includes("\\")) throw new x_("ZIP entry name cannot contain backslashes");
-	if (t.split("/").some((e) => !e.trim())) throw new x_("ZIP entry name cannot contain empty path segments");
+	if (t.startsWith("/")) throw new N_("ZIP entry name cannot be absolute");
+	if (t.includes("\\")) throw new N_("ZIP entry name cannot contain backslashes");
+	if (t.split("/").some((e) => !e.trim())) throw new N_("ZIP entry name cannot contain empty path segments");
 }
 //#endregion
 //#region src/app/services/vfs-archive/vfs-zip-archive.ts
-var E_ = class extends Hc {}, D_ = class extends Hc {}, O_ = class extends Hc {};
-function k_(e) {
+var R_ = class extends Hc {}, z_ = class extends Hc {}, B_ = class extends Hc {};
+function V_(e) {
 	return new Uint8Array(Uu(e));
 }
-function A_(e, t) {
+function H_(e, t) {
 	let n = X(t);
 	return Object.values(e.nodes).some((e) => e.path === n);
 }
-function j_(e) {
+function U_(e) {
 	try {
 		return new TextDecoder("utf-8", { fatal: !0 }).decode(e);
 	} catch {
-		throw new O_("ZIP entry is not valid UTF-8 text");
+		throw new B_("ZIP entry is not valid UTF-8 text");
 	}
 }
-function M_(e, t) {
+function W_(e, t) {
 	let n = Object.values(e.nodes).filter((e) => e.type === "file");
-	if (n.length === 0) throw new E_("No files to export");
+	if (n.length === 0) throw new R_("No files to export");
 	let r = {};
 	for (let e of n) {
-		let n = S_(e.path);
-		r[n] = k_(t.decode(e.content));
+		let n = P_(e.path);
+		r[n] = V_(t.decode(e.content));
 	}
 	return Zu(r, { level: 6 });
 }
-function N_(e, t) {
+function G_(e, t) {
 	let n;
 	try {
 		n = Qu(e);
 	} catch (e) {
 		throw new Hc(`Failed to read ZIP: ${e instanceof Error ? e.message : "Invalid ZIP archive"}`);
 	}
-	let r = Object.entries(n).filter(([e]) => !w_(e));
-	if (r.length === 0) throw new D_("ZIP contains no importable files");
+	let r = Object.entries(n).filter(([e]) => !I_(e));
+	if (r.length === 0) throw new z_("ZIP contains no importable files");
 	let i = [];
 	for (let [e, t] of r) {
-		T_(e);
-		let n = C_(e);
-		if (n === "/") throw new O_("ZIP entry cannot map to root");
-		let r = j_(t);
+		L_(e);
+		let n = F_(e);
+		if (n === "/") throw new B_("ZIP entry cannot map to root");
+		let r = U_(t);
 		i.push({
 			zipName: e,
 			vfsPath: n,
@@ -9591,8 +9776,8 @@ function N_(e, t) {
 	});
 	return a.exportSnapshot();
 }
-function P_(e, t) {
-	let n = hl(e), r = (e) => A_(t, e), i = {};
+function K_(e, t) {
+	let n = hl(e), r = (e) => H_(t, e), i = {};
 	for (let [e, t] of Object.entries(n.fileInclusionByPath)) r(e) && (i[e] = t);
 	let a = {};
 	for (let [e, t] of Object.entries(n.directoryRuleEnabledByPath)) r(e) && (a[e] = t);
@@ -9607,7 +9792,7 @@ function P_(e, t) {
 }
 //#endregion
 //#region src/app/services/vfs-archive/trigger-browser-download.ts
-function F_(e, t) {
+function q_(e, t) {
 	let n = URL.createObjectURL(t);
 	try {
 		let t = document.createElement("a");
@@ -9618,50 +9803,50 @@ function F_(e, t) {
 }
 //#endregion
 //#region src/app/screens/business-screens/VfsMainScreen.vue?vue&type=script&setup=true&lang.ts
-var I_ = {
+var J_ = {
 	key: 0,
 	class: "vfs-tabs-editor-snapshot-tools",
 	"data-testid": "editor-snapshot-toolbar-tabs"
-}, L_ = ["disabled", "aria-busy"], R_ = {
+}, Y_ = ["disabled", "aria-busy"], X_ = {
 	key: 0,
 	class: "fa-solid fa-spinner fa-spin",
 	"aria-hidden": "true"
-}, z_ = { key: 1 }, B_ = ["data-layout"], V_ = {
+}, Z_ = { key: 1 }, Q_ = ["data-layout"], $_ = {
 	key: 0,
 	class: "vfs-list-only-layout",
 	"data-testid": "vfs-list-only-layout"
-}, H_ = ["disabled"], U_ = ["disabled"], W_ = {
+}, ev = ["disabled"], tv = ["disabled"], nv = {
 	key: 1,
 	class: "vfs-preview-stack",
 	"data-testid": "vfs-preview-stack"
-}, G_ = { class: "vfs-preview-top-bar" }, K_ = {
+}, rv = { class: "vfs-preview-top-bar" }, iv = {
 	class: "vfs-preview-top-bar__left",
 	"data-testid": "vfs-preview-top-bar-left"
-}, q_ = ["aria-label", "title"], J_ = { class: "vfs-preview-top-bar__title" }, Y_ = ["title"], X_ = { class: "vfs-preview-chrome-actions" }, Z_ = [
+}, av = ["aria-label", "title"], ov = { class: "vfs-preview-top-bar__title" }, sv = ["title"], cv = { class: "vfs-preview-chrome-actions" }, lv = [
 	"title",
 	"aria-label",
 	"disabled"
-], Q_ = [
+], uv = [
 	"title",
 	"aria-label",
 	"disabled"
-], $_ = [
+], dv = [
 	"title",
 	"aria-label",
 	"disabled",
 	"aria-busy"
-], ev = {
+], fv = {
 	key: 0,
 	class: "fa-solid fa-spinner fa-spin",
 	"aria-hidden": "true"
-}, tv = {
+}, pv = {
 	key: 1,
 	class: "fa-solid fa-floppy-disk",
 	"aria-hidden": "true"
-}, nv = ["disabled"], rv = ["disabled"], iv = {
+}, mv = ["disabled"], hv = ["disabled"], gv = {
 	key: 1,
 	class: "vfs-editor-stage"
-}, av = ["title"], ov = { "data-testid": "vfs-preview-meta-created" }, sv = { "data-testid": "vfs-preview-meta-updated" }, cv = { "data-testid": "vfs-preview-meta-char-count" }, lv = /* @__PURE__ */ Zd(/* @__PURE__ */ Zr({
+}, _v = ["title"], vv = { "data-testid": "vfs-preview-meta-created" }, yv = { "data-testid": "vfs-preview-meta-updated" }, bv = { "data-testid": "vfs-preview-meta-char-count" }, xv = /* @__PURE__ */ Zd(/* @__PURE__ */ Zr({
 	__name: "VfsMainScreen",
 	props: {
 		scope: { default: "chat" },
@@ -9676,7 +9861,7 @@ var I_ = {
 		function oe() {
 			return ae.value ? Z.getState().extension.extensionTemplateVfsSnapshot ?? Xc() : Z.getState().chat.chatVfsSnapshot;
 		}
-		let R = /* @__PURE__ */ U(oe()), se = J(() => b_(R.value, S.value)), ce = null, le = () => {
+		let R = /* @__PURE__ */ U(oe()), se = J(() => M_(R.value, S.value)), ce = null, le = () => {
 			s.value = window.innerWidth >= 1024 ? "desktop" : "mobile", c.value = window.innerHeight;
 		};
 		function ue() {
@@ -9734,7 +9919,7 @@ var I_ = {
 		}
 		function ge(e) {
 			let t = S.value;
-			return e.kind === "file" ? m_(R.value, t, e.path) : e.path === "/" ? !0 : t.directoryRuleEnabledByPath[e.path] === !0;
+			return e.kind === "file" ? E_(R.value, t, e.path) : e.path === "/" ? !0 : t.directoryRuleEnabledByPath[e.path] === !0;
 		}
 		function _e(e) {
 			return e === "explicit-include" ? {
@@ -9905,10 +10090,10 @@ var I_ = {
 			if (!M.value) {
 				M.value = !0;
 				try {
-					let e = M_(R.value, T);
-					F_(`vfs-export-${Date.now()}.zip`, new Blob([Uint8Array.from(e)], { type: "application/zip" })), toastr.success("已导出");
+					let e = W_(R.value, T);
+					q_(`vfs-export-${Date.now()}.zip`, new Blob([Uint8Array.from(e)], { type: "application/zip" })), toastr.success("已导出");
 				} catch (e) {
-					if (e instanceof E_) {
+					if (e instanceof R_) {
 						toastr.warning("当前没有可导出的文件");
 						return;
 					}
@@ -9925,7 +10110,7 @@ var I_ = {
 				M.value = !0;
 				try {
 					let e = await n.arrayBuffer();
-					N.value = N_(new Uint8Array(e), T), re.value = null;
+					N.value = G_(new Uint8Array(e), T), re.value = null;
 					let t = ae.value ? "模板" : "当前 chat";
 					j.value = {
 						action: "import-replace",
@@ -9968,7 +10153,7 @@ var I_ = {
 			return he(R.value, g.value, e).map((t) => {
 				let n = ge(t);
 				if (t.kind === "file") {
-					let r = d_(e, t.path);
+					let r = C_(e, t.path);
 					return {
 						...t,
 						enabled: n,
@@ -10041,7 +10226,11 @@ var I_ = {
 			let e = new Set(ie.value.map((e) => e.checkpointId).filter((e) => !!e));
 			I.value && !e.has(I.value) && (I.value = "");
 		}, { deep: !0 });
-		let Je = J(() => He.value ? n.value === "editor" ? A.value : n.value === "reader" || n.value === "slideshow" : !1), Ye = J(() => Je.value ? Km(n.value === "slideshow" ? Be.value[b.value]?.content ?? "" : r.value).body.length : 0), Xe = J(() => `创建: ${We} | 更新: ${Ge} | 字数: ${Ye}`), Ze = J(() => s.value === "mobile" || c.value < 680), Qe = J(() => b.value > 0), $e = J(() => b.value < y.value.length - 1), et = J(() => n.value === "list"), tt = J(() => n.value !== "list");
+		let Je = J(() => He.value ? n.value === "editor" ? A.value : n.value === "reader" || n.value === "slideshow" : !1), Ye = J(() => {
+			if (!Je.value) return 0;
+			let e = n.value === "slideshow" ? Be.value[b.value]?.path ?? "" : _.value ?? "", t = n.value === "slideshow" ? Be.value[b.value]?.content ?? "" : r.value;
+			return kg(e) ? Km(t).body.length : t.length;
+		}), Xe = J(() => `创建: ${We} | 更新: ${Ge} | 字数: ${Ye}`), Ze = J(() => s.value === "mobile" || c.value < 680), Qe = J(() => b.value > 0), $e = J(() => b.value < y.value.length - 1), et = J(() => n.value === "list"), tt = J(() => n.value !== "list");
 		function nt(e) {
 			return he(R.value, e, S.value).filter((e) => e.kind === "file").map((e) => e.path);
 		}
@@ -10324,7 +10513,7 @@ var I_ = {
 								chatVfsLogs: [],
 								vfsPathVersionStore: {},
 								vfsCheckpoints: [],
-								workTree: P_(e.chat.workTree ?? hl(null), n)
+								workTree: K_(e.chat.workTree ?? hl(null), n)
 							})), R.value = n;
 						}
 						_.value = null, Le("list"), we(), toastr.success("导入成功");
@@ -10456,14 +10645,14 @@ var I_ = {
 				d.dispatch({ type: "SAVE_SUCCESS" }), i.value = r.value, a.value = !1, we(), toastr.success("已保存");
 			});
 		}
-		return (e, t) => (G(), wo(Yg, {
+		return (e, t) => (G(), wo(s_, {
 			ref_key: "tabShellRef",
 			ref: E,
 			tabs: L.value,
 			"before-tab-change": Et,
 			onTabChanged: Me
 		}, {
-			"tabs-trailing": Sr(({ activeTab: e }) => [!ae.value && e === "files" && tt.value && n.value === "editor" ? (G(), K("div", I_, [jo(uf, {
+			"tabs-trailing": Sr(({ activeTab: e }) => [!ae.value && e === "files" && tt.value && n.value === "editor" ? (G(), K("div", J_, [jo(uf, {
 				modelValue: I.value,
 				"onUpdate:modelValue": t[0] ||= (e) => I.value = e,
 				density: "compact",
@@ -10487,14 +10676,14 @@ var I_ = {
 				disabled: !I.value || h.value,
 				"aria-busy": h.value ? "true" : void 0,
 				onClick: t[1] ||= (e) => void Dt({ checkpointId: I.value })
-			}, [h.value ? (G(), K("i", R_)) : (G(), K("span", z_, "回滚"))], 8, L_)])) : Lo("", !0)]),
+			}, [h.value ? (G(), K("i", X_)) : (G(), K("span", Z_, "回滚"))], 8, Y_)])) : Lo("", !0)]),
 			default: Sr(({ activeTab: e }) => [
 				e === "files" ? (G(), K("div", {
 					key: 0,
 					"data-testid": "vfs-main-layout",
 					"data-layout": s.value,
 					class: z(["vfs-main-layout", `layout-${s.value}`])
-				}, [et.value ? (G(), K("div", V_, [(G(), wo(Vf, {
+				}, [et.value ? (G(), K("div", $_, [(G(), wo(Vf, {
 					key: `fm-${o.value}`,
 					mode: n.value,
 					"current-path": g.value,
@@ -10526,7 +10715,7 @@ var I_ = {
 						}, [...t[13] ||= [q("i", {
 							class: "fa-solid fa-file-zipper",
 							"aria-hidden": "true"
-						}, null, -1)]], 8, H_),
+						}, null, -1)]], 8, ev),
 						q("button", {
 							type: "button",
 							class: "vfs-fm-icon-button",
@@ -10538,7 +10727,7 @@ var I_ = {
 						}, [...t[14] ||= [q("i", {
 							class: "fa-solid fa-file-import",
 							"aria-hidden": "true"
-						}, null, -1)]], 8, U_),
+						}, null, -1)]], 8, tv),
 						q("input", {
 							ref_key: "zipFileInputRef",
 							ref: te,
@@ -10559,13 +10748,13 @@ var I_ = {
 					"mode",
 					"current-path",
 					"entries"
-				]))])) : tt.value ? (G(), K("div", W_, [q("section", {
+				]))])) : tt.value ? (G(), K("div", nv, [q("section", {
 					ref_key: "previewBodyEl",
 					ref: ee,
 					class: z(["vfs-preview-body", { "vfs-preview-body--fullscreen": $t(D).isActive }]),
 					"data-testid": "vfs-preview-body"
-				}, [q("header", G_, [
-					q("div", K_, [q("button", {
+				}, [q("header", rv, [
+					q("div", iv, [q("button", {
 						type: "button",
 						class: "menu_button vfs-preview-back-button",
 						"data-testid": "vfs-preview-back",
@@ -10575,14 +10764,14 @@ var I_ = {
 					}, [...t[15] ||= [q("i", {
 						class: "fa-solid fa-arrow-left",
 						"aria-hidden": "true"
-					}, null, -1)]], 8, q_)]),
-					q("div", J_, [Ve.value ? (G(), K("p", {
+					}, null, -1)]], 8, av)]),
+					q("div", ov, [Ve.value ? (G(), K("p", {
 						key: 0,
 						class: "vfs-preview-file-title",
 						title: Ve.value,
 						"data-testid": "viewer-file-title"
-					}, B(Ve.value), 9, Y_)) : Lo("", !0)]),
-					q("div", X_, [
+					}, B(Ve.value), 9, sv)) : Lo("", !0)]),
+					q("div", cv, [
 						q("button", {
 							type: "button",
 							class: "menu_button vfs-preview-chrome-button",
@@ -10594,7 +10783,7 @@ var I_ = {
 						}, [q("i", {
 							class: z(["fa-solid", $t(D).isActive ? "fa-compress" : "fa-expand"]),
 							"aria-hidden": "true"
-						}, null, 2)], 8, Z_),
+						}, null, 2)], 8, lv),
 						q("button", {
 							type: "button",
 							class: "menu_button vfs-preview-chrome-button",
@@ -10606,7 +10795,7 @@ var I_ = {
 						}, [q("i", {
 							class: z(A.value ? "fa-solid fa-code" : "fa-solid fa-eye"),
 							"aria-hidden": "true"
-						}, null, 2)], 8, Q_),
+						}, null, 2)], 8, uv),
 						q("button", {
 							"data-testid": "editor-save-submit",
 							type: "button",
@@ -10616,7 +10805,7 @@ var I_ = {
 							disabled: m.value,
 							"aria-busy": m.value ? "true" : void 0,
 							onClick: t[8] ||= (e) => void Ot()
-						}, [m.value ? (G(), K("i", ev)) : (G(), K("i", tv))], 8, $_),
+						}, [m.value ? (G(), K("i", fv)) : (G(), K("i", pv))], 8, dv),
 						q("button", {
 							type: "button",
 							class: "menu_button vfs-preview-chrome-button",
@@ -10628,7 +10817,7 @@ var I_ = {
 						}, [...t[16] ||= [q("i", {
 							class: "fa-solid fa-chevron-left",
 							"aria-hidden": "true"
-						}, null, -1)]], 8, nv),
+						}, null, -1)]], 8, mv),
 						q("button", {
 							type: "button",
 							class: "menu_button vfs-preview-chrome-button",
@@ -10640,28 +10829,31 @@ var I_ = {
 						}, [...t[17] ||= [q("i", {
 							class: "fa-solid fa-chevron-right",
 							"aria-hidden": "true"
-						}, null, -1)]], 8, rv)
+						}, null, -1)]], 8, hv)
 					])
 				]), q("section", {
 					class: z(["vfs-preview-content-frame", Je.value ? Ze.value ? "vfs-preview-content-frame--meta-flow" : "vfs-preview-content-frame--meta-anchored" : null]),
 					"data-testid": "vfs-preview-content-frame",
 					"data-vfs-preview-surface": "shared"
-				}, [n.value === "reader" ? (G(), wo(kg, {
+				}, [n.value === "reader" ? (G(), wo(jg, {
 					key: `reader-${o.value}`,
-					html: F.value
-				}, null, 8, ["html"])) : n.value === "editor" ? (G(), K("div", iv, [(G(), wo(Rg, {
+					html: F.value,
+					"file-path": _.value ?? ""
+				}, null, 8, ["html", "file-path"])) : n.value === "editor" ? (G(), K("div", gv, [(G(), wo(Xg, {
 					key: `editor-${o.value}`,
 					modelValue: r.value,
 					"onUpdate:modelValue": [t[9] ||= (e) => r.value = e, t[11] ||= (e) => a.value = !0],
 					"preview-mode": A.value,
 					"onUpdate:previewMode": t[10] ||= (e) => A.value = e,
+					"file-path": _.value ?? "",
 					"save-in-progress": m.value,
 					"embed-toolbar": !1
 				}, null, 8, [
 					"modelValue",
 					"preview-mode",
+					"file-path",
 					"save-in-progress"
-				]))])) : n.value === "slideshow" ? (G(), wo(Hg, {
+				]))])) : n.value === "slideshow" ? (G(), wo(e_, {
 					key: 2,
 					pages: Be.value,
 					"page-index": b.value
@@ -10671,10 +10863,10 @@ var I_ = {
 					"data-testid": "vfs-preview-meta",
 					title: Xe.value
 				}, [
-					q("span", ov, "创建: " + B(We.value), 1),
-					q("span", sv, "更新: " + B(Ge.value), 1),
-					q("span", cv, "字数: " + B(Ye.value), 1)
-				], 10, av)) : Lo("", !0)], 2)], 2)])) : Lo("", !0)], 10, B_)) : e === "history" ? (G(), wo(_p, { key: `history-${o.value}` })) : e === "worktree" ? (G(), wo(Qg, {
+					q("span", vv, "创建: " + B(We.value), 1),
+					q("span", yv, "更新: " + B(Ge.value), 1),
+					q("span", bv, "字数: " + B(Ye.value), 1)
+				], 10, _v)) : Lo("", !0)], 2)], 2)])) : Lo("", !0)], 10, Q_)) : e === "history" ? (G(), wo(_p, { key: `history-${o.value}` })) : e === "worktree" ? (G(), wo(u_, {
 					key: 2,
 					text: se.value
 				}, null, 8, ["text"])) : Lo("", !0),
@@ -10718,8 +10910,8 @@ var I_ = {
 			_: 1
 		}, 8, ["tabs"]));
 	}
-}), [["__scopeId", "data-v-93c5f777"]]), uv = "st-vfs-popup", dv = "st-vfs-popup-app", fv = "st-vfs-action-menu-teleport", pv = "st-vfs-popup";
-function mv() {
+}), [["__scopeId", "data-v-124536bd"]]), Sv = "st-vfs-popup", Cv = "st-vfs-popup-app", wv = "st-vfs-action-menu-teleport", Tv = "st-vfs-popup";
+function Ev() {
 	let e = null, t = null, n = !1, r = null, i = () => {
 		!e || n || (n = !0, t &&= (Nd(e), t.unmount(), null), r &&= (e.querySelector("[data-st-vfs-close]")?.removeEventListener("click", r), null), e.removeEventListener("close", a), e.removeEventListener("cancel", o), e.remove(), e = null, n = !1, Dd(Td));
 	}, a = () => {
@@ -10733,7 +10925,7 @@ function mv() {
 	}, s = (n) => {
 		if (typeof document > "u") return null;
 		if (e && e.open) return e;
-		e && i(), e = document.createElement("dialog"), e.id = uv, e.classList.add(pv), e.setAttribute("role", "dialog"), e.style.width = "min(960px, 96vw)", e.style.maxWidth = "100vw", n?.title && e.setAttribute("aria-label", n.title), e.replaceChildren();
+		e && i(), e = document.createElement("dialog"), e.id = Sv, e.classList.add(Tv), e.setAttribute("role", "dialog"), e.style.width = "min(960px, 96vw)", e.style.maxWidth = "100vw", n?.title && e.setAttribute("aria-label", n.title), e.replaceChildren();
 		let s = document.createElement("header");
 		s.className = "st-vfs-popup__header";
 		let l = document.createElement("div");
@@ -10743,11 +10935,11 @@ function mv() {
 		let d = document.createElement("button");
 		d.type = "button", d.className = "menu_button st-vfs-popup__close", d.setAttribute("data-st-vfs-close", "true"), d.setAttribute("aria-label", "关闭"), d.title = "关闭", d.textContent = "×", u.append(d), s.append(l, u);
 		let f = document.createElement("div");
-		f.id = dv, f.className = "st-vfs-popup__app";
+		f.id = Cv, f.className = "st-vfs-popup__app";
 		let p = document.createElement("div");
-		p.id = fv, p.className = "st-vfs-popup__action-menu-teleport", e.append(s, f, p), e.addEventListener("close", a), e.addEventListener("cancel", o), document.body.appendChild(e), typeof e.showModal == "function" ? e.showModal() : e.setAttribute("open", "true"), r = () => c(), d.addEventListener("click", r);
+		p.id = wv, p.className = "st-vfs-popup__action-menu-teleport", e.append(s, f, p), e.addEventListener("close", a), e.addEventListener("cancel", o), document.body.appendChild(e), typeof e.showModal == "function" ? e.showModal() : e.setAttribute("open", "true"), r = () => c(), d.addEventListener("click", r);
 		try {
-			t = wc(lv, {
+			t = wc(xv, {
 				scope: n?.scope ?? "chat",
 				tabs: n?.scope === "template" ? ["files"] : [
 					"files",
@@ -10776,10 +10968,10 @@ function mv() {
 }
 //#endregion
 //#region src/App.vue?vue&type=script&setup=true&lang.ts
-var hv = { class: "vfs-settings-root" }, gv = { class: "inline-drawer" }, _v = { class: "inline-drawer-content" }, vv = { class: "vfs-panel" }, yv = { class: "checkbox_label" }, bv = { class: "vfs-field" }, xv = /* @__PURE__ */ Zd(/* @__PURE__ */ Zr({
+var Dv = { class: "vfs-settings-root" }, Ov = { class: "inline-drawer" }, kv = { class: "inline-drawer-content" }, Av = { class: "vfs-panel" }, jv = { class: "checkbox_label" }, Mv = { class: "vfs-field" }, Nv = /* @__PURE__ */ Zd(/* @__PURE__ */ Zr({
 	__name: "App",
 	setup(e) {
-		let t = /* @__PURE__ */ U(!0), n = /* @__PURE__ */ U(10), r = null, i = xd(jc(Vc())), a = mv();
+		let t = /* @__PURE__ */ U(!0), n = /* @__PURE__ */ U(10), r = null, i = xd(jc(Vc())), a = Ev();
 		pi(() => {
 			yd(), i.start(), t.value = Z.getState().extension.enabled, n.value = Z.getState().extension.snapshotMaxCount, r = Z.subscribe((e) => {
 				t.value = e.extension.enabled, n.value = e.extension.snapshotMaxCount;
@@ -10803,13 +10995,13 @@ var hv = { class: "vfs-settings-root" }, gv = { class: "inline-drawer" }, _v = {
 				title: "模板管理"
 			});
 		};
-		return (e, r) => (G(), K("div", hv, [q("div", gv, [r[4] ||= q("div", { class: "inline-drawer-toggle inline-drawer-header" }, [q("div", { class: "vfs-title-row" }, [q("b", null, "虚拟文件系统配置")]), q("div", { class: "inline-drawer-icon fa-solid fa-circle-chevron-down down" })], -1), q("div", _v, [q("div", vv, [
-			q("label", yv, [wr(q("input", {
+		return (e, r) => (G(), K("div", Dv, [q("div", Ov, [r[4] ||= q("div", { class: "inline-drawer-toggle inline-drawer-header" }, [q("div", { class: "vfs-title-row" }, [q("b", null, "虚拟文件系统配置")]), q("div", { class: "inline-drawer-icon fa-solid fa-circle-chevron-down down" })], -1), q("div", kv, [q("div", Av, [
+			q("label", jv, [wr(q("input", {
 				"onUpdate:modelValue": r[0] ||= (e) => t.value = e,
 				type: "checkbox",
 				onChange: o
 			}, null, 544), [[mc, t.value]]), r[2] ||= q("span", null, "启用虚拟文件系统", -1)]),
-			q("label", bv, [r[3] ||= q("span", { class: "vfs-field-label" }, "检查点保留条数（FIFO，1–500）", -1), wr(q("input", {
+			q("label", Mv, [r[3] ||= q("span", { class: "vfs-field-label" }, "检查点保留条数（FIFO，1–500）", -1), wr(q("input", {
 				"onUpdate:modelValue": r[1] ||= (e) => n.value = e,
 				class: "vfs-number-input",
 				type: "number",
@@ -10832,18 +11024,18 @@ var hv = { class: "vfs-settings-root" }, gv = { class: "inline-drawer" }, _v = {
 }), [["__scopeId", "data-v-a415a9a8"]]);
 //#endregion
 //#region src/app/services/virtual-tools/tools.ts
-function Sv(e) {
+function Pv(e) {
 	if (typeof e != "string" || e.trim().length === 0) throw Error("path must be a non-empty string");
 	return e;
 }
-function Cv(e, t) {
+function Fv(e, t) {
 	return typeof e == "number" && Number.isFinite(e) ? Math.floor(e) : t;
 }
-function wv(e, t) {
+function Iv(e, t) {
 	if (typeof e != "number" || !Number.isInteger(e) || e < 1) throw Error(`${t} must be a positive integer`);
 	return e;
 }
-function Tv(e, t) {
+function Lv(e, t) {
 	return e.length <= t ? {
 		text: e,
 		truncated: !1
@@ -10852,13 +11044,13 @@ function Tv(e, t) {
 		truncated: !0
 	};
 }
-function Ev(e) {
+function Rv(e) {
 	return e.split("\n");
 }
-var Dv = {
+var zv = {
 	name: "read",
 	execute(e, t) {
-		let n = 2e4, r = Sv(e.path), i = Math.max(1, Cv(e.startLine, 1)), a = Math.max(i, Cv(e.endLine, i + 499)), o = Math.max(1, Cv(e.maxLines, 500)), s = Math.max(1, Cv(e.maxChars, n)), c = Math.min(500, o), l = Math.min(n, s), u = Ev(t.vfs.readFile(r)), d = Math.min(u.length, Math.min(a, i + c - 1)), f = Tv(u.slice(i - 1, d).join("\n"), l), p = d < Math.min(u.length, a);
+		let n = 2e4, r = Pv(e.path), i = Math.max(1, Fv(e.startLine, 1)), a = Math.max(i, Fv(e.endLine, i + 499)), o = Math.max(1, Fv(e.maxLines, 500)), s = Math.max(1, Fv(e.maxChars, n)), c = Math.min(500, o), l = Math.min(n, s), u = Rv(t.vfs.readFile(r)), d = Math.min(u.length, Math.min(a, i + c - 1)), f = Lv(u.slice(i - 1, d).join("\n"), l), p = d < Math.min(u.length, a);
 		return {
 			tool: "read",
 			ok: !0,
@@ -10876,10 +11068,10 @@ var Dv = {
 			}
 		};
 	}
-}, Ov = {
+}, Bv = {
 	name: "write",
 	execute(e, t) {
-		let n = Sv(e.path), r = typeof e.content == "string" ? e.content : "";
+		let n = Pv(e.path), r = typeof e.content == "string" ? e.content : "";
 		return t.vfs.writeFile(n, r, {
 			createParents: !0,
 			updatedBy: "assistant"
@@ -10889,20 +11081,20 @@ var Dv = {
 			summary: `Wrote ${n}`
 		};
 	}
-}, kv = {
+}, Vv = {
 	name: "delete",
 	execute(e, t) {
-		let n = Sv(e.path), r = e.recursive === !0;
+		let n = Pv(e.path), r = e.recursive === !0;
 		return t.vfs.delete(n, { recursive: r }), {
 			tool: "delete",
 			ok: !0,
 			summary: `Deleted ${n}`
 		};
 	}
-}, Av = {
+}, Hv = {
 	name: "append",
 	execute(e, t) {
-		let n = Sv(e.path), r = typeof e.content == "string" ? e.content : "", i = t.vfs.exists(n) ? t.vfs.readFile(n) : "";
+		let n = Pv(e.path), r = typeof e.content == "string" ? e.content : "", i = t.vfs.exists(n) ? t.vfs.readFile(n) : "";
 		return t.vfs.writeFile(n, `${i}${r}`, {
 			createParents: !0,
 			updatedBy: "assistant"
@@ -10912,16 +11104,16 @@ var Dv = {
 			summary: `Appended ${n}`
 		};
 	}
-}, jv = {
+}, Uv = {
 	name: "update",
 	execute(e, t) {
-		let n = Sv(e.path), r = wv(e.startLine, "startLine"), i = wv(e.endLine, "endLine");
+		let n = Pv(e.path), r = Iv(e.startLine, "startLine"), i = Iv(e.endLine, "endLine");
 		if (i < r) throw Error("endLine must be greater than or equal to startLine");
 		if (typeof e.expectedOldContent != "string") throw Error("expectedOldContent is required");
 		if (typeof e.newContent != "string") throw Error("newContent is required");
-		let a = e.expectedOldContent, o = e.newContent, s = Ev(t.vfs.readFile(n));
+		let a = e.expectedOldContent, o = e.newContent, s = Rv(t.vfs.readFile(n));
 		if (s.slice(r - 1, i).join("\n") !== a) throw Error("expectedOldContent mismatch");
-		return s.splice(r - 1, i - r + 1, ...Ev(o)), t.vfs.writeFile(n, s.join("\n"), {
+		return s.splice(r - 1, i - r + 1, ...Rv(o)), t.vfs.writeFile(n, s.join("\n"), {
 			createParents: !0,
 			updatedBy: "assistant"
 		}), {
@@ -10930,10 +11122,10 @@ var Dv = {
 			summary: `Updated ${n}:${r}-${i}`
 		};
 	}
-}, Mv = {
+}, Wv = {
 	name: "list",
 	execute(e, t) {
-		let n = Sv(e.path), r = t.vfs.list(n);
+		let n = Pv(e.path), r = t.vfs.list(n);
 		return {
 			tool: "list",
 			ok: !0,
@@ -10941,7 +11133,7 @@ var Dv = {
 			data: r
 		};
 	}
-}, Nv = {
+}, Gv = {
 	name: "search",
 	execute(e, t) {
 		let n = typeof e.query == "string" ? e.query : "", r = e.regex === !0, i = typeof e.path == "string" ? e.path : "/", a = t.vfs.walk(i).filter((e) => e.type === "file"), o = r ? new RegExp(n, "i") : null, s = a.map((e) => {
@@ -10956,32 +11148,32 @@ var Dv = {
 		};
 	}
 };
-function Pv() {
+function Kv() {
 	return [
-		Dv,
-		Ov,
-		kv,
-		jv,
-		Av,
-		Mv,
-		Nv
+		zv,
+		Bv,
+		Vv,
+		Uv,
+		Hv,
+		Wv,
+		Gv
 	];
 }
 //#endregion
 //#region src/app/services/virtual-tools/tool-dispatcher.ts
-var Fv = {
+var qv = {
 	maxCalls: 10,
 	timeoutMs: 5e3
 };
-function Iv(e) {
+function Jv(e) {
 	return typeof e == "object" && !!e && !Array.isArray(e);
 }
-var Lv = class {
+var Yv = class {
 	tools;
 	options;
-	constructor(e = Pv(), t = {}) {
+	constructor(e = Kv(), t = {}) {
 		this.tools = new Map(e.map((e) => [e.name, e])), this.options = {
-			...Fv,
+			...qv,
 			...t
 		};
 	}
@@ -11000,7 +11192,7 @@ var Lv = class {
 		};
 		let n = Date.now(), r = [];
 		for (let i of e.calls) {
-			if (!i || typeof i.tool != "string" || i.tool.trim() === "" || !Iv(i.args)) return {
+			if (!i || typeof i.tool != "string" || i.tool.trim() === "" || !Jv(i.args)) return {
 				ok: !1,
 				results: r,
 				errorCode: "INVALID_CALL_ARGS",
@@ -11044,10 +11236,10 @@ var Lv = class {
 };
 //#endregion
 //#region src/app/services/vfs-runtime/chat-vfs-runtime.ts
-function Rv(e) {
+function Xv(e) {
 	return Object.keys(e).slice(0, 4).join(",");
 }
-function zv(e, t, n, r) {
+function Zv(e, t, n, r) {
 	let i = [];
 	return e.calls.forEach((e, a) => {
 		let o = t.results[a];
@@ -11061,7 +11253,7 @@ function zv(e, t, n, r) {
 			toolName: o.tool,
 			status: "success",
 			durationMs: 0,
-			argsSummary: Rv(e.args ?? {})
+			argsSummary: Xv(e.args ?? {})
 		});
 		let s = o.tool === "read" && o.data && typeof o.data == "object" ? o.data : null;
 		s && "truncated" in s && s.truncated === !0 && i.push({
@@ -11079,7 +11271,7 @@ function zv(e, t, n, r) {
 		});
 	}), i;
 }
-var Bv = class {
+var Qv = class {
 	store;
 	dispatcher;
 	checkpointService;
@@ -11110,7 +11302,7 @@ var Bv = class {
 					durationMs: c - t.startedAt,
 					argsSummary: `calls=${e.calls.length}`,
 					checkpointId: s
-				}, a = zv(e, i, t, c);
+				}, a = Zv(e, i, t, c);
 				l = id([
 					...n.chatVfsLogs,
 					r,
@@ -11139,7 +11331,7 @@ var Bv = class {
 		let e = this.store.getState().extension;
 		return e.enabled && e.virtualToolCallEnabled;
 	}
-}, Vv = class {
+}, $v = class {
 	store;
 	constructor(e) {
 		this.store = e;
@@ -11181,34 +11373,34 @@ var Bv = class {
 	cloneSnapshot(e) {
 		return JSON.parse(JSON.stringify(e));
 	}
-}, Hv = /<virtual-tool-call>([\s\S]*?)<\/virtual-tool-call>/g, Uv = /<virtual-tool-result>([\s\S]*?)<\/virtual-tool-result>/g;
-function Wv(e) {
+}, ey = /<virtual-tool-call>([\s\S]*?)<\/virtual-tool-call>/g, ty = /<virtual-tool-result>([\s\S]*?)<\/virtual-tool-result>/g;
+function ny(e) {
 	let t = null, n = null;
-	for (; (t = Hv.exec(e)) !== null;) n = t;
+	for (; (t = ey.exec(e)) !== null;) n = t;
 	return n ? {
 		content: n[1].trim(),
 		start: n.index,
 		end: n.index + n[0].length
 	} : null;
 }
-function Gv(e) {
-	let t = [...e.matchAll(Uv)].length;
+function ry(e) {
+	let t = [...e.matchAll(ty)].length;
 	return {
 		ok: t <= 1,
 		count: t
 	};
 }
-function Kv(e, t, n) {
+function iy(e, t, n) {
 	let r = JSON.stringify(n);
 	return `${e.slice(0, t.start)}<virtual-tool-result>${r}</virtual-tool-result>${e.slice(t.end)}`;
 }
 //#endregion
 //#region src/app/services/message/virtual-tool-message-handler.ts
-var qv = /* @__PURE__ */ new Set();
-function Jv(e) {
+var ay = /* @__PURE__ */ new Set();
+function oy(e) {
 	return Object.keys(e).slice(0, 4).join(",");
 }
-var Yv = class {
+var sy = class {
 	runtime;
 	logs;
 	constructor(e, t) {
@@ -11216,18 +11408,18 @@ var Yv = class {
 	}
 	process(e) {
 		let t = `${e.chatId}:${e.messageId}`;
-		if (qv.has(t)) return {
+		if (ay.has(t)) return {
 			handled: !1,
 			messageText: e.messageText
 		};
-		qv.add(t);
-		let n = Date.now(), r = Wv(e.messageText);
+		ay.add(t);
+		let n = Date.now(), r = ny(e.messageText);
 		try {
 			if (!this.runtime.isVirtualToolCallEnabled()) return {
 				handled: !1,
 				messageText: e.messageText
 			};
-			let t = Gv(e.messageText);
+			let t = ry(e.messageText);
 			if (!t.ok) return this.logs.append({
 				id: `log-${Date.now()}`,
 				timestamp: Date.now(),
@@ -11267,7 +11459,7 @@ var Yv = class {
 					errorMessage: i
 				}), {
 					handled: !0,
-					messageText: Kv(e.messageText, r, {
+					messageText: iy(e.messageText, r, {
 						ok: !1,
 						calls: [],
 						results: [],
@@ -11285,7 +11477,7 @@ var Yv = class {
 				ok: o.ok,
 				calls: i.calls.map((e) => ({
 					tool: e.tool,
-					argsSummary: Jv(e.args ?? {})
+					argsSummary: oy(e.args ?? {})
 				})),
 				results: o.results,
 				errorCode: o.errorCode,
@@ -11305,11 +11497,11 @@ var Yv = class {
 				errorMessage: o.errorMessage
 			}), this.logPerToolExecution(e, i, o, a)), {
 				handled: !0,
-				messageText: Kv(e.messageText, r, s)
+				messageText: iy(e.messageText, r, s)
 			};
 		} catch (t) {
 			let i = t instanceof Error ? t.message : String(t), a = "UNHANDLED_PROCESSING_ERROR";
-			return r ||= Wv(e.messageText), this.logs.append({
+			return r ||= ny(e.messageText), this.logs.append({
 				id: `log-${Date.now()}`,
 				timestamp: Date.now(),
 				chatId: e.chatId,
@@ -11323,7 +11515,7 @@ var Yv = class {
 				errorMessage: i
 			}), r ? {
 				handled: !0,
-				messageText: Kv(e.messageText, r, {
+				messageText: iy(e.messageText, r, {
 					ok: !1,
 					calls: [],
 					results: [],
@@ -11335,7 +11527,7 @@ var Yv = class {
 				messageText: e.messageText
 			};
 		} finally {
-			qv.delete(t);
+			ay.delete(t);
 		}
 	}
 	logPerToolExecution(e, t, n, r) {
@@ -11352,7 +11544,7 @@ var Yv = class {
 					toolName: o.tool,
 					status: "success",
 					durationMs: 0,
-					argsSummary: Jv(t.args ?? {})
+					argsSummary: oy(t.args ?? {})
 				});
 				let n = o.tool === "read" && o.data && typeof o.data == "object" ? o.data : null;
 				n && "truncated" in n && n.truncated === !0 && this.logs.append({
@@ -11379,51 +11571,51 @@ var Yv = class {
 				toolName: t.tool,
 				status: n.errorCode === "BATCH_TIMEOUT" ? "timeout" : "failed",
 				durationMs: 0,
-				argsSummary: Jv(t.args ?? {}),
+				argsSummary: oy(t.args ?? {}),
 				errorCode: n.errorCode,
 				errorMessage: n.errorMessage
 			});
 		});
 	}
-}, Xv = "├── ", Zv = "└── ", Qv = "│   ", $v = "    ";
-function ey(e, t) {
+}, cy = "├── ", ly = "└── ", uy = "│   ", dy = "    ";
+function fy(e, t) {
 	return t.children.map((t) => e.nodes[t]).filter(Boolean).sort((e, t) => e.name.localeCompare(t.name));
 }
-function ty(e) {
+function py(e) {
 	return e.type === "directory" ? e.path === "/" ? "/" : `${e.name}/` : e.name;
 }
-function ny(e) {
+function my(e) {
 	let t = e.nodes[e.rootId];
 	if (!t || t.type !== "directory") return "/";
 	let n = [];
-	n.push(ty(t));
+	n.push(py(t));
 	let r = (t, i) => {
-		let a = ey(e, t);
+		let a = fy(e, t);
 		a.forEach((e, t) => {
-			let o = t === a.length - 1, s = o ? Zv : Xv;
-			n.push(`${i}${s}${ty(e)}`), e.type === "directory" && r(e, `${i}${o ? $v : Qv}`);
+			let o = t === a.length - 1, s = o ? ly : cy;
+			n.push(`${i}${s}${py(e)}`), e.type === "directory" && r(e, `${i}${o ? dy : uy}`);
 		});
 	};
 	return r(t, ""), n.join("\n");
 }
 //#endregion
 //#region src/infra/sillytarvern/macros/register-vfs-macros.ts
-function ry(e, t) {
+function hy(e, t) {
 	if (typeof SillyTavern > "u") return;
 	let { registerMacro: n } = SillyTavern.getContext();
 	n("VIRTUAL_FILE_TREE", () => {
 		t?.();
 		let n = e.getState().chat.chatVfsSnapshot;
-		return ny(n);
+		return my(n);
 	}), n("VIRTUAL_WORK_TREE", () => {
 		t?.();
 		let { chatVfsSnapshot: n, workTree: r } = e.getState().chat;
-		return b_(n, r);
+		return M_(n, r);
 	});
 }
 //#endregion
 //#region src/infra/sillytarvern/function-tools/format-function-tool-result.ts
-function iy(e) {
+function gy(e) {
 	let t = {
 		tool: e.tool,
 		ok: e.ok,
@@ -11431,43 +11623,43 @@ function iy(e) {
 	};
 	return e.data !== void 0 && (t.data = e.data), e.errorCode && (t.errorCode = e.errorCode), t;
 }
-function ay(e) {
+function _y(e) {
 	let t = {
 		ok: e.ok,
-		results: e.results.map(iy)
+		results: e.results.map(gy)
 	};
 	return e.ok || (e.errorCode && (t.errorCode = e.errorCode), e.errorMessage && (t.errorMessage = e.errorMessage)), JSON.stringify(t);
 }
 //#endregion
 //#region src/infra/sillytarvern/function-tools/vfs-function-tool-schemas.ts
-var oy = "http://json-schema.org/draft-04/schema#";
-function sy(e) {
+var vy = "http://json-schema.org/draft-04/schema#";
+function yy(e) {
 	return {
 		type: "string",
 		description: e
 	};
 }
-function cy(e) {
+function by(e) {
 	return {
 		type: "number",
 		description: e
 	};
 }
-var ly = [
+var xy = [
 	{
 		name: "vfs_read",
 		displayName: "VFS Read",
 		shortTool: "read",
 		description: "Read a file from the current chat virtual file system. Paths must start with `/`. Optional line/char limits tighten output.",
 		parameters: {
-			$schema: oy,
+			$schema: vy,
 			type: "object",
 			properties: {
-				path: sy("Virtual file path (required, e.g. `/notes/a.txt`)"),
-				startLine: cy("1-based start line (default 1)"),
-				endLine: cy("1-based end line (inclusive)"),
-				maxLines: cy("Max lines to return (cannot exceed built-in cap)"),
-				maxChars: cy("Max characters to return (cannot exceed built-in cap)")
+				path: yy("Virtual file path (required, e.g. `/notes/a.txt`)"),
+				startLine: by("1-based start line (default 1)"),
+				endLine: by("1-based end line (inclusive)"),
+				maxLines: by("Max lines to return (cannot exceed built-in cap)"),
+				maxChars: by("Max characters to return (cannot exceed built-in cap)")
 			},
 			required: ["path"]
 		},
@@ -11479,10 +11671,10 @@ var ly = [
 		shortTool: "write",
 		description: "Create or overwrite a file in the current chat virtual file system. Paths must start with `/`. Parent directories are created automatically.",
 		parameters: {
-			$schema: oy,
+			$schema: vy,
 			type: "object",
 			properties: {
-				path: sy("Virtual file path (required)"),
+				path: yy("Virtual file path (required)"),
 				content: {
 					type: "string",
 					description: "Full file content to write (defaults to empty string)"
@@ -11498,10 +11690,10 @@ var ly = [
 		shortTool: "append",
 		description: "Append text to a file in the current chat virtual file system. Paths must start with `/`. Creates the file if missing.",
 		parameters: {
-			$schema: oy,
+			$schema: vy,
 			type: "object",
 			properties: {
-				path: sy("Virtual file path (required)"),
+				path: yy("Virtual file path (required)"),
 				content: {
 					type: "string",
 					description: "Text to append (defaults to empty string)"
@@ -11517,10 +11709,10 @@ var ly = [
 		shortTool: "delete",
 		description: "Delete a file or directory in the current chat virtual file system. Set `recursive` to true only when intentionally removing a non-empty directory tree.",
 		parameters: {
-			$schema: oy,
+			$schema: vy,
 			type: "object",
 			properties: {
-				path: sy("Virtual file or directory path (required)"),
+				path: yy("Virtual file or directory path (required)"),
 				recursive: {
 					type: "boolean",
 					description: "Must be true to recursively delete a non-empty directory"
@@ -11536,12 +11728,12 @@ var ly = [
 		shortTool: "update",
 		description: "Replace a line range in a file when `expectedOldContent` exactly matches the current segment. Paths must start with `/`. Prevents silent line-drift overwrites.",
 		parameters: {
-			$schema: oy,
+			$schema: vy,
 			type: "object",
 			properties: {
-				path: sy("Virtual file path (required)"),
-				startLine: cy("1-based start line (required, >= 1)"),
-				endLine: cy("1-based end line (required, >= startLine)"),
+				path: yy("Virtual file path (required)"),
+				startLine: by("1-based start line (required, >= 1)"),
+				endLine: by("1-based end line (required, >= startLine)"),
 				expectedOldContent: {
 					type: "string",
 					description: "Exact text of the lines to replace (must match file)"
@@ -11567,9 +11759,9 @@ var ly = [
 		shortTool: "list",
 		description: "List entries under a directory in the current chat virtual file system. Paths must start with `/`.",
 		parameters: {
-			$schema: oy,
+			$schema: vy,
 			type: "object",
-			properties: { path: sy("Virtual directory path (required)") },
+			properties: { path: yy("Virtual directory path (required)") },
 			required: ["path"]
 		},
 		formatMessage: (e) => `正在列出 ${String(e.path ?? "")}…`
@@ -11580,7 +11772,7 @@ var ly = [
 		shortTool: "search",
 		description: "Search file contents under a directory in the current chat virtual file system. Use `regex: true` for case-insensitive regex; otherwise substring match.",
 		parameters: {
-			$schema: oy,
+			$schema: vy,
 			type: "object",
 			properties: {
 				query: {
@@ -11602,24 +11794,24 @@ var ly = [
 			return t ? `正在搜索「${t}」…` : "正在搜索虚拟文件…";
 		}
 	}
-], uy = ly.map((e) => e.name), dy = Object.fromEntries(ly.map((e) => [e.name, e.shortTool]));
-function fy(e) {
+], Sy = xy.map((e) => e.name), Cy = Object.fromEntries(xy.map((e) => [e.name, e.shortTool]));
+function wy(e) {
 	if (typeof SillyTavern > "u") return !1;
 	let t = SillyTavern.getContext();
 	if (!t.registerFunctionTool || !t.isToolCallingSupported?.()) return !1;
 	let n = e.getState().extension;
 	return !(!n.enabled || !n.virtualToolCallEnabled || t.canPerformToolCalls && !t.canPerformToolCalls("normal"));
 }
-function py(e, t, n) {
-	let r = dy[n];
+function Ty(e, t, n) {
+	let r = Cy[n];
 	return async (n) => {
-		if (!fy(t)) return JSON.stringify({
+		if (!wy(t)) return JSON.stringify({
 			ok: !1,
 			errorCode: "VFS_TOOLS_DISABLED",
 			errorMessage: "VFS function tools are unavailable (extension off, virtual tools off, or ST function calling unsupported)."
 		});
 		try {
-			return ay(e.executeSingleTool(r, n ?? {}));
+			return _y(e.executeSingleTool(r, n ?? {}));
 		} catch (e) {
 			return JSON.stringify({
 				ok: !1,
@@ -11628,73 +11820,73 @@ function py(e, t, n) {
 		}
 	};
 }
-function my(e, t) {
+function Ey(e, t) {
 	if (typeof SillyTavern > "u") return;
 	let n = SillyTavern.getContext();
-	if (n.registerFunctionTool) for (let r of ly) n.unregisterFunctionTool?.(r.name), n.registerFunctionTool({
+	if (n.registerFunctionTool) for (let r of xy) n.unregisterFunctionTool?.(r.name), n.registerFunctionTool({
 		name: r.name,
 		displayName: r.displayName,
 		description: r.description,
 		parameters: r.parameters,
 		formatMessage: r.formatMessage,
 		stealth: !1,
-		shouldRegister: () => fy(t),
-		action: py(e, t, r.name)
+		shouldRegister: () => wy(t),
+		action: Ty(e, t, r.name)
 	});
 }
-function hy() {
+function Dy() {
 	if (typeof SillyTavern > "u") return;
 	let e = SillyTavern.getContext();
-	if (e.unregisterFunctionTool) for (let t of uy) e.unregisterFunctionTool(t);
+	if (e.unregisterFunctionTool) for (let t of Sy) e.unregisterFunctionTool(t);
 }
-var gy = null;
-function _y(e, t) {
-	return gy = fy(t), gy ? my(e, t) : hy(), t.subscribe(() => {
-		let n = fy(t);
-		n !== gy && (gy = n, n ? my(e, t) : hy());
+var Oy = null;
+function ky(e, t) {
+	return Oy = wy(t), Oy ? Ey(e, t) : Dy(), t.subscribe(() => {
+		let n = wy(t);
+		n !== Oy && (Oy = n, n ? Ey(e, t) : Dy());
 	});
 }
 //#endregion
 //#region src/app/composables/screens-composables/useVfsEntryMount.ts
-var vy = "st-vfs-entry-button", yy = ".vfsEntry", by = null;
-function xy(e) {
+var Ay = "st-vfs-entry-button", jy = ".vfsEntry", My = null;
+function Ny(e) {
 	if (typeof document > "u") return null;
 	let t = document.querySelector(".extraMesButtons");
 	if (!t) return null;
-	let n = t.querySelector(`#${vy}`) ?? (() => {
+	let n = t.querySelector(`#${Ay}`) ?? (() => {
 		let e = document.createElement("div");
-		return e.id = vy, e.className = "mes_button st-vfs-entry fa-solid fa-box-archive", e.title = "虚拟文件系统", e.setAttribute("aria-label", "虚拟文件系统"), e.tabIndex = 0, t.appendChild(e), e;
+		return e.id = Ay, e.className = "mes_button st-vfs-entry fa-solid fa-box-archive", e.title = "虚拟文件系统", e.setAttribute("aria-label", "虚拟文件系统"), e.tabIndex = 0, t.appendChild(e), e;
 	})();
 	n.className = "mes_button st-vfs-entry fa-solid fa-box-archive", n.title = "虚拟文件系统", n.setAttribute("aria-label", "虚拟文件系统"), n.tabIndex = 0;
-	let r = window.jQuery, i = `#${vy}`, a = `click${yy}`, o = (t) => {
+	let r = window.jQuery, i = `#${Ay}`, a = `click${jy}`, o = (t) => {
 		t.target?.closest(i) && (t.preventDefault(), e());
 	};
 	return r ? (r(document).off(a, i), r(document).on(a, i, (t) => {
 		t?.preventDefault?.(), e();
-	})) : (by && document.removeEventListener("click", by), by = o, document.addEventListener("click", o)), () => {
-		r ? r(document).off(a, i) : (document.removeEventListener("click", o), by === o && (by = null)), n.remove();
+	})) : (My && document.removeEventListener("click", My), My = o, document.addEventListener("click", o)), () => {
+		r ? r(document).off(a, i) : (document.removeEventListener("click", o), My === o && (My = null)), n.remove();
 	};
 }
 //#endregion
 //#region src/app/bootstrap/mountVfsEntry.ts
-var Sy = null, Cy = mv(), wy = null, Ty = null, Ey = 0, Dy = 40, Oy = ".extraMesButtons #st-vfs-entry-button";
-function ky() {
+var Py = null, Fy = Ev(), Iy = null, Ly = null, Ry = 0, zy = 40, By = ".extraMesButtons #st-vfs-entry-button";
+function Vy() {
 	let e = () => {
-		Cy.open(), Dd(wd);
+		Fy.open(), Dd(wd);
 	}, t = () => {
-		Ty &&= (window.clearInterval(Ty), null);
-	}, n = () => typeof document < "u" && !!document.querySelector(Oy), r = () => {
-		if (n()) return Ey = 0, t(), !0;
-		let r = xy(e);
-		return r ? (Sy = r, Ey = 0, t(), !0) : !1;
+		Ly &&= (window.clearInterval(Ly), null);
+	}, n = () => typeof document < "u" && !!document.querySelector(By), r = () => {
+		if (n()) return Ry = 0, t(), !0;
+		let r = Ny(e);
+		return r ? (Py = r, Ry = 0, t(), !0) : !1;
 	}, i = () => {
-		Ty ||= window.setInterval(() => {
-			Ey += 1, !r() && Ey >= Dy && t();
+		Ly ||= window.setInterval(() => {
+			Ry += 1, !r() && Ry >= zy && t();
 		}, 250);
 	}, a = () => {
-		wy || typeof MutationObserver > "u" || (wy = new MutationObserver(() => {
+		Iy || typeof MutationObserver > "u" || (Iy = new MutationObserver(() => {
 			n() || r() || i();
-		}), wy.observe(document.body, {
+		}), Iy.observe(document.body, {
 			childList: !0,
 			subtree: !0
 		}));
@@ -11705,25 +11897,25 @@ function ky() {
 	}
 	typeof document > "u" || (a(), i());
 }
-function Ay() {
-	wy?.disconnect(), wy = null, Ty &&= (window.clearInterval(Ty), null), Ey = 0, Sy?.(), Sy = null, Cy.close();
+function Hy() {
+	Iy?.disconnect(), Iy = null, Ly &&= (window.clearInterval(Ly), null), Ry = 0, Py?.(), Py = null, Fy.close();
 }
 //#endregion
 //#region src/app/bootstrap/unmountVfsEntry.ts
-function jy() {
-	Ay();
+function Uy() {
+	Hy();
 }
 //#endregion
 //#region src/main.ts
-var My = document.createElement("div");
-My.id = "st-vfs-settings-root";
-var Ny = document.querySelector("#extensions_settings");
-Ny && (Ny.appendChild(My), wc(xv).mount(My)), yd();
-var Py = new Vv(Z);
-Py.initializeChatFromTemplateIfNeeded(), vd(Py.initializeChatFromTemplateIfNeeded.bind(Py)), ry(Z, Py.initializeChatFromTemplateIfNeeded.bind(Py));
-var Fy = new Bv(Z, new Lv(), hd, Py), Iy = _y(Fy, Z);
-xd(jc(Vc(new Yv(Fy, new rd(Z))))).start(), ky(), typeof window < "u" && window.addEventListener("beforeunload", () => {
-	Iy(), hy(), jy();
+var Wy = document.createElement("div");
+Wy.id = "st-vfs-settings-root";
+var Gy = document.querySelector("#extensions_settings");
+Gy && (Gy.appendChild(Wy), wc(Nv).mount(Wy)), yd();
+var Ky = new $v(Z);
+Ky.initializeChatFromTemplateIfNeeded(), vd(Ky.initializeChatFromTemplateIfNeeded.bind(Ky)), hy(Z, Ky.initializeChatFromTemplateIfNeeded.bind(Ky));
+var qy = new Qv(Z, new Yv(), hd, Ky), Jy = ky(qy, Z);
+xd(jc(Vc(new sy(qy, new rd(Z))))).start(), Vy(), typeof window < "u" && window.addEventListener("beforeunload", () => {
+	Jy(), Dy(), Uy();
 });
 //#endregion
 
