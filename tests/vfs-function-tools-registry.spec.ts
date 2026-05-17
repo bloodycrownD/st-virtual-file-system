@@ -71,20 +71,20 @@ describe('vfs function tools registry', () => {
     vi.unstubAllGlobals()
   })
 
-  it('T-FC-01 registers seven vfs_* tools', () => {
+  it('T-FC-01 registers all vfs_* tools', () => {
     const runtime = createRuntime()
     const store = createVfsPersistenceStore(createAdapterMock())
     store.init()
     registerVfsFunctionTools(runtime, store)
 
-    expect(registerFunctionTool).toHaveBeenCalledTimes(7)
+    expect(registerFunctionTool).toHaveBeenCalledTimes(VFS_FUNCTION_TOOL_NAMES.length)
     expect(registered.map((d) => d.name).sort()).toEqual([...VFS_FUNCTION_TOOL_NAMES].sort())
     for (const def of registered) {
       expect(def.stealth).toBe(false)
       expect(def.description.length).toBeGreaterThan(0)
       expect(typeof def.formatMessage).toBe('function')
     }
-    expect(unregisterFunctionTool).toHaveBeenCalledTimes(7)
+    expect(unregisterFunctionTool).toHaveBeenCalledTimes(VFS_FUNCTION_TOOL_NAMES.length)
   })
 
   it('T-FC-02 shouldRegister is false when extension or virtual tools are off', () => {
@@ -167,7 +167,7 @@ describe('vfs function tools registry', () => {
     store.updateExtension((draft) => ({ ...draft, virtualToolCallEnabled: false }))
     syncVfsFunctionToolRegistration(runtime, store)
 
-    expect(unregisterFunctionTool).toHaveBeenCalledTimes(7)
+    expect(unregisterFunctionTool).toHaveBeenCalledTimes(VFS_FUNCTION_TOOL_NAMES.length)
     for (const name of VFS_FUNCTION_TOOL_NAMES) {
       expect(unregisterFunctionTool).toHaveBeenCalledWith(name)
     }
@@ -200,7 +200,7 @@ describe('vfs function tools registry', () => {
   it('unregisterVfsFunctionTools is idempotent', () => {
     unregisterVfsFunctionTools()
     unregisterVfsFunctionTools()
-    expect(unregisterFunctionTool).toHaveBeenCalledTimes(14)
+    expect(unregisterFunctionTool).toHaveBeenCalledTimes(VFS_FUNCTION_TOOL_NAMES.length * 2)
   })
 
   it('cold start with virtual tools off does not register (subscribeVfsFunctionToolGateSync)', () => {
@@ -214,7 +214,7 @@ describe('vfs function tools registry', () => {
     subscribeVfsFunctionToolGateSync(runtime, store)
 
     expect(registerFunctionTool).not.toHaveBeenCalled()
-    expect(unregisterFunctionTool).toHaveBeenCalledTimes(7)
+    expect(unregisterFunctionTool).toHaveBeenCalledTimes(VFS_FUNCTION_TOOL_NAMES.length)
   })
 
   it('gate subscribe ignores chat-only store updates', () => {

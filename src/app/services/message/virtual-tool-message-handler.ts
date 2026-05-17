@@ -35,16 +35,12 @@
  */
 import { extractLastCallBlock, replaceCallWithResult, validateSingleResultTag } from './virtual-tool-tag-manager'
 import type { ToolCallEnvelope } from '@/app/services/virtual-tools/tool-contracts'
+import { buildResultCallsDisplay, summarizeToolArgs } from '@/app/services/virtual-tools/tool-result-payload'
 import type { ChatVfsRuntime } from '@/app/services/vfs-runtime/chat-vfs-runtime'
 import type { ChatVfsLogService } from '@/app/services/vfs-log/chat-vfs-log-service'
 
 /** 进程内并发锁：同 chatId:messageId 只允许一个处理流程在跑。 */
 const locks = new Set<string>()
-
-function summarizeArgs(args: Record<string, unknown>): string {
-  const keys = Object.keys(args)
-  return keys.slice(0, 4).join(',')
-}
 
 /**
  * Executes (at most) one virtual tool-call batch found in a message and returns an updated message text.
@@ -137,7 +133,7 @@ export class VirtualToolMessageHandler {
           handled: true,
           messageText: replaceCallWithResult(input.messageText, callBlock, {
             ok: false,
-            calls: [],
+            calls: [{ tool: '(parse-error)', args: { callContent: callBlock.content } }],
             results: [],
             errorCode: 'INVALID_JSON',
             errorMessage,
@@ -154,7 +150,7 @@ export class VirtualToolMessageHandler {
       })
       const payload = {
         ok: batch.ok,
-        calls: envelope.calls.map((call) => ({ tool: call.tool, argsSummary: summarizeArgs(call.args ?? {}) })),
+        calls: buildResultCallsDisplay(envelope.calls, !batch.ok),
         results: batch.results,
         errorCode: batch.errorCode,
         errorMessage: batch.errorMessage,
@@ -236,7 +232,7 @@ export class VirtualToolMessageHandler {
           toolName: result.tool,
           status: 'success',
           durationMs: 0,
-          argsSummary: summarizeArgs(call.args ?? {}),
+          argsSummary: summarizeToolArgs(call.args ?? {}),
         })
         const maybeReadData = result.tool === 'read' && result.data && typeof result.data === 'object' ? result.data : null
         const truncated =
@@ -268,7 +264,7 @@ export class VirtualToolMessageHandler {
           toolName: call.tool,
           status: batch.errorCode === 'BATCH_TIMEOUT' ? 'timeout' : 'failed',
           durationMs: 0,
-          argsSummary: summarizeArgs(call.args ?? {}),
+          argsSummary: summarizeToolArgs(call.args ?? {}),
           errorCode: batch.errorCode,
           errorMessage: batch.errorMessage,
         })

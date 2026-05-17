@@ -2,7 +2,7 @@
 
 ## 背景
 
-本扩展已在聊天消息内支持 `<virtual-tool-call>` 协议（见 `docs/Tools.md`），可在消息落库后批量执行 `read` / `write` / `append` / `delete` / `update` / `list` / `search` 等虚拟文件操作。
+本扩展已在聊天消息内支持 `<virtual-tool-call>` 协议（见 `docs/Tools.md`），可在消息落库后批量执行 `read` / `write` / `append` / `delete` / `replace` / `list` / `search` 等虚拟文件操作。
 
 SillyTavern 另提供基于 Chat Completion API 的 **Function Calling** 能力（见 `docs/Toolcall.md`）：扩展可通过 `registerFunctionTool` 向 LLM 暴露结构化工具，由模型在受支持的生成流程中主动调用。
 
@@ -31,7 +31,7 @@ SillyTavern 另提供基于 Chat Completion API 的 **Function Calling** 能力�
 
 ### 包含范围
 
-- 在扩展启动/就绪时，按条件调用 `registerFunctionTool` 注册 7 个工具：`vfs_read`、`vfs_write`、`vfs_append`、`vfs_delete`、`vfs_update`、`vfs_list`、`vfs_search`。
+- 在扩展启动/就绪时，按条件调用 `registerFunctionTool` 注册 7 个工具：`vfs_read`、`vfs_write`、`vfs_append`、`vfs_delete`、`vfs_replace`、`vfs_list`、`vfs_search`。
 - 各工具 `description` / `parameters`（JSON Schema）与 `docs/Tools.md` 对齐，便于 LLM 正确填参。
 - `shouldRegister`：扩展 `enabled=true` **且** `virtualToolCallEnabled=true` **且** ST 侧 `isToolCallingSupported()` 为真（实现阶段可按需叠加 `canPerformToolCalls` 判断）。
 - `action` 内调用现有 virtual tool 执行链路，将 `ToolResultItem` 序列化为返回给 LLM 的字符串（成功/失败信息清晰可读）。
@@ -102,3 +102,13 @@ SillyTavern 另提供基于 Chat Completion API 的 **Function Calling** 能力�
 - **Given** 成功调用 `vfs_write`  
   **When** 工具执行完成  
   **Then** `stealth=false`，ST 聊天记录中可见该次工具调用记录（符合 Toolcall.md 默认行为）。
+
+---
+
+## 后续变更记录
+
+| 日期 | 文档 | 摘要 |
+|------|------|------|
+| 2026-05 | [VFS-Virtual-Tools-Evolutions/prd.md](./VFS-Virtual-Tools-Evolutions/prd.md) | 虚拟工具：`replace` 替代 `update`；失败结果展示完整入参 |
+
+初版 PRD 背景中的工具列表以 **`replace` 替代 `update`** 为准；详见演进 PRD/SPEC。

@@ -1,5 +1,5 @@
 /**
- * @file JSON Schema (draft-04) and LLM-facing copy for the seven `vfs_*` function tools.
+ * @file JSON Schema (draft-04) and LLM-facing copy for the `vfs_*` function tools.
  * Parameter shapes align with `.apm/kb/docs/Tools.md`.
  */
 
@@ -110,30 +110,32 @@ export const VFS_FUNCTION_TOOL_SCHEMAS: VfsFunctionToolSchemaEntry[] = [
     formatMessage: (args) => `正在删除 ${String(args.path ?? '')}…`,
   },
   {
-    name: 'vfs_update',
-    displayName: 'VFS Update',
-    shortTool: 'update',
+    name: 'vfs_replace',
+    displayName: 'VFS Replace',
+    shortTool: 'replace',
     description:
-      'Replace a line range in a file when `expectedOldContent` exactly matches the current segment. Paths must start with `/`. Prevents silent line-drift overwrites.',
+      'Replace an exact substring in a file (like search-and-replace). Paths must start with `/`. `oldContent` must appear in the file; when it appears more than once, set `replaceAll` to true or use a longer unique `oldContent`.',
     parameters: {
       $schema: DRAFT_04,
       type: 'object',
       properties: {
         path: pathProperty('Virtual file path (required)'),
-        startLine: optionalNumber('1-based start line (required, >= 1)'),
-        endLine: optionalNumber('1-based end line (required, >= startLine)'),
-        expectedOldContent: {
+        oldContent: {
           type: 'string',
-          description: 'Exact text of the lines to replace (must match file)',
+          description: 'Exact text to find in the file (required, non-empty)',
         },
         newContent: {
           type: 'string',
-          description: 'Replacement content for the line range',
+          description: 'Replacement text (required; use empty string to delete oldContent)',
+        },
+        replaceAll: {
+          type: 'boolean',
+          description: 'When true, replace every occurrence; default false requires a unique match',
         },
       },
-      required: ['path', 'startLine', 'endLine', 'expectedOldContent', 'newContent'],
+      required: ['path', 'oldContent', 'newContent'],
     },
-    formatMessage: (args) => `正在更新 ${String(args.path ?? '')}…`,
+    formatMessage: (args) => `正在替换 ${String(args.path ?? '')} 中的片段…`,
   },
   {
     name: 'vfs_list',

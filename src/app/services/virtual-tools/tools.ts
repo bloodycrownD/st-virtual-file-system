@@ -28,13 +28,6 @@ function asNumber(value: unknown, fallback: number): number {
   return typeof value === 'number' && Number.isFinite(value) ? Math.floor(value) : fallback
 }
 
-function requireInteger(value: unknown, field: string): number {
-  if (typeof value !== 'number' || !Number.isInteger(value) || value < 1) {
-    throw new Error(`${field} must be a positive integer`)
-  }
-  return value
-}
-
 function truncateText(input: string, maxChars: number): { text: string; truncated: boolean } {
   if (input.length <= maxChars) {
     return { text: input, truncated: false }
@@ -172,48 +165,64 @@ export const appendTool: VirtualTool = {
   },
 }
 
+function countNonOverlappingOccurrences(haystack: string, needle: string): number {
+  if (needle.length === 0) {
+    throw new Error('oldContent must be a non-empty string')
+  }
+  let count = 0
+  let position = 0
+  while (position <= haystack.length) {
+    const index = haystack.indexOf(needle, position)
+    if (index === -1) break
+    count += 1
+    position = index + needle.length
+  }
+  return count
+}
+
 /**
- * Line-range update with exact-match guard.
+ * Substring replace (StrReplace-style): exact `oldContent` must appear in the file.
  *
  * Required args:
  * - `path`: non-empty string
- * - `startLine`: positive integer (1-based)
- * - `endLine`: positive integer, must be \(\ge startLine\)
- * - `expectedOldContent`: string; must exactly match the current file segment
- * - `newContent`: string; replacement content for the given range
+ * - `oldContent`: non-empty string; segment to find
+ * - `newContent`: string; replacement (may be empty to delete the segment)
  *
- * Safety behavior:
- * - Rejects ambiguous updates by requiring an **exact match** of the existing segment before writing.
- *   This prevents silent "line drift" overwrites when the file changed since the caller planned the edit.
+ * Optional args:
+ * - `replaceAll`: boolean (default `false`); when false, `oldContent` must match exactly once
  */
-export const updateTool: VirtualTool = {
-  name: 'update',
+export const replaceTool: VirtualTool = {
+  name: 'replace',
   execute(args, context): ToolResultItem {
     const path = asPath(args.path)
-    // Reject ambiguous update payloads to avoid accidental broad rewrites.
-    const startLine = requireInteger(args.startLine, 'startLine')
-    const endLine = requireInteger(args.endLine, 'endLine')
-    if (endLine < startLine) {
-      throw new Error('endLine must be greater than or equal to startLine')
-    }
-    if (typeof args.expectedOldContent !== 'string') {
-      throw new Error('expectedOldContent is required')
+    if (typeof args.oldContent !== 'string' || args.oldContent.length === 0) {
+      throw new Error('oldContent must be a non-empty string')
     }
     if (typeof args.newContent !== 'string') {
       throw new Error('newContent is required')
     }
-    const expected = args.expectedOldContent
-    const replacement = args.newContent
+    const oldContent = args.oldContent
+    const newContent = args.newContent
+    const replaceAll = args.replaceAll === true
     const full = context.vfs.readFile(path)
-    const lines = toLines(full)
-    const existingSegment = lines.slice(startLine - 1, endLine).join('\n')
-    // We enforce exact-match replacement to prevent silent line-drift writes.
-    if (existingSegment !== expected) {
-      throw new Error('expectedOldContent mismatch')
+    const occurrences = countNonOverlappingOccurrences(full, oldContent)
+    if (occurrences === 0) {
+      throw new Error('oldContent not found')
     }
-    lines.splice(startLine - 1, endLine - startLine + 1, ...toLines(replacement))
-    context.vfs.writeFile(path, lines.join('\n'), { createParents: true, updatedBy: 'assistant' })
-    return { tool: 'update', ok: true, summary: `Updated ${path}:${startLine}-${endLine}` }
+    if (!replaceAll && occurrences > 1) {
+      throw new Error('oldContent is not unique; set replaceAll=true to replace every occurrence')
+    }
+    const updated = replaceAll
+      ? full.split(oldContent).join(newContent)
+      : full.replace(oldContent, newContent)
+    context.vfs.writeFile(path, updated, { createParents: true, updatedBy: 'assistant' })
+    const countLabel = replaceAll ? `${occurrences}` : '1'
+    return {
+      tool: 'replace',
+      ok: true,
+      summary: `Replaced ${countLabel} occurrence(s) in ${path}`,
+      data: { path, occurrences: replaceAll ? occurrences : 1, replaceAll },
+    }
   },
 }
 
@@ -276,5 +285,5 @@ export const searchTool: VirtualTool = {
  * The order is not semantically meaningful, but results are produced in call order at runtime.
  */
 export function createDefaultVirtualTools(): VirtualTool[] {
-  return [readTool, writeTool, deleteTool, updateTool, appendTool, listTool, searchTool]
+  return [readTool, writeTool, deleteTool, replaceTool, appendTool, listTool, searchTool]
 }

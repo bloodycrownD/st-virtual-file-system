@@ -43,27 +43,37 @@ function createToolAction(runtime: ChatVfsRuntime, store: VfsPersistenceStore, v
   return async (args: Record<string, unknown>): Promise<string> => {
     // Defense in depth: ST should not invoke when gated off, but block if unregister lagged.
     if (!shouldRegisterVfsTools(store)) {
-      return JSON.stringify({
-        ok: false,
-        errorCode: 'VFS_TOOLS_DISABLED',
-        errorMessage:
-          'VFS function tools are unavailable (extension off, virtual tools off, or ST function calling unsupported).',
-      })
+      return formatFunctionToolResult(
+        {
+          ok: false,
+          results: [],
+          errorCode: 'VFS_TOOLS_DISABLED',
+          errorMessage:
+            'VFS function tools are unavailable (extension off, virtual tools off, or ST function calling unsupported).',
+        },
+        { calls: [{ tool: shortTool, args: args ?? {} }] },
+      )
     }
+    const callInput = { tool: shortTool, args: args ?? {} }
     try {
-      const batch = runtime.executeSingleTool(shortTool, args ?? {})
-      return formatFunctionToolResult(batch)
+      const batch = runtime.executeSingleTool(shortTool, callInput.args)
+      return formatFunctionToolResult(batch, { calls: [callInput] })
     } catch (err) {
-      return JSON.stringify({
-        ok: false,
-        errorMessage: err instanceof Error ? err.message : String(err),
-      })
+      return formatFunctionToolResult(
+        {
+          ok: false,
+          results: [],
+          errorCode: 'TOOL_EXECUTION_FAILED',
+          errorMessage: err instanceof Error ? err.message : String(err),
+        },
+        { calls: [callInput] },
+      )
     }
   }
 }
 
 /**
- * Register all seven `vfs_*` tools with SillyTavern (no-op when API missing).
+ * Register all `vfs_*` tools with SillyTavern (no-op when API missing).
  * Unregisters each name first for idempotent hot-reload safety.
  */
 export function registerVfsFunctionTools(runtime: ChatVfsRuntime, store: VfsPersistenceStore): void {

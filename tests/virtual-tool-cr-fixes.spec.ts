@@ -53,19 +53,19 @@ describe('virtual tool CR fixes', () => {
     expect(readData?.truncation?.byChars).toBe(true)
   })
 
-  it('rejects update calls missing strict required fields', () => {
+  it('rejects replace calls missing oldContent', () => {
     const store = createVfsPersistenceStore(createAdapterMock())
     store.init()
     const runtime = new ChatVfsRuntime(store, new ToolDispatcher(), checkpointService(store))
     const result = runtime.executeBatch({
       calls: [
         { tool: 'write', args: { path: '/a.txt', content: 'before' } },
-        { tool: 'update', args: { path: '/a.txt', newContent: 'after' } },
+        { tool: 'replace', args: { path: '/a.txt', newContent: 'after' } },
       ],
     })
     expect(result.ok).toBe(false)
     expect(result.errorCode).toBe('TOOL_EXECUTION_FAILED')
-    expect(result.errorMessage).toContain('startLine')
+    expect(result.errorMessage).toContain('oldContent')
   })
 
   it('re-initializes template on first runtime access after chat reload', () => {

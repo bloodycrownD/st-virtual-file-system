@@ -52,7 +52,7 @@ ToolDispatcher → VirtualTool.execute → VfsCore (chat snapshot)
 | `vfs_write` | `write` |
 | `vfs_append` | `append` |
 | `vfs_delete` | `delete` |
-| `vfs_update` | `update` |
+| `vfs_replace` | `replace` |
 | `vfs_list` | `list` |
 | `vfs_search` | `search` |
 
@@ -237,3 +237,14 @@ registry 只调此方法，减少重复。
 ---
 
 请确认本 SPEC 后再进入编码。若需调整（例如：FC 也写入 `chatVfsLogs`、或强制对齐 `enabled` 门控），确认时一并说明。
+
+---
+
+## 后续变更记录
+
+| 日期 | 文档 | 摘要 |
+|------|------|------|
+| 2026-05 | [VFS-Virtual-Tools-Evolutions/prd.md](./VFS-Virtual-Tools-Evolutions/prd.md) | 新增 `replace`、移除 `update`；失败时 result/FC 返回完整 `args` |
+| 2026-05 | [VFS-Virtual-Tools-Evolutions/spec.md](./VFS-Virtual-Tools-Evolutions/spec.md) | 实现锚点、序列化规则、测试与回滚说明 |
+
+**当前工具映射**以本文「名称映射」表为准（`vfs_replace`，无 `vfs_update`）。`format-function-tool-result.ts` 在失败路径通过 `tool-result-payload.ts` 的 `buildResultCallsDisplay` 输出完整 `args`。
