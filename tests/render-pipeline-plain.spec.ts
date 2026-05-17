@@ -10,11 +10,13 @@ describe('renderPlainTextDocument', () => {
     expect(html).toMatch(/# hi|&lt;/)
   })
 
-  it('T-PLAIN-02: preserves newlines as br or pre-wrap', () => {
+  it('T-PLAIN-02: preserves newlines via pre-wrap div (no code-block pre)', () => {
     const result = renderPlainTextDocument('line one\nline two')
     expect(result.ok).toBe(true)
     const html = result.html ?? ''
-    expect(html).toContain('<br>')
     expect(html).toContain('vfs-plain-text')
+    expect(html).not.toMatch(/<pre[\s>]/i)
+    expect(html).toContain('line one')
+    expect(html).toContain('line two')
   })
 })

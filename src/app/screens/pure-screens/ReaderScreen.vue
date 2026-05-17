@@ -59,7 +59,8 @@ const safeHtml = computed(() => {
   padding-left: 1.4em;
 }
 
-.vfs-reader :deep(pre) {
+/* Markdown fenced/code blocks only — plain-text files use .vfs-plain-text div. */
+.vfs-reader :deep(pre:not(.vfs-plain-text)) {
   padding: 10px 12px;
   overflow: auto;
   border-radius: 10px;
@@ -160,9 +161,16 @@ const safeHtml = computed(() => {
 
 .vfs-reader :deep(.vfs-plain-text) {
   margin: 0;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 0;
   white-space: pre-wrap;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  font-family: inherit;
   font-size: 14px;
-  line-height: 1.45;
+  line-height: 1.72;
+  color: inherit;
 }
 </style>

@@ -148,7 +148,10 @@ function getVisibleFileNames(wrapper: ReturnType<typeof mount>): string[] {
 }
 
 function getGutterLineTexts(wrapper: ReturnType<typeof mount>): string[] {
-  return wrapper.findAll('.vfs-line-number-gutter__line').map((line) => line.text())
+  return wrapper
+    .findAll('.vfs-line-number-gutter__row')
+    .map((row) => row.text())
+    .filter((text) => text.length > 0)
 }
 
 async function selectTemplateFile(wrapper: ReturnType<typeof mount>) {

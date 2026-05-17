@@ -70,7 +70,8 @@ export function renderSafeMarkdownDocument(raw: string): RenderResult {
  */
 export function renderPlainTextDocument(raw: string): RenderResult {
   const escaped = escapeHtml(raw ?? '')
-  const html = `<pre class="vfs-plain-text">${escaped.replace(/\n/g, '<br>')}</pre>`
+  // WHY: use div (not pre) so markdown code-block :deep(pre) styles do not add an inner dark panel.
+  const html = `<div class="vfs-plain-text">${escaped}</div>`
   return { ok: true, html }
 }
 

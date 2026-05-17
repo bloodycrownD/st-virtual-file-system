@@ -1,16 +1,34 @@
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import EditorScreen from '@/app/screens/pure-screens/EditorScreen.vue'
+import LineNumberGutter from '@/app/components/pure-components/LineNumberGutter.vue'
 import ReaderScreen from '@/app/screens/pure-screens/ReaderScreen.vue'
 import SlideshowScreen from '@/app/screens/pure-screens/SlideshowScreen.vue'
 
-function getGutterLines(wrapper: ReturnType<typeof mount>) {
-  return wrapper.findAll('.vfs-line-number-gutter__line')
+function getGutterRows(wrapper: ReturnType<typeof mount>) {
+  return wrapper.findAll('.vfs-line-number-gutter__row')
 }
 
 describe('vfs line numbers', () => {
   beforeEach(() => {
     ;(globalThis as { toastr: { error: (message: string) => void } }).toastr = { error: vi.fn() }
+  })
+
+  it('expands visual rows with blank continuation rows (VS Code style)', () => {
+    const wrapper = mount(LineNumberGutter, {
+      props: {
+        lineCount: 2,
+        scrollTop: 0,
+        visualRowHeightPx: 21,
+        visualRowCounts: [3, 1],
+      },
+    })
+
+    const rows = getGutterRows(wrapper)
+    expect(rows).toHaveLength(4)
+    expect(rows.map((row) => row.text())).toEqual(['1', '', '', '2'])
+    expect(rows[0].classes()).not.toContain('vfs-line-number-gutter__row--continuation')
+    expect(rows[1].classes()).toContain('vfs-line-number-gutter__row--continuation')
   })
 
   it('shows editor line numbers for logical lines', () => {
@@ -24,7 +42,7 @@ describe('vfs line numbers', () => {
       },
     })
 
-    expect(getGutterLines(wrapper).map((line) => line.text())).toEqual(['1', '2', '3'])
+    expect(getGutterRows(wrapper).map((line) => line.text()).filter(Boolean)).toEqual(['1', '2', '3'])
   })
 
   it('hides line numbers in editor preview mode', () => {
@@ -55,7 +73,7 @@ describe('vfs line numbers', () => {
 
     await wrapper.setProps({ modelValue: 'a\nb\nc' })
 
-    expect(getGutterLines(wrapper).map((line) => line.text())).toEqual(['1', '2', '3'])
+    expect(getGutterRows(wrapper).map((line) => line.text()).filter(Boolean)).toEqual(['1', '2', '3'])
   })
 
   it('syncs editor gutter position with source scroll', async () => {
@@ -75,6 +93,7 @@ describe('vfs line numbers', () => {
     await textarea.trigger('scroll')
 
     const gutterContent = wrapper.find('.vfs-line-number-gutter__content')
+    expect(getGutterRows(wrapper).length).toBeGreaterThan(0)
     expect(gutterContent.attributes('style')).toContain('translateY(-120px)')
   })
 
@@ -121,7 +140,7 @@ describe('vfs line numbers', () => {
       },
     })
 
-    const lines = getGutterLines(wrapper).map((line) => line.text())
+    const lines = getGutterRows(wrapper).map((line) => line.text()).filter(Boolean)
     expect(lines).toHaveLength(520)
     expect(lines[0]).toBe('1')
     expect(lines[519]).toBe('520')
