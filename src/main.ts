@@ -66,7 +66,11 @@ registerVfsMacros(vfsPersistenceStore, templateService.initializeChatFromTemplat
 const runtime = new ChatVfsRuntime(vfsPersistenceStore, new ToolDispatcher(), vfsCheckpointService, templateService)
 const unsubscribeVfsFunctionTools = subscribeVfsFunctionToolGateSync(runtime, vfsPersistenceStore)
 const logs = new ChatVfsLogService(vfsPersistenceStore)
-const messageHandler = new VirtualToolMessageHandler(runtime, logs)
+const messageHandler = new VirtualToolMessageHandler(
+  runtime,
+  logs,
+  () => vfsPersistenceStore.getState().extension.virtualToolJsonRepairEnabled,
+)
 const controller = createMessageController(createMessagePipeline(messageHandler))
 createStMessageEventAdapter(controller).start()
 mountVfsEntryButton()

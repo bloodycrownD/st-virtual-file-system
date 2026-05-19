@@ -38,6 +38,11 @@ export interface VfsExtensionSettings {
    */
   virtualToolCallEnabled: boolean
   /**
+   * Message-tag channel JSON auto-repair (conservative). When disabled, only strict `JSON.parse`
+   * is used; parse failures still keep the `<virtual-tool-call>` block (no failure result tag).
+   */
+  virtualToolJsonRepairEnabled: boolean
+  /**
    * Extension-scoped template snapshot used to initialize chat snapshots.
    *
    * On first access in a chat, `ExtensionVfsTemplateService` may clone this snapshot into
@@ -59,6 +64,7 @@ const DEFAULT_SETTINGS: VfsExtensionSettings = {
   snapshotMaxCount: 10,
   logMaxBytes: 1024 * 1024,
   virtualToolCallEnabled: true,
+  virtualToolJsonRepairEnabled: true,
   extensionTemplateVfsSnapshot: null,
   workTreeTemplate: null,
 }
@@ -79,6 +85,7 @@ export function parseVfsExtensionSettings(raw: unknown): VfsExtensionSettings {
     snapshotMaxCount?: unknown
     logMaxBytes?: unknown
     virtualToolCallEnabled?: unknown
+    virtualToolJsonRepairEnabled?: unknown
     extensionTemplateVfsSnapshot?: unknown
     workTreeTemplate?: unknown
   }
@@ -112,6 +119,10 @@ export function parseVfsExtensionSettings(raw: unknown): VfsExtensionSettings {
       typeof input.virtualToolCallEnabled === 'boolean'
         ? input.virtualToolCallEnabled
         : DEFAULT_SETTINGS.virtualToolCallEnabled,
+    virtualToolJsonRepairEnabled:
+      typeof input.virtualToolJsonRepairEnabled === 'boolean'
+        ? input.virtualToolJsonRepairEnabled
+        : DEFAULT_SETTINGS.virtualToolJsonRepairEnabled,
     extensionTemplateVfsSnapshot,
     workTreeTemplate,
   }
@@ -135,6 +146,7 @@ export function serializeVfsExtensionSettings(state: VfsExtensionSettings): Reco
         ? Math.floor(state.logMaxBytes)
         : DEFAULT_SETTINGS.logMaxBytes,
     virtualToolCallEnabled: Boolean(state.virtualToolCallEnabled),
+    virtualToolJsonRepairEnabled: Boolean(state.virtualToolJsonRepairEnabled),
     extensionTemplateVfsSnapshot: state.extensionTemplateVfsSnapshot
       ? serializeVfsSnapshot(state.extensionTemplateVfsSnapshot)
       : null,

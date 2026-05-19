@@ -12,6 +12,8 @@ import { useVfsPopupLifecycle } from '@/app/composables/screens-composables/useV
 
 /** 与 checkbox 双向绑定；勾选状态变化时在 handleToggle 里写回 store */
 const enabled = ref(true)
+/** 消息标签通道 JSON 自动修复（保守策略） */
+const virtualToolJsonRepairEnabled = ref(true)
 /** 检查点 FIFO 上限（`snapshotMaxCount` 持久化键名不变，扩展设置） */
 const snapshotMaxCount = ref(10)
 /** store.subscribe 返回的取消函数，组件卸载时调用，防止内存泄漏 */
@@ -31,10 +33,12 @@ onMounted(() => {
   /** 注册 MESSAGE_RECEIVED / EDITED / DELETED 等（不注册 CHAT_CHANGED，交给上面） */
   messageEventAdapter.start()
   enabled.value = vfsPersistenceStore.getState().extension.enabled
+  virtualToolJsonRepairEnabled.value = vfsPersistenceStore.getState().extension.virtualToolJsonRepairEnabled
   snapshotMaxCount.value = vfsPersistenceStore.getState().extension.snapshotMaxCount
   /** 别处若改了 extension，表单仍能同步（简单订阅模型） */
   unsubscribe = vfsPersistenceStore.subscribe((state) => {
     enabled.value = state.extension.enabled
+    virtualToolJsonRepairEnabled.value = state.extension.virtualToolJsonRepairEnabled
     snapshotMaxCount.value = state.extension.snapshotMaxCount
   })
 })
@@ -49,6 +53,13 @@ onUnmounted(() => {
 /** v-model + @change：把 UI 勾选结果持久化到 extensionSettings */
 const handleToggle = () => {
   vfsPersistenceStore.setExtensionEnabled(enabled.value)
+}
+
+const handleJsonRepairToggle = () => {
+  vfsPersistenceStore.updateExtension((draft) => ({
+    ...draft,
+    virtualToolJsonRepairEnabled: virtualToolJsonRepairEnabled.value,
+  }))
 }
 
 const handleSnapshotMaxCountChange = () => {
@@ -79,6 +90,11 @@ const openTemplateManager = () => {
             <input v-model="enabled" type="checkbox" @change="handleToggle" />
             <span>启用虚拟文件系统</span>
           </label>
+          <label class="checkbox_label vfs-json-repair">
+            <input v-model="virtualToolJsonRepairEnabled" type="checkbox" @change="handleJsonRepairToggle" />
+            <span>启用工具调用 JSON 自动修复（仅消息标签通道）</span>
+          </label>
+          <p class="vfs-hint">采用保守策略；低把握场景不执行</p>
           <label class="vfs-field">
             <span class="vfs-field-label">检查点保留条数（FIFO，1–500）</span>
             <input
@@ -114,6 +130,16 @@ const openTemplateManager = () => {
 
 .vfs-panel {
   padding: 10px;
+}
+
+.vfs-json-repair {
+  margin-top: 10px;
+}
+
+.vfs-hint {
+  margin: 4px 0 0 24px;
+  font-size: 0.85em;
+  opacity: 0.8;
 }
 
 .vfs-field {

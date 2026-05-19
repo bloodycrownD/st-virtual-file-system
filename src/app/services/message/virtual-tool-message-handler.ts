@@ -25,15 +25,16 @@
  *
  * ## Failure-mode behavior
  *
- * The primary safety goal is **“execute at most once”**, even in the presence of errors:
- *
- * - If the call block contains invalid JSON, a `<virtual-tool-result>` is written with an error payload.
+ * - **JSON parse/repair failure** (strict fail, policy reject, or repair fail): the message is left unchanged,
+ *   `handled=false`, and the `<virtual-tool-call>` block remains for edit/retry. No `INVALID_JSON` result tag.
+ * - **JSON repair success**: batch executes; result payload may include `repairApplied` / `repairNotes`.
  * - If an unexpected exception occurs while a call block exists, a `<virtual-tool-result>` is still written to
  *   consume the call and prevent retry storms.
  * - If an unexpected exception occurs and no call block is available, we conservatively mark `handled=true`
  *   only when the message still contains a call tag (blocking repeated processing loops).
  */
 import { extractLastCallBlock, replaceCallWithResult, validateSingleResultTag } from './virtual-tool-tag-manager'
+import { parseVirtualToolEnvelope } from './virtual-tool-call-parser'
 import type { ToolCallEnvelope } from '@/app/services/virtual-tools/tool-contracts'
 import { buildResultCallsDisplay, summarizeToolArgs } from '@/app/services/virtual-tools/tool-result-payload'
 import type { ChatVfsRuntime } from '@/app/services/vfs-runtime/chat-vfs-runtime'
@@ -53,6 +54,7 @@ export class VirtualToolMessageHandler {
   constructor(
     private readonly runtime: ChatVfsRuntime,
     private readonly logs: ChatVfsLogService,
+    private readonly getJsonRepairEnabled: () => boolean = () => true,
   ) {}
 
   /**
@@ -66,7 +68,6 @@ export class VirtualToolMessageHandler {
    *
    * ### When it returns `handled=true`
    * - A call was executed and replaced with a `<virtual-tool-result>`.
-   * - A call was found but failed in a handled way (e.g. invalid JSON), and was still replaced with a result.
    * - An unexpected exception happened while a call block exists; we still replace the call with a result to
    *   prevent retry storms.
    * - As a last resort, if an exception happened and we cannot re-locate the call block, we may return
@@ -111,11 +112,16 @@ export class VirtualToolMessageHandler {
       if (!callBlock || !callBlock.content) {
         return { handled: false, messageText: input.messageText }
       }
-      let envelope: ToolCallEnvelope
-      try {
-        envelope = JSON.parse(callBlock.content) as ToolCallEnvelope
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : String(error)
+      const parseResult = parseVirtualToolEnvelope(callBlock.content, {
+        repairEnabled: this.getJsonRepairEnabled(),
+      })
+      if (parseResult.kind === 'strict-failed' || parseResult.kind === 'non-repairable' || parseResult.kind === 'repair-failed') {
+        const skipCode =
+          parseResult.kind === 'strict-failed'
+            ? 'JSON_PARSE_SKIPPED'
+            : parseResult.kind === 'non-repairable'
+              ? parseResult.reasonCode
+              : 'JSON_REPAIR_FAILED'
         this.logs.append({
           id: `log-${Date.now()}`,
           timestamp: Date.now(),
@@ -125,21 +131,15 @@ export class VirtualToolMessageHandler {
           toolName: 'batch',
           status: 'failed',
           durationMs: Date.now() - startedAt,
-          argsSummary: 'parse',
-          errorCode: 'INVALID_JSON',
-          errorMessage,
+          argsSummary: 'parse-skip',
+          errorCode: skipCode,
+          errorMessage: parseResult.errorMessage,
         })
-        return {
-          handled: true,
-          messageText: replaceCallWithResult(input.messageText, callBlock, {
-            ok: false,
-            calls: [{ tool: '(parse-error)', args: { callContent: callBlock.content } }],
-            results: [],
-            errorCode: 'INVALID_JSON',
-            errorMessage,
-          }),
-        }
+        return { handled: false, messageText: input.messageText }
       }
+      const envelope = parseResult.envelope
+      const repairApplied = parseResult.kind === 'repaired'
+      const repairNotes = repairApplied ? parseResult.repairNotes : undefined
       const batchId = `batch-${Date.now()}`
       // 进入运行时执行（含原子事务语义：成功才落盘）；成功路径在同一次 `updateChat` 写入 batch 日志 + `checkpointId`。
       const batch = this.runtime.executeBatch(envelope, {
@@ -148,12 +148,31 @@ export class VirtualToolMessageHandler {
         startedAt,
         batchId,
       })
-      const payload = {
+      const payload: Record<string, unknown> = {
         ok: batch.ok,
         calls: buildResultCallsDisplay(envelope.calls, !batch.ok),
         results: batch.results,
         errorCode: batch.errorCode,
         errorMessage: batch.errorMessage,
+      }
+      if (repairApplied) {
+        payload.repairApplied = true
+        payload.repairNotes = repairNotes
+      }
+      if (repairApplied && batch.ok) {
+        this.logs.append({
+          id: `log-${Date.now()}-repaired`,
+          timestamp: Date.now(),
+          chatId: input.chatId,
+          messageId: input.messageId,
+          batchId,
+          toolName: 'batch',
+          status: 'success',
+          durationMs: Date.now() - startedAt,
+          argsSummary: 'json-repaired',
+          errorCode: 'JSON_REPAIRED',
+          errorMessage: repairNotes?.join('; ') ?? 'JSON auto-repaired',
+        })
       }
       if (!batch.ok) {
         this.logs.append({
