@@ -240,21 +240,29 @@ describe('virtual tool CR fixes', () => {
     expect(nestedHandled).toBe(false)
   })
 
-  it('replaces malformed call blocks with failure result to avoid retrigger loop', () => {
-    const store = createVfsPersistenceStore(createAdapterMock())
+  it('keeps malformed call blocks when JSON cannot be parsed (no INVALID_JSON result)', () => {
+    const store = createVfsPersistenceStore(
+      createAdapterMock({ virtualToolJsonRepairEnabled: false }),
+    )
     store.init()
     const logs = new ChatVfsLogService(store)
     const runtime = new ChatVfsRuntime(store, new ToolDispatcher(), checkpointService(store))
-    const handler = new VirtualToolMessageHandler(runtime, logs)
+    const handler = new VirtualToolMessageHandler(
+      runtime,
+      logs,
+      () => store.getState().extension.virtualToolJsonRepairEnabled,
+    )
+    const before = JSON.stringify(store.getState().chat.chatVfsSnapshot)
     const output = handler.process({
       chatId: 'chat',
       messageId: 'bad-json',
       messageText: '<virtual-tool-call>{"calls":[{"tool":"list","args":{"path":"/"}}]</virtual-tool-call>',
     })
-    expect(output.handled).toBe(true)
-    expect(output.messageText).not.toContain('<virtual-tool-call>')
-    expect(output.messageText).toContain('<virtual-tool-result>')
-    expect(output.messageText).toContain('INVALID_JSON')
+    expect(output.handled).toBe(false)
+    expect(output.messageText).toContain('<virtual-tool-call>')
+    expect(output.messageText).not.toContain('<virtual-tool-result>')
+    expect(output.messageText).not.toContain('INVALID_JSON')
+    expect(JSON.stringify(store.getState().chat.chatVfsSnapshot)).toBe(before)
   })
 
   it('replaces call block with unhandled error result when runtime throws unexpectedly', () => {

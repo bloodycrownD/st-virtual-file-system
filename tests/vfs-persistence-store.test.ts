@@ -27,6 +27,7 @@ describe('vfs persistence store', () => {
       snapshotMaxCount: 10,
       logMaxBytes: 1024 * 1024,
       virtualToolCallEnabled: true,
+      virtualToolJsonRepairEnabled: true,
       extensionTemplateVfsSnapshot: null,
       workTreeTemplate: null,
     })
@@ -62,6 +63,7 @@ describe('vfs persistence store', () => {
       snapshotMaxCount: 10,
       logMaxBytes: 1024 * 1024,
       virtualToolCallEnabled: true,
+      virtualToolJsonRepairEnabled: true,
       extensionTemplateVfsSnapshot: null,
       workTreeTemplate: null,
     })
@@ -102,6 +104,7 @@ describe('vfs persistence store', () => {
       snapshotMaxCount: 10,
       logMaxBytes: 1024 * 1024,
       virtualToolCallEnabled: true,
+      virtualToolJsonRepairEnabled: true,
       extensionTemplateVfsSnapshot: null,
       workTreeTemplate: null,
     })

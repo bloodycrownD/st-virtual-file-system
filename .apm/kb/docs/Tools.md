@@ -7,7 +7,7 @@
 
 ## 调用长什么样（`<virtual-tool-call>`）
 
-在消息里放入一对标签，中间是一段 **JSON**（必须是合法 JSON）：
+在消息里放入一对标签，中间是一段 **JSON**（须为合法 JSON；扩展设置中可开启**保守的 JSON 自动修复**，仅作用于本标签通道）：
 
 ```text
 <virtual-tool-call>{"calls":[{"tool":"write","args":{"path":"/notes/hello.txt","content":"你好\n"}}]}</virtual-tool-call>
@@ -114,7 +114,7 @@
 
 ## 使用上容易踩坑的几点
 
-1. **标签名、JSON 都要写对**：标签是 `<virtual-tool-call>` / `</virtual-tool-call>`，中间 JSON 少一个引号都会导致解析失败，消息里会出现带 `INVALID_JSON` 一类的结果说明。  
+1. **标签名、JSON 都要写对**：标签是 `<virtual-tool-call>` / `</virtual-tool-call>`。无法解析且未通过保守修复时，**不会**写入失败型 `<virtual-tool-result>`，原 call 块保留以便改正后重试；高把握的结构问题（如少 `}`、尾逗号）在开启自动修复时可能自动补全并执行。  
 2. **每条调用都要有 `args` 对象**，不能写成 `null` 或数组。  
 3. **工具名拼写**必须与上表一致（全小写英文），否则整批会报「不支持的工具」。  
 4. 同一条消息里**不要留多段 `<virtual-tool-result>`**；正常情况扩展执行一次就只会留下一段结果。

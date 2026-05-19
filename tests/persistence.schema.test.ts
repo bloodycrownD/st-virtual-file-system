@@ -10,6 +10,7 @@ describe('vfs extension settings schema', () => {
     expect(parsed.snapshotMaxCount).toBe(10)
     expect(parsed.logMaxBytes).toBe(1024 * 1024)
     expect(parsed.virtualToolCallEnabled).toBe(true)
+    expect(parsed.virtualToolJsonRepairEnabled).toBe(true)
     expect(parsed.extensionTemplateVfsSnapshot).toBeNull()
     expect(parsed.workTreeTemplate).toBeNull()
   })
@@ -20,6 +21,7 @@ describe('vfs extension settings schema', () => {
       snapshotMaxCount: 3,
       logMaxBytes: 2048,
       virtualToolCallEnabled: false,
+      virtualToolJsonRepairEnabled: false,
       extensionTemplateVfsSnapshot: null,
       workTreeTemplate: null,
     })
@@ -28,6 +30,7 @@ describe('vfs extension settings schema', () => {
       snapshotMaxCount: 3,
       logMaxBytes: 2048,
       virtualToolCallEnabled: false,
+      virtualToolJsonRepairEnabled: false,
       extensionTemplateVfsSnapshot: null,
       workTreeTemplate: null,
     })
