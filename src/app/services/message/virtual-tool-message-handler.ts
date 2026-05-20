@@ -28,6 +28,8 @@
  * - **JSON parse/repair failure** (strict fail, policy reject, or repair fail): the message is left unchanged,
  *   `handled=false`, and the `<virtual-tool-call>` block remains for edit/retry. No `INVALID_JSON` result tag.
  * - **JSON repair success**: batch executes; result payload may include `repairApplied` / `repairNotes`.
+ * - **Result `calls` display**: failures always embed full `args`; successes use `argsSummary` unless
+ *   `virtualToolResultFullArgsEnabled` is on (message tag channel only; FC uses `!batch.ok` only).
  * - If an unexpected exception occurs while a call block exists, a `<virtual-tool-result>` is still written to
  *   consume the call and prevent retry storms.
  * - If an unexpected exception occurs and no call block is available, we conservatively mark `handled=true`
@@ -55,6 +57,8 @@ export class VirtualToolMessageHandler {
     private readonly runtime: ChatVfsRuntime,
     private readonly logs: ChatVfsLogService,
     private readonly getJsonRepairEnabled: () => boolean = () => true,
+    /** Read per-process; default false keeps success batches on argsSummary (v1.0.9 behavior). */
+    private readonly getResultFullArgsEnabled: () => boolean = () => false,
   ) {}
 
   /**
@@ -148,9 +152,11 @@ export class VirtualToolMessageHandler {
         startedAt,
         batchId,
       })
+      // Failures always need full args; successes follow extension toggle (FC path unchanged).
+      const includeFullArgs = !batch.ok || this.getResultFullArgsEnabled()
       const payload: Record<string, unknown> = {
         ok: batch.ok,
-        calls: buildResultCallsDisplay(envelope.calls, !batch.ok),
+        calls: buildResultCallsDisplay(envelope.calls, includeFullArgs),
         results: batch.results,
         errorCode: batch.errorCode,
         errorMessage: batch.errorMessage,

@@ -9,7 +9,13 @@ export function summarizeToolArgs(args: Record<string, unknown>): string {
   return keys.slice(0, 4).join(',')
 }
 
-/** Success: argsSummary only. Failure: full `args` for debugging. */
+/**
+ * Build `calls` entries for result JSON.
+ *
+ * @param includeFullArgs - When true, each item is `{ tool, args }`; otherwise `{ tool, argsSummary }`.
+ * Message-tag success uses `virtualToolResultFullArgsEnabled`; failures always pass true.
+ * Function Calling keeps `includeFullArgs = !batch.ok` only (does not read the extension toggle).
+ */
 export function buildResultCallsDisplay(
   calls: Array<{ tool: string; args?: Record<string, unknown> }>,
   includeFullArgs: boolean,

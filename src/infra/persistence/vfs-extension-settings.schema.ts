@@ -43,6 +43,11 @@ export interface VfsExtensionSettings {
    */
   virtualToolJsonRepairEnabled: boolean
   /**
+   * When enabled, successful message-tag `<virtual-tool-result>` batches include full `calls[].args`
+   * instead of `argsSummary` only. Default off to preserve compact results; FC ignores this flag.
+   */
+  virtualToolResultFullArgsEnabled: boolean
+  /**
    * Extension-scoped template snapshot used to initialize chat snapshots.
    *
    * On first access in a chat, `ExtensionVfsTemplateService` may clone this snapshot into
@@ -65,6 +70,7 @@ const DEFAULT_SETTINGS: VfsExtensionSettings = {
   logMaxBytes: 1024 * 1024,
   virtualToolCallEnabled: true,
   virtualToolJsonRepairEnabled: true,
+  virtualToolResultFullArgsEnabled: false,
   extensionTemplateVfsSnapshot: null,
   workTreeTemplate: null,
 }
@@ -86,6 +92,7 @@ export function parseVfsExtensionSettings(raw: unknown): VfsExtensionSettings {
     logMaxBytes?: unknown
     virtualToolCallEnabled?: unknown
     virtualToolJsonRepairEnabled?: unknown
+    virtualToolResultFullArgsEnabled?: unknown
     extensionTemplateVfsSnapshot?: unknown
     workTreeTemplate?: unknown
   }
@@ -123,6 +130,10 @@ export function parseVfsExtensionSettings(raw: unknown): VfsExtensionSettings {
       typeof input.virtualToolJsonRepairEnabled === 'boolean'
         ? input.virtualToolJsonRepairEnabled
         : DEFAULT_SETTINGS.virtualToolJsonRepairEnabled,
+    virtualToolResultFullArgsEnabled:
+      typeof input.virtualToolResultFullArgsEnabled === 'boolean'
+        ? input.virtualToolResultFullArgsEnabled
+        : DEFAULT_SETTINGS.virtualToolResultFullArgsEnabled,
     extensionTemplateVfsSnapshot,
     workTreeTemplate,
   }
@@ -147,6 +158,7 @@ export function serializeVfsExtensionSettings(state: VfsExtensionSettings): Reco
         : DEFAULT_SETTINGS.logMaxBytes,
     virtualToolCallEnabled: Boolean(state.virtualToolCallEnabled),
     virtualToolJsonRepairEnabled: Boolean(state.virtualToolJsonRepairEnabled),
+    virtualToolResultFullArgsEnabled: Boolean(state.virtualToolResultFullArgsEnabled),
     extensionTemplateVfsSnapshot: state.extensionTemplateVfsSnapshot
       ? serializeVfsSnapshot(state.extensionTemplateVfsSnapshot)
       : null,

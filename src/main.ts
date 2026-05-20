@@ -70,6 +70,7 @@ const messageHandler = new VirtualToolMessageHandler(
   runtime,
   logs,
   () => vfsPersistenceStore.getState().extension.virtualToolJsonRepairEnabled,
+  () => vfsPersistenceStore.getState().extension.virtualToolResultFullArgsEnabled,
 )
 const controller = createMessageController(createMessagePipeline(messageHandler))
 createStMessageEventAdapter(controller).start()
