@@ -41,7 +41,7 @@
 | 字段 | 含义 |
 |------|------|
 | **`ok`** | 整批是否全部按预期跑完。`false` 表示中途有错或超时等。 |
-| **`calls`** | 本次尝试的调用列表。**成功**时每项为 `{ tool, argsSummary }`（仅参数名，如 `path,content`）。**失败**时每项为 `{ tool, args }`（**完整入参**，便于排错）。JSON 解析失败时可能含 `args.callContent` 为原始 call JSON。 |
+| **`calls`** | 本次尝试的调用列表。**成功**时默认每项为 `{ tool, argsSummary }`（仅参数名，如 `path,content`）；扩展设置开启「成功时展示完整入参」后为 `{ tool, args }`（与 call 块一致）。**失败**时每项为 `{ tool, args }`（**完整入参**，便于排错）。JSON 解析失败时可能含 `args.callContent` 为原始 call JSON。 |
 | **`results`** | 与 `calls` **一一对应**的每条结果（见下表）。若中途失败，可能只有前面几条有结果。 |
 | **`errorCode` / `errorMessage`** | 当 `ok` 为 `false` 时，说明失败原因（例如 JSON 写错、未知工具名、超时等）。 |
 

@@ -21,6 +21,21 @@ describe('tool result payload', () => {
     expect(calls[0]?.args).toBeUndefined()
   })
 
+  it('formatFunctionToolResult uses argsSummary on FC success regardless of extension toggle', () => {
+    const json = formatFunctionToolResult(
+      {
+        ok: true,
+        results: [{ tool: 'write', ok: true, summary: 'ok' }],
+      },
+      { calls: [{ tool: 'write', args: { path: '/a.txt', content: 'hello' } }] },
+    )
+    const parsed = JSON.parse(json) as {
+      calls: Array<{ tool: string; args?: Record<string, unknown>; argsSummary?: string }>
+    }
+    expect(parsed.calls[0]?.argsSummary).toBe('path,content')
+    expect(parsed.calls[0]?.args).toBeUndefined()
+  })
+
   it('formatFunctionToolResult embeds full args on FC failure', () => {
     const json = formatFunctionToolResult(
       {

@@ -11,8 +11,13 @@ describe('vfs extension settings schema', () => {
     expect(parsed.logMaxBytes).toBe(1024 * 1024)
     expect(parsed.virtualToolCallEnabled).toBe(true)
     expect(parsed.virtualToolJsonRepairEnabled).toBe(true)
+    expect(parsed.virtualToolResultFullArgsEnabled).toBe(false)
     expect(parsed.extensionTemplateVfsSnapshot).toBeNull()
     expect(parsed.workTreeTemplate).toBeNull()
+  })
+
+  it('defaults virtualToolResultFullArgsEnabled to false when missing', () => {
+    expect(parseVfsExtensionSettings({}).virtualToolResultFullArgsEnabled).toBe(false)
   })
 
   it('serializes into JSON-safe object', () => {
@@ -22,6 +27,7 @@ describe('vfs extension settings schema', () => {
       logMaxBytes: 2048,
       virtualToolCallEnabled: false,
       virtualToolJsonRepairEnabled: false,
+      virtualToolResultFullArgsEnabled: true,
       extensionTemplateVfsSnapshot: null,
       workTreeTemplate: null,
     })
@@ -31,6 +37,7 @@ describe('vfs extension settings schema', () => {
       logMaxBytes: 2048,
       virtualToolCallEnabled: false,
       virtualToolJsonRepairEnabled: false,
+      virtualToolResultFullArgsEnabled: true,
       extensionTemplateVfsSnapshot: null,
       workTreeTemplate: null,
     })

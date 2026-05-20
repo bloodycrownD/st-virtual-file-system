@@ -14,6 +14,8 @@ import { useVfsPopupLifecycle } from '@/app/composables/screens-composables/useV
 const enabled = ref(true)
 /** 消息标签通道 JSON 自动修复（保守策略） */
 const virtualToolJsonRepairEnabled = ref(true)
+/** 消息标签通道成功批次是否在 result 中展示完整 calls[].args（默认关） */
+const virtualToolResultFullArgsEnabled = ref(false)
 /** 检查点 FIFO 上限（`snapshotMaxCount` 持久化键名不变，扩展设置） */
 const snapshotMaxCount = ref(10)
 /** store.subscribe 返回的取消函数，组件卸载时调用，防止内存泄漏 */
@@ -34,11 +36,13 @@ onMounted(() => {
   messageEventAdapter.start()
   enabled.value = vfsPersistenceStore.getState().extension.enabled
   virtualToolJsonRepairEnabled.value = vfsPersistenceStore.getState().extension.virtualToolJsonRepairEnabled
+  virtualToolResultFullArgsEnabled.value = vfsPersistenceStore.getState().extension.virtualToolResultFullArgsEnabled
   snapshotMaxCount.value = vfsPersistenceStore.getState().extension.snapshotMaxCount
   /** 别处若改了 extension，表单仍能同步（简单订阅模型） */
   unsubscribe = vfsPersistenceStore.subscribe((state) => {
     enabled.value = state.extension.enabled
     virtualToolJsonRepairEnabled.value = state.extension.virtualToolJsonRepairEnabled
+    virtualToolResultFullArgsEnabled.value = state.extension.virtualToolResultFullArgsEnabled
     snapshotMaxCount.value = state.extension.snapshotMaxCount
   })
 })
@@ -59,6 +63,13 @@ const handleJsonRepairToggle = () => {
   vfsPersistenceStore.updateExtension((draft) => ({
     ...draft,
     virtualToolJsonRepairEnabled: virtualToolJsonRepairEnabled.value,
+  }))
+}
+
+const handleResultFullArgsToggle = () => {
+  vfsPersistenceStore.updateExtension((draft) => ({
+    ...draft,
+    virtualToolResultFullArgsEnabled: virtualToolResultFullArgsEnabled.value,
   }))
 }
 
@@ -95,6 +106,11 @@ const openTemplateManager = () => {
             <span>启用工具调用 JSON 自动修复（仅消息标签通道）</span>
           </label>
           <p class="vfs-hint">采用保守策略；低把握场景不执行</p>
+          <label class="checkbox_label vfs-json-repair">
+            <input v-model="virtualToolResultFullArgsEnabled" type="checkbox" @change="handleResultFullArgsToggle" />
+            <span>成功时在消息结果中展示完整工具入参（仅消息标签通道）</span>
+          </label>
+          <p class="vfs-hint">默认关闭；开启后 &lt;virtual-tool-result&gt; 的 calls 含完整 args，可能增大消息体积</p>
           <label class="vfs-field">
             <span class="vfs-field-label">检查点保留条数（FIFO，1–500）</span>
             <input
