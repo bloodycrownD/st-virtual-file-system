@@ -1,4 +1,4 @@
-(function(){try{if(typeof document<`u`){var e=document.createElement(`style`);e.appendChild(document.createTextNode(`.vfs-action-menu[data-v-a111f74c]{position:relative}.vfs-action-menu__toggle[data-v-a111f74c]{cursor:pointer;-webkit-user-select:none;user-select:none;justify-content:center;align-items:center;width:28px;height:28px;padding:0;list-style:none;display:inline-flex}.vfs-action-menu__toggle i[data-v-a111f74c]{font-size:14px;line-height:1}.vfs-action-menu[data-disabled=true] .vfs-action-menu__toggle[data-v-a111f74c]{opacity:.5;cursor:not-allowed}.vfs-action-menu__list[data-v-a111f74c]{z-index:50;background:#00000040;border:1px solid #ffffff1f;border-radius:8px;min-width:180px;max-height:min(50vh,360px);margin:0;padding:8px;list-style:none;position:absolute;top:calc(100% + 8px);right:0;overflow:auto;box-shadow:0 10px 24px #00000073}.vfs-action-menu__list--entity-fixed[data-v-a111f74c],.vfs-action-menu__list--fixed-overlay[data-v-a111f74c]{top:unset;right:unset;position:fixed}.vfs-action-menu__separator[data-v-a111f74c]{border-top:1px solid #ffffff1f;margin:6px 0}.vfs-action-confirm-dialog__message[data-v-37f7685b]{color:var(--SmartThemeBodyColor,#ffffffd9);margin:0;line-height:1.45}.vfs-listbox-field[data-v-3f94c5a7]{min-width:0;position:relative}.vfs-listbox-field__trigger[data-v-3f94c5a7]{width:100%;min-height:40px;color:inherit;text-align:left;cursor:pointer;background:#0f1218eb;border:1px solid #fff3;border-radius:6px;justify-content:space-between;align-items:center;gap:8px;padding:8px 10px;font-size:1rem;line-height:1.35;display:inline-flex}.vfs-listbox-field__trigger[data-v-3f94c5a7]:disabled{opacity:.55;cursor:not-allowed}.vfs-listbox-field__trigger[data-v-3f94c5a7]:focus-visible{outline-offset:1px}.vfs-listbox-field__trigger-label[data-v-3f94c5a7]{text-overflow:ellipsis;white-space:nowrap;flex:auto;min-width:0;overflow:hidden}.vfs-listbox-field__listbox[data-v-3f94c5a7]{z-index:20;box-sizing:border-box;background:#141820fa;border:1px solid #fff3;border-radius:8px;width:max-content;min-width:100%;max-width:min(100vw - 20px,36rem);max-height:220px;margin:0;padding:4px;list-style:none;position:absolute;top:calc(100% + 6px);left:0;right:auto;overflow:hidden auto}.vfs-listbox-field__option[data-v-3f94c5a7]{width:100%;color:inherit;text-align:left;cursor:pointer;white-space:nowrap;background:0 0;border:0;border-radius:6px;padding:8px 10px;font-size:1rem;line-height:1.35;display:block}.vfs-listbox-field__option[data-active=true][data-v-3f94c5a7]{background:#ffffff24}.vfs-listbox-field__option[aria-selected=true][data-v-3f94c5a7]{font-weight:600}.vfs-listbox-field--dropdown-match-trigger .vfs-listbox-field__listbox[data-v-3f94c5a7]{width:100%;min-width:0;max-width:none;left:0;right:0}.vfs-listbox-field--compact .vfs-listbox-field__trigger[data-v-3f94c5a7]{border-radius:6px;min-height:30px;padding:4px 8px;font-size:.8rem}.vfs-listbox-field--compact .vfs-listbox-field__listbox[data-v-3f94c5a7]{max-height:200px;padding:3px}.vfs-listbox-field--compact .vfs-listbox-field__option[data-v-3f94c5a7]{padding:5px 8px;font-size:.75rem;line-height:1.3}.vfs-action-input-dialog__fields[data-v-b7ee78ed]{gap:8px;display:grid}.vfs-action-input-dialog__error[data-v-b7ee78ed]{color:#ffb3b3;margin:0;font-size:.9rem}.vfs-action-input-dialog__range-number[data-v-b7ee78ed]{grid-template-columns:1fr 92px;align-items:center;gap:8px;display:grid}.vfs-action-input-dialog__listbox-field[data-v-b7ee78ed]{width:100%}.vfs-unsaved-editor-dialog__body[data-v-b25ce526]{color:var(--SmartThemeBodyColor,#ffffffd9);margin:0;font-size:.95rem;line-height:1.45}.vfs-unsaved-editor-dialog__actions[data-v-b25ce526]{flex-wrap:wrap;justify-content:flex-end}.vfs-file-manager-panel[data-v-f2452120]{flex-direction:column;flex:auto;min-width:0;min-height:0;display:flex}.vfs-fm-header[data-v-f2452120]{flex-wrap:nowrap;flex:none;justify-content:space-between;align-items:center;gap:10px;min-width:0;margin-bottom:10px;display:flex}.vfs-fm-nav-group[data-v-f2452120]{flex:auto;align-items:center;gap:8px;min-width:0;display:flex}.vfs-fm-action-group[data-v-f2452120]{white-space:nowrap;flex-wrap:nowrap;flex:none;justify-content:flex-end;align-items:center;gap:8px;max-width:55%;display:inline-flex;overflow-x:auto}.vfs-fm-icon-button[data-v-f2452120]{width:28px;height:28px;color:inherit;background:#0003;border:1px solid #ffffff1f;border-radius:8px;flex:none;justify-content:center;align-items:center;padding:0;display:inline-flex}.vfs-fm-icon-button i[data-v-f2452120]{font-size:14px;line-height:1}.vfs-fm-icon-button[data-v-f2452120-s]{width:28px;height:28px;color:inherit;background:#0003;border:1px solid #ffffff1f;border-radius:8px;flex:none;justify-content:center;align-items:center;padding:0;display:inline-flex}.vfs-fm-icon-button i[data-v-f2452120-s]{font-size:14px;line-height:1}.vfs-fm-icon-button[data-v-f2452120]:disabled{opacity:.5;cursor:not-allowed}.vfs-fm-path-text[data-v-f2452120]{opacity:.9;text-overflow:ellipsis;white-space:nowrap;max-width:100%;overflow:hidden}.vfs-fm-list[data-v-f2452120]{flex:auto;align-content:start;gap:6px;min-width:0;min-height:0;margin:0;padding:0;list-style:none;display:grid;overflow:hidden auto}.vfs-fm-row[data-v-f2452120]{align-items:stretch;gap:6px;min-width:0;display:flex}.vfs-fm-item[data-v-f2452120]{text-align:left;background:#0000002e;border:1px solid #ffffff1f;border-radius:8px;flex:1 1 0;justify-content:space-between;align-items:center;gap:10px;min-width:0;padding:8px 10px;display:flex}.vfs-fm-item-main[data-v-f2452120]{flex:auto;align-items:center;gap:10px;min-width:0;display:flex}.vfs-fm-row-badge[data-v-f2452120]{color:#ffffff73;flex:0 auto;align-items:center;gap:4px;min-width:0;max-width:42%;font-size:11px;line-height:1.2;display:inline-flex}.vfs-fm-row-badge i[data-v-f2452120]{opacity:.95;flex-shrink:0;font-size:12px;line-height:1}.vfs-fm-row-badge-label[data-v-f2452120]{text-overflow:ellipsis;white-space:nowrap;min-width:0;font-size:12px;overflow:hidden}.vfs-fm-row-actions[data-v-f2452120]{z-index:2;flex:none;justify-content:center;align-items:center;gap:6px;display:inline-flex;position:relative}.vfs-fm-row-status[data-v-f2452120]{opacity:.95;background:#0003;border:1px solid #ffffff1f;border-radius:8px;justify-content:center;align-items:center;width:28px;min-width:28px;height:28px;display:inline-flex}.vfs-fm-row-status--on[data-v-f2452120]{color:#ffd54a;border-color:#ffd54a80;box-shadow:0 0 10px #ffd54a33}.vfs-fm-row-status--off[data-v-f2452120]{color:#fff6;filter:saturate(.2)brightness(.75);border-color:#ffffff1f}.vfs-fm-kind[data-v-f2452120]{text-align:center;width:22px}.vfs-fm-name[data-v-f2452120]{text-overflow:ellipsis;white-space:nowrap;flex:auto;min-width:0;overflow:hidden}@media (width<=1023px){.vfs-fm-header[data-v-f2452120]{flex-wrap:wrap;align-items:flex-start}.vfs-fm-action-group[data-v-f2452120]{white-space:normal;flex-wrap:wrap;justify-content:flex-start;min-width:0;max-width:100%;overflow-x:visible}.vfs-fm-item-main[data-v-f2452120]{flex:1 1 0;min-width:0;max-width:80%}}.vfs-history-screen[data-v-f7501d07]{flex-direction:column;flex:1;gap:12px;min-height:0;display:flex}.vfs-history-top[data-v-f7501d07]{flex:none}.vfs-history-status-bar[data-v-f7501d07]{background:#14182080;border:1px solid #ffffff24;border-radius:10px;align-items:center;gap:10px;padding:8px 10px;display:flex}.vfs-history-status-label[data-v-f7501d07]{opacity:.8;letter-spacing:.02em;font-size:12px}.vfs-history-status-pill[data-v-f7501d07]{background:#ffffff14;border:1px solid #fff3;border-radius:999px;align-items:center;padding:2px 8px;font-size:12px;font-weight:600;display:inline-flex}.vfs-history-status-spinner[data-v-f7501d07]{opacity:.9;margin-left:4px}.vfs-history-hint[data-v-f7501d07]{opacity:.8;margin:0;font-size:12px}.vfs-log-scrollport[data-v-f7501d07]{flex:auto;min-height:0;overflow:hidden auto}.vfs-log-list[data-v-f7501d07]{gap:8px;margin:0;padding:0;list-style:none;display:grid}.vfs-log-row[data-v-f7501d07]{background:#ffffff0a;border:1px solid #ffffff1f;border-radius:10px;justify-content:space-between;align-items:center;gap:10px;padding:8px 10px;display:flex}.vfs-log-meta[data-v-f7501d07]{flex-direction:column;gap:2px;min-width:0;display:flex}.vfs-log-line[data-v-f7501d07]{word-break:break-word;font-size:13px}.vfs-log-sub[data-v-f7501d07],.vfs-log-snap[data-v-f7501d07]{opacity:.75;word-break:break-all;font-size:12px}.vfs-log-actions[data-v-f7501d07]{flex-direction:column;flex:none;align-items:flex-end;gap:4px;display:flex}.vfs-log-rollback[data-v-f7501d07]{white-space:nowrap;flex:none}.vfs-log-rollback--disabled[data-v-f7501d07]{opacity:.65;cursor:not-allowed}.vfs-log-snapshot-missing[data-v-f7501d07]{text-align:right;flex-direction:column;align-items:flex-end;gap:2px;max-width:12rem;display:flex}.vfs-log-snapshot-missing-hint[data-v-f7501d07]{opacity:.72;word-break:break-word;font-size:11px;line-height:1.25}.vfs-log-empty[data-v-f7501d07]{opacity:.75;background:#ffffff08;border:1px dashed #fff3;border-radius:10px;margin:0;padding:12px}.vfs-line-number-gutter[data-v-3ddd70c5]{-webkit-user-select:none;user-select:none;color:#ffffff52;font-variant-numeric:tabular-nums;background:0 0;border:none;flex:0 0 35px;width:35px;min-width:35px;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,Liberation Mono,Courier New,monospace;overflow:hidden}.vfs-line-number-gutter__content[data-v-3ddd70c5]{will-change:transform}.vfs-line-number-gutter__row[data-v-3ddd70c5]{box-sizing:border-box;text-align:right;padding-right:8px;font-size:12px;display:block}.vfs-reader[data-v-26a4b717]{overflow-wrap:anywhere;word-break:break-word;width:100%;min-width:0;max-width:none;font-size:14px;line-height:1.72}.vfs-reader[data-v-26a4b717] h1,.vfs-reader[data-v-26a4b717] h2,.vfs-reader[data-v-26a4b717] h3,.vfs-reader[data-v-26a4b717] h4{margin:18px 0 10px;line-height:1.25}.vfs-reader[data-v-26a4b717] p{margin:12px 0}.vfs-reader[data-v-26a4b717] ul,.vfs-reader[data-v-26a4b717] ol{margin:12px 0;padding-left:1.4em}.vfs-reader[data-v-26a4b717] pre:not(.vfs-plain-text){background:#00000040;border:1px solid #ffffff1f;border-radius:10px;padding:10px 12px;overflow:auto}.vfs-reader[data-v-26a4b717] code{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,Liberation Mono,Courier New,monospace;font-size:.95em}.vfs-reader[data-v-26a4b717] blockquote{opacity:.95;border-left:3px solid #fff3;margin:12px 0;padding-left:12px}.vfs-reader[data-v-26a4b717] table{border-collapse:collapse;width:100%}.vfs-reader[data-v-26a4b717] th,.vfs-reader[data-v-26a4b717] td{border:1px solid #ffffff1f;padding:6px 8px}.vfs-reader[data-v-26a4b717] img{max-width:100%;height:auto}.vfs-reader[data-v-26a4b717] .vfs-md-frontmatter{color:#ffffffc7;background:#0000002e;border:1px solid #ffffff1f;border-radius:10px;margin:0 0 14px;padding:10px 12px;font-size:12px;line-height:1.45}.vfs-reader[data-v-26a4b717] .vfs-md-frontmatter__row{flex-wrap:wrap;align-items:flex-start;gap:6px 10px;margin:6px 0;display:flex}.vfs-reader[data-v-26a4b717] .vfs-md-frontmatter__row:first-child{margin-top:0}.vfs-reader[data-v-26a4b717] .vfs-md-frontmatter__row:last-child{margin-bottom:0}.vfs-reader[data-v-26a4b717] .vfs-md-frontmatter__key{color:#ffffffe0;opacity:.95;flex:none;max-width:100%;font-weight:600}.vfs-reader[data-v-26a4b717] .vfs-md-frontmatter__value{opacity:.9;word-break:break-word;flex:12rem;min-width:0}.vfs-reader[data-v-26a4b717] .vfs-md-frontmatter__value--block{max-height:none;margin-top:6px}.vfs-reader[data-v-26a4b717] .vfs-md-frontmatter__details{flex:12rem;min-width:0}.vfs-reader[data-v-26a4b717] .vfs-md-frontmatter__summary{cursor:pointer;-webkit-user-select:none;user-select:none;opacity:.85;list-style:none}.vfs-reader[data-v-26a4b717] .vfs-md-frontmatter__summary::-webkit-details-marker{display:none}.vfs-reader[data-v-26a4b717] .vfs-plain-text{white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;color:inherit;background:0 0;border:none;border-radius:0;margin:0;padding:0;font-family:inherit;font-size:14px;line-height:1.72}.vfs-editor-screen[data-v-162fe7ff]{flex-direction:column;flex:auto;min-width:0;height:100%;min-height:0;max-height:100%;display:flex}.vfs-editor-toolbar[data-v-162fe7ff]{flex-wrap:wrap;flex:none;align-items:center;gap:8px;display:flex}.vfs-editor-toolbar__icon-button[data-v-162fe7ff]{justify-content:center;align-items:center;min-width:2.25rem;min-height:2.25rem;padding:6px 10px;display:inline-flex}.vfs-line-numbered-editor[data-v-162fe7ff]{flex:auto;min-width:0;min-height:0;display:flex;overflow:hidden}.vfs-editor-wrap[data-v-162fe7ff]{flex:auto;min-width:0;min-height:0;position:relative;overflow:hidden}.vfs-editor-line-mirror[data-v-162fe7ff]{visibility:hidden;pointer-events:none;box-sizing:content-box;white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;margin:0;padding:0;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,Liberation Mono,Courier New,monospace;font-size:12px;line-height:1.72;position:absolute;top:0;left:0;overflow:visible}.vfs-editor-line-mirror__line[data-v-162fe7ff]{width:100%;min-width:0;display:block}.vfs-editor[data-v-162fe7ff]{z-index:1;box-sizing:border-box;resize:none;white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;border-radius:0;outline:none;flex:auto;width:100%;height:100%;min-height:0;max-height:100%;padding:8px 10px;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,Liberation Mono,Courier New,monospace;font-size:12px;line-height:1.72;position:relative;overflow:auto;box-shadow:none!important;background:0 0!important;border:0!important}.vfs-editor-preview-pane[data-v-162fe7ff]{flex:auto;min-width:0;min-height:0;overflow:auto}.vfs-slide-content[data-v-0649f89e]{gap:16px;display:grid}.vfs-slide-empty[data-v-0649f89e]{opacity:.75;margin:0}.vfs-tab-shell[data-v-7b1edd28]{flex-direction:column;flex:auto;min-width:0;min-height:0;display:flex}.vfs-tabs[data-v-7b1edd28]{background:#00000024;border:1px solid #ffffff1f;border-radius:12px;flex-wrap:wrap;flex:none;align-items:center;gap:8px;padding:6px;display:flex}.vfs-tabs__primary[data-v-7b1edd28]{flex-wrap:wrap;flex:auto;gap:6px;min-width:0;display:flex}.vfs-tabs__trailing[data-v-7b1edd28]{flex:0 auto;align-items:center;gap:6px;min-width:0;max-width:100%;margin-left:auto;display:inline-flex}@media (width<=1023px){.vfs-tabs[data-v-7b1edd28]{flex-direction:column;align-items:stretch}.vfs-tabs__primary[data-v-7b1edd28]{width:100%;overflow-x:visible}.vfs-tabs__trailing[data-v-7b1edd28]{flex-wrap:wrap;justify-content:flex-start;width:100%;max-width:none;margin-left:0}}.vfs-tabs__trailing[data-v-7b1edd28]:empty{display:none}.vfs-tab-content[data-v-7b1edd28]{flex-direction:column;flex:auto;min-width:0;min-height:0;display:flex}.vfs-tab[data-v-7b1edd28]{writing-mode:horizontal-tb;white-space:nowrap;opacity:.9;background:0 0;border:1px solid #0000;border-radius:999px;flex:none;justify-content:center;align-items:center;transition:background .12s,border-color .12s,opacity .12s;display:inline-flex}.vfs-tab[data-v-7b1edd28]:hover{opacity:1;background:#ffffff0f;border-color:#ffffff1f}.vfs-tab.active[data-v-7b1edd28]{opacity:1;background:#ffffff1f;border-color:#ffffff38;font-weight:700;box-shadow:0 6px 16px #0000002e}.vfs-worktree-screen[data-v-a1232042]{flex-direction:column;flex:auto;min-width:0;min-height:0;display:flex}.vfs-worktree-text[data-v-a1232042]{white-space:pre-wrap;overflow-wrap:anywhere;opacity:.92;background:#00000024;border:1px solid #ffffff1f;border-radius:12px;flex:auto;min-width:0;min-height:0;margin:0;padding:10px 12px;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,Liberation Mono,Courier New,monospace;font-size:12px;line-height:1.35;overflow:auto}.vfs-main-layout[data-v-124536bd]{flex-direction:column;flex:auto;min-height:0;display:flex;position:relative}.vfs-list-only-layout[data-v-124536bd]{flex-direction:column;flex:auto;width:100%;min-height:0;display:flex}.vfs-preview-stack[data-v-124536bd]{flex-direction:column;flex:auto;min-height:0;display:flex}.vfs-preview-body[data-v-124536bd]{flex-direction:column;flex:auto;gap:8px;min-height:0;display:flex}.vfs-preview-body--fullscreen[data-v-124536bd]{box-sizing:border-box;background:var(--SmartThemeBlurTintColor,#141414eb);min-height:100dvh}.vfs-preview-top-bar[data-v-124536bd]{flex-wrap:wrap;flex:none;align-items:center;gap:8px;display:flex;position:relative}.vfs-tabs-editor-snapshot-tools[data-v-124536bd]{flex:none;align-items:center;gap:6px;display:inline-flex}.vfs-tabs-snapshot-listbox[data-v-124536bd]{flex:none;width:11rem;min-width:11rem;max-width:11rem}.vfs-tabs-snapshot-rollback-button[data-v-124536bd]{flex-shrink:0;justify-content:center;align-items:center;min-width:2.1rem;min-height:30px;padding:4px 8px;font-size:.8rem;display:inline-flex}.vfs-preview-top-bar__left[data-v-124536bd]{flex:none;align-items:center;gap:8px;display:flex}.vfs-preview-top-bar__title[data-v-124536bd]{flex:auto;min-width:0}.vfs-preview-chrome-actions[data-v-124536bd]{flex-wrap:wrap;align-items:center;gap:8px;min-width:0;margin-left:auto;display:inline-flex}.vfs-preview-chrome-button[data-v-124536bd]{justify-content:center;align-items:center;min-width:2.25rem;min-height:2.25rem;padding:6px 10px;display:inline-flex}.vfs-preview-file-title[data-v-124536bd]{text-overflow:ellipsis;white-space:nowrap;pointer-events:none;opacity:.92;margin:0;font-size:1.08rem;font-weight:700;line-height:1.2;overflow:hidden}.vfs-preview-body[data-v-124536bd]>:not(.vfs-preview-top-bar){flex:auto;min-width:0;min-height:0}.vfs-preview-content-frame[data-v-124536bd]{background:#00000024;border:1px solid #ffffff29;border-radius:12px;flex-direction:column;flex:auto;min-width:0;min-height:0;padding:10px 12px;display:flex;position:relative}.vfs-preview-content-frame--meta-anchored[data-v-124536bd]{padding-bottom:52px}.vfs-editor-stage[data-v-124536bd]{flex-direction:column;flex:auto;min-width:0;min-height:0;display:flex}.vfs-preview-back-button[data-v-124536bd]{justify-content:center;align-items:center;min-width:2.25rem;min-height:2.25rem;padding:6px 10px;display:inline-flex}.vfs-preview-meta[data-v-124536bd]{opacity:.72;text-align:right;flex-wrap:wrap;justify-content:flex-end;align-items:center;gap:6px 10px;max-width:100%;font-size:12px;line-height:1.3;display:flex}.vfs-preview-meta--anchored[data-v-124536bd]{position:absolute;bottom:8px;right:12px}.vfs-preview-meta--flow[data-v-124536bd]{margin-top:8px;margin-left:auto}[data-layout=mobile] .vfs-preview-top-bar[data-v-124536bd]{flex-flow:wrap;align-items:center;min-width:0}[data-layout=mobile] .vfs-preview-top-bar__left[data-v-124536bd]{flex:none;order:-1}[data-layout=mobile] .vfs-preview-chrome-actions[data-v-124536bd]{box-sizing:border-box;flex-wrap:nowrap;flex:1 1 0;order:-1;justify-content:flex-end;min-width:0;margin-left:0}[data-layout=mobile] .vfs-preview-top-bar__title[data-v-124536bd]{text-align:center;flex:0 0 100%;order:0;width:100%;min-width:0;max-width:100%}[data-layout=mobile] .vfs-preview-file-title[data-v-124536bd]{text-align:center}@media (width<=1023px){.vfs-tabs-editor-snapshot-tools[data-v-124536bd],.vfs-tabs-snapshot-listbox[data-v-124536bd]{flex:auto;width:100%;min-width:0;max-width:100%}}.vfs-settings-root[data-v-c3405d1a],.inline-drawer[data-v-c3405d1a],.inline-drawer-content[data-v-c3405d1a]{width:100%}.vfs-title-row[data-v-c3405d1a]{align-items:center;gap:10px;display:flex}.vfs-panel[data-v-c3405d1a]{padding:10px}.vfs-json-repair[data-v-c3405d1a]{margin-top:10px}.vfs-hint[data-v-c3405d1a]{opacity:.8;margin:4px 0 0 24px;font-size:.85em}.vfs-field[data-v-c3405d1a]{flex-direction:column;gap:6px;margin-top:12px;display:flex}.vfs-field-label[data-v-c3405d1a]{opacity:.9;font-size:.95em}.vfs-number-input[data-v-c3405d1a]{max-width:120px}.vfs-actions[data-v-c3405d1a]{flex-wrap:wrap;gap:8px;margin-top:10px;display:flex}.vfs-actions .menu_button[data-v-c3405d1a]{writing-mode:horizontal-tb;white-space:nowrap}#st-vfs-popup.st-vfs-popup{z-index:10000;height:70vh;max-height:85vh;color:var(--SmartThemeBodyColor,#ffffffeb);background:var(--SmartThemeBlurTintColor,#141414eb);border:1px solid #ffffff1f;border-radius:12px;flex-direction:column;padding:0;display:flex;position:fixed;overflow:hidden;box-shadow:0 12px 40px #0000008c;pointer-events:auto!important}#st-vfs-popup.st-vfs-popup::backdrop{pointer-events:none;background:#0000008c}#st-vfs-popup #st-vfs-popup-app{flex-direction:column;flex:auto;min-height:0;padding:12px;display:flex;pointer-events:auto!important}#st-vfs-popup #st-vfs-popup-app>*{flex:auto;min-height:0}#st-vfs-popup #st-vfs-action-menu-teleport{z-index:80;position:absolute;inset:0;pointer-events:none!important}#st-vfs-popup #st-vfs-action-menu-teleport>*,#st-vfs-popup.st-vfs-popup *{pointer-events:auto!important}#st-vfs-popup .st-vfs-popup__header{justify-content:space-between;align-items:center;gap:10px;padding:10px 12px 0;display:flex}#st-vfs-popup .st-vfs-popup__header-actions{align-items:center;gap:8px;display:inline-flex}#st-vfs-popup .st-vfs-popup__title{opacity:.95;text-overflow:ellipsis;white-space:nowrap;font-weight:700;overflow:hidden}#st-vfs-popup .st-vfs-popup__close{min-width:36px;height:36px;box-shadow:none;color:inherit;background:0 0;border:0;padding:0;font-size:28px;font-weight:500;line-height:36px}#st-vfs-popup .st-vfs-popup__close:hover{opacity:.85;background:0 0;border:0}#st-vfs-popup button,#st-vfs-popup .menu_button,#st-vfs-popup summary{writing-mode:horizontal-tb;white-space:nowrap}#st-vfs-popup button.vfs-fm-item{white-space:normal}#st-vfs-popup .vfs-action-menu__toggle{cursor:pointer;-webkit-user-select:none;user-select:none;background:#0003;border:1px solid #ffffff1f;border-radius:8px;align-items:center;gap:8px;padding:6px 10px;display:inline-flex}#st-vfs-popup summary.vfs-action-menu__toggle::-webkit-details-marker{display:none}#st-vfs-popup .vfs-action-menu__list button[role=menuitem]{text-align:left;width:100%;color:var(--SmartThemeBodyColor,#ffffffeb);border-radius:8px;justify-content:flex-start;padding:6px 10px}#st-vfs-popup .vfs-action-menu__list button[role=menuitem].menu_button{min-width:100%}#st-vfs-popup .vfs-create-modal__overlay{z-index:30;background:#00000073;justify-content:center;align-items:center;display:flex;position:absolute;inset:0}#st-vfs-popup .vfs-create-modal__card{background:var(--SmartThemeBlurTintColor,#141414f0);border:1px solid #ffffff29;border-radius:10px;width:min(420px,100% - 24px);padding:14px;box-shadow:0 10px 30px #00000073}#st-vfs-popup .vfs-create-modal__title{margin:0 0 10px}#st-vfs-popup .vfs-create-modal__field{gap:6px;display:grid}#st-vfs-popup .vfs-create-modal__actions{justify-content:flex-end;gap:8px;margin-top:12px;display:flex}@media (width<=1023px){#st-vfs-popup.st-vfs-popup{border-radius:8px;height:92vh;max-height:96vh}#st-vfs-popup #st-vfs-popup-app{padding:8px}#st-vfs-popup .st-vfs-popup__header{padding:8px 10px 0}#st-vfs-popup .st-vfs-popup__close{min-width:32px;height:32px;font-size:24px;line-height:32px}}.extraMesButtons #st-vfs-entry-button.st-vfs-entry{justify-content:center;align-items:flex-start;min-width:22px;height:28px;min-height:28px;padding:2px 0 0;font-size:14px;line-height:1;display:inline-flex}#st-vfs-settings-root .checkbox_label{color:var(--SmartThemeBodyColor,#ffffffeb);align-items:center;gap:8px;display:inline-flex}#st-vfs-settings-root .checkbox_label input[type=checkbox]{width:16px;height:16px;accent-color:var(--SmartThemeQuoteColor,#7aa2ff);flex:none}#st-vfs-settings-root .vfs-number-input{box-sizing:border-box;color:var(--SmartThemeBodyColor,#ffffffeb);background:#0003;border:1px solid #ffffff1f;border-radius:8px;padding:6px 10px}#st-vfs-settings-root .vfs-number-input:focus-visible{outline-offset:1px;outline:2px solid #7aa2ff73}#st-vfs-settings-root .menu_button{color:var(--SmartThemeBodyColor,#ffffffeb);background:#0003;border:1px solid #ffffff1f;border-radius:8px;padding:6px 10px}#st-vfs-settings-root .menu_button:hover{background:#ffffff0f;border-color:#ffffff29}
+(function(){try{if(typeof document<`u`){var e=document.createElement(`style`);e.appendChild(document.createTextNode(`.vfs-action-menu[data-v-a111f74c]{position:relative}.vfs-action-menu__toggle[data-v-a111f74c]{cursor:pointer;-webkit-user-select:none;user-select:none;justify-content:center;align-items:center;width:28px;height:28px;padding:0;list-style:none;display:inline-flex}.vfs-action-menu__toggle i[data-v-a111f74c]{font-size:14px;line-height:1}.vfs-action-menu[data-disabled=true] .vfs-action-menu__toggle[data-v-a111f74c]{opacity:.5;cursor:not-allowed}.vfs-action-menu__list[data-v-a111f74c]{z-index:50;background:#00000040;border:1px solid #ffffff1f;border-radius:8px;min-width:180px;max-height:min(50vh,360px);margin:0;padding:8px;list-style:none;position:absolute;top:calc(100% + 8px);right:0;overflow:auto;box-shadow:0 10px 24px #00000073}.vfs-action-menu__list--entity-fixed[data-v-a111f74c],.vfs-action-menu__list--fixed-overlay[data-v-a111f74c]{top:unset;right:unset;position:fixed}.vfs-action-menu__separator[data-v-a111f74c]{border-top:1px solid #ffffff1f;margin:6px 0}.vfs-action-confirm-dialog__message[data-v-37f7685b]{color:var(--SmartThemeBodyColor,#ffffffd9);margin:0;line-height:1.45}.vfs-listbox-field[data-v-3f94c5a7]{min-width:0;position:relative}.vfs-listbox-field__trigger[data-v-3f94c5a7]{width:100%;min-height:40px;color:inherit;text-align:left;cursor:pointer;background:#0f1218eb;border:1px solid #fff3;border-radius:6px;justify-content:space-between;align-items:center;gap:8px;padding:8px 10px;font-size:1rem;line-height:1.35;display:inline-flex}.vfs-listbox-field__trigger[data-v-3f94c5a7]:disabled{opacity:.55;cursor:not-allowed}.vfs-listbox-field__trigger[data-v-3f94c5a7]:focus-visible{outline-offset:1px}.vfs-listbox-field__trigger-label[data-v-3f94c5a7]{text-overflow:ellipsis;white-space:nowrap;flex:auto;min-width:0;overflow:hidden}.vfs-listbox-field__listbox[data-v-3f94c5a7]{z-index:20;box-sizing:border-box;background:#141820fa;border:1px solid #fff3;border-radius:8px;width:max-content;min-width:100%;max-width:min(100vw - 20px,36rem);max-height:220px;margin:0;padding:4px;list-style:none;position:absolute;top:calc(100% + 6px);left:0;right:auto;overflow:hidden auto}.vfs-listbox-field__option[data-v-3f94c5a7]{width:100%;color:inherit;text-align:left;cursor:pointer;white-space:nowrap;background:0 0;border:0;border-radius:6px;padding:8px 10px;font-size:1rem;line-height:1.35;display:block}.vfs-listbox-field__option[data-active=true][data-v-3f94c5a7]{background:#ffffff24}.vfs-listbox-field__option[aria-selected=true][data-v-3f94c5a7]{font-weight:600}.vfs-listbox-field--dropdown-match-trigger .vfs-listbox-field__listbox[data-v-3f94c5a7]{width:100%;min-width:0;max-width:none;left:0;right:0}.vfs-listbox-field--compact .vfs-listbox-field__trigger[data-v-3f94c5a7]{border-radius:6px;min-height:30px;padding:4px 8px;font-size:.8rem}.vfs-listbox-field--compact .vfs-listbox-field__listbox[data-v-3f94c5a7]{max-height:200px;padding:3px}.vfs-listbox-field--compact .vfs-listbox-field__option[data-v-3f94c5a7]{padding:5px 8px;font-size:.75rem;line-height:1.3}.vfs-action-input-dialog__fields[data-v-b7ee78ed]{gap:8px;display:grid}.vfs-action-input-dialog__error[data-v-b7ee78ed]{color:#ffb3b3;margin:0;font-size:.9rem}.vfs-action-input-dialog__range-number[data-v-b7ee78ed]{grid-template-columns:1fr 92px;align-items:center;gap:8px;display:grid}.vfs-action-input-dialog__listbox-field[data-v-b7ee78ed]{width:100%}.vfs-unsaved-editor-dialog__body[data-v-b25ce526]{color:var(--SmartThemeBodyColor,#ffffffd9);margin:0;font-size:.95rem;line-height:1.45}.vfs-unsaved-editor-dialog__actions[data-v-b25ce526]{flex-wrap:wrap;justify-content:flex-end}.vfs-file-manager-panel[data-v-f2452120]{flex-direction:column;flex:auto;min-width:0;min-height:0;display:flex}.vfs-fm-header[data-v-f2452120]{flex-wrap:nowrap;flex:none;justify-content:space-between;align-items:center;gap:10px;min-width:0;margin-bottom:10px;display:flex}.vfs-fm-nav-group[data-v-f2452120]{flex:auto;align-items:center;gap:8px;min-width:0;display:flex}.vfs-fm-action-group[data-v-f2452120]{white-space:nowrap;flex-wrap:nowrap;flex:none;justify-content:flex-end;align-items:center;gap:8px;max-width:55%;display:inline-flex;overflow-x:auto}.vfs-fm-icon-button[data-v-f2452120]{width:28px;height:28px;color:inherit;background:#0003;border:1px solid #ffffff1f;border-radius:8px;flex:none;justify-content:center;align-items:center;padding:0;display:inline-flex}.vfs-fm-icon-button i[data-v-f2452120]{font-size:14px;line-height:1}.vfs-fm-icon-button[data-v-f2452120-s]{width:28px;height:28px;color:inherit;background:#0003;border:1px solid #ffffff1f;border-radius:8px;flex:none;justify-content:center;align-items:center;padding:0;display:inline-flex}.vfs-fm-icon-button i[data-v-f2452120-s]{font-size:14px;line-height:1}.vfs-fm-icon-button[data-v-f2452120]:disabled{opacity:.5;cursor:not-allowed}.vfs-fm-path-text[data-v-f2452120]{opacity:.9;text-overflow:ellipsis;white-space:nowrap;max-width:100%;overflow:hidden}.vfs-fm-list[data-v-f2452120]{flex:auto;align-content:start;gap:6px;min-width:0;min-height:0;margin:0;padding:0;list-style:none;display:grid;overflow:hidden auto}.vfs-fm-row[data-v-f2452120]{align-items:stretch;gap:6px;min-width:0;display:flex}.vfs-fm-item[data-v-f2452120]{text-align:left;background:#0000002e;border:1px solid #ffffff1f;border-radius:8px;flex:1 1 0;justify-content:space-between;align-items:center;gap:10px;min-width:0;padding:8px 10px;display:flex}.vfs-fm-item-main[data-v-f2452120]{flex:auto;align-items:center;gap:10px;min-width:0;display:flex}.vfs-fm-row-badge[data-v-f2452120]{color:#ffffff73;flex:0 auto;align-items:center;gap:4px;min-width:0;max-width:42%;font-size:11px;line-height:1.2;display:inline-flex}.vfs-fm-row-badge i[data-v-f2452120]{opacity:.95;flex-shrink:0;font-size:12px;line-height:1}.vfs-fm-row-badge-label[data-v-f2452120]{text-overflow:ellipsis;white-space:nowrap;min-width:0;font-size:12px;overflow:hidden}.vfs-fm-row-actions[data-v-f2452120]{z-index:2;flex:none;justify-content:center;align-items:center;gap:6px;display:inline-flex;position:relative}.vfs-fm-row-status[data-v-f2452120]{opacity:.95;background:#0003;border:1px solid #ffffff1f;border-radius:8px;justify-content:center;align-items:center;width:28px;min-width:28px;height:28px;display:inline-flex}.vfs-fm-row-status--on[data-v-f2452120]{color:#ffd54a;border-color:#ffd54a80;box-shadow:0 0 10px #ffd54a33}.vfs-fm-row-status--off[data-v-f2452120]{color:#fff6;filter:saturate(.2)brightness(.75);border-color:#ffffff1f}.vfs-fm-kind[data-v-f2452120]{text-align:center;width:22px}.vfs-fm-name[data-v-f2452120]{text-overflow:ellipsis;white-space:nowrap;flex:auto;min-width:0;overflow:hidden}@media (width<=1023px){.vfs-fm-header[data-v-f2452120]{flex-wrap:wrap;align-items:flex-start}.vfs-fm-action-group[data-v-f2452120]{white-space:normal;flex-wrap:wrap;justify-content:flex-start;min-width:0;max-width:100%;overflow-x:visible}.vfs-fm-item-main[data-v-f2452120]{flex:1 1 0;min-width:0;max-width:80%}}.vfs-history-screen[data-v-f7501d07]{flex-direction:column;flex:1;gap:12px;min-height:0;display:flex}.vfs-history-top[data-v-f7501d07]{flex:none}.vfs-history-status-bar[data-v-f7501d07]{background:#14182080;border:1px solid #ffffff24;border-radius:10px;align-items:center;gap:10px;padding:8px 10px;display:flex}.vfs-history-status-label[data-v-f7501d07]{opacity:.8;letter-spacing:.02em;font-size:12px}.vfs-history-status-pill[data-v-f7501d07]{background:#ffffff14;border:1px solid #fff3;border-radius:999px;align-items:center;padding:2px 8px;font-size:12px;font-weight:600;display:inline-flex}.vfs-history-status-spinner[data-v-f7501d07]{opacity:.9;margin-left:4px}.vfs-history-hint[data-v-f7501d07]{opacity:.8;margin:0;font-size:12px}.vfs-log-scrollport[data-v-f7501d07]{flex:auto;min-height:0;overflow:hidden auto}.vfs-log-list[data-v-f7501d07]{gap:8px;margin:0;padding:0;list-style:none;display:grid}.vfs-log-row[data-v-f7501d07]{background:#ffffff0a;border:1px solid #ffffff1f;border-radius:10px;justify-content:space-between;align-items:center;gap:10px;padding:8px 10px;display:flex}.vfs-log-meta[data-v-f7501d07]{flex-direction:column;gap:2px;min-width:0;display:flex}.vfs-log-line[data-v-f7501d07]{word-break:break-word;font-size:13px}.vfs-log-sub[data-v-f7501d07],.vfs-log-snap[data-v-f7501d07]{opacity:.75;word-break:break-all;font-size:12px}.vfs-log-actions[data-v-f7501d07]{flex-direction:column;flex:none;align-items:flex-end;gap:4px;display:flex}.vfs-log-rollback[data-v-f7501d07]{white-space:nowrap;flex:none}.vfs-log-rollback--disabled[data-v-f7501d07]{opacity:.65;cursor:not-allowed}.vfs-log-snapshot-missing[data-v-f7501d07]{text-align:right;flex-direction:column;align-items:flex-end;gap:2px;max-width:12rem;display:flex}.vfs-log-snapshot-missing-hint[data-v-f7501d07]{opacity:.72;word-break:break-word;font-size:11px;line-height:1.25}.vfs-log-empty[data-v-f7501d07]{opacity:.75;background:#ffffff08;border:1px dashed #fff3;border-radius:10px;margin:0;padding:12px}.vfs-line-number-gutter[data-v-3ddd70c5]{-webkit-user-select:none;user-select:none;color:#ffffff52;font-variant-numeric:tabular-nums;background:0 0;border:none;flex:0 0 35px;width:35px;min-width:35px;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,Liberation Mono,Courier New,monospace;overflow:hidden}.vfs-line-number-gutter__content[data-v-3ddd70c5]{will-change:transform}.vfs-line-number-gutter__row[data-v-3ddd70c5]{box-sizing:border-box;text-align:right;padding-right:8px;font-size:12px;display:block}.vfs-reader[data-v-26a4b717]{overflow-wrap:anywhere;word-break:break-word;width:100%;min-width:0;max-width:none;font-size:14px;line-height:1.72}.vfs-reader[data-v-26a4b717] h1,.vfs-reader[data-v-26a4b717] h2,.vfs-reader[data-v-26a4b717] h3,.vfs-reader[data-v-26a4b717] h4{margin:18px 0 10px;line-height:1.25}.vfs-reader[data-v-26a4b717] p{margin:12px 0}.vfs-reader[data-v-26a4b717] ul,.vfs-reader[data-v-26a4b717] ol{margin:12px 0;padding-left:1.4em}.vfs-reader[data-v-26a4b717] pre:not(.vfs-plain-text){background:#00000040;border:1px solid #ffffff1f;border-radius:10px;padding:10px 12px;overflow:auto}.vfs-reader[data-v-26a4b717] code{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,Liberation Mono,Courier New,monospace;font-size:.95em}.vfs-reader[data-v-26a4b717] blockquote{opacity:.95;border-left:3px solid #fff3;margin:12px 0;padding-left:12px}.vfs-reader[data-v-26a4b717] table{border-collapse:collapse;width:100%}.vfs-reader[data-v-26a4b717] th,.vfs-reader[data-v-26a4b717] td{border:1px solid #ffffff1f;padding:6px 8px}.vfs-reader[data-v-26a4b717] img{max-width:100%;height:auto}.vfs-reader[data-v-26a4b717] .vfs-md-frontmatter{color:#ffffffc7;background:#0000002e;border:1px solid #ffffff1f;border-radius:10px;margin:0 0 14px;padding:10px 12px;font-size:12px;line-height:1.45}.vfs-reader[data-v-26a4b717] .vfs-md-frontmatter__row{flex-wrap:wrap;align-items:flex-start;gap:6px 10px;margin:6px 0;display:flex}.vfs-reader[data-v-26a4b717] .vfs-md-frontmatter__row:first-child{margin-top:0}.vfs-reader[data-v-26a4b717] .vfs-md-frontmatter__row:last-child{margin-bottom:0}.vfs-reader[data-v-26a4b717] .vfs-md-frontmatter__key{color:#ffffffe0;opacity:.95;flex:none;max-width:100%;font-weight:600}.vfs-reader[data-v-26a4b717] .vfs-md-frontmatter__value{opacity:.9;word-break:break-word;flex:12rem;min-width:0}.vfs-reader[data-v-26a4b717] .vfs-md-frontmatter__value--block{max-height:none;margin-top:6px}.vfs-reader[data-v-26a4b717] .vfs-md-frontmatter__details{flex:12rem;min-width:0}.vfs-reader[data-v-26a4b717] .vfs-md-frontmatter__summary{cursor:pointer;-webkit-user-select:none;user-select:none;opacity:.85;list-style:none}.vfs-reader[data-v-26a4b717] .vfs-md-frontmatter__summary::-webkit-details-marker{display:none}.vfs-reader[data-v-26a4b717] .vfs-plain-text{white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;color:inherit;background:0 0;border:none;border-radius:0;margin:0;padding:0;font-family:inherit;font-size:14px;line-height:1.72}.vfs-editor-screen[data-v-162fe7ff]{flex-direction:column;flex:auto;min-width:0;height:100%;min-height:0;max-height:100%;display:flex}.vfs-editor-toolbar[data-v-162fe7ff]{flex-wrap:wrap;flex:none;align-items:center;gap:8px;display:flex}.vfs-editor-toolbar__icon-button[data-v-162fe7ff]{justify-content:center;align-items:center;min-width:2.25rem;min-height:2.25rem;padding:6px 10px;display:inline-flex}.vfs-line-numbered-editor[data-v-162fe7ff]{flex:auto;min-width:0;min-height:0;display:flex;overflow:hidden}.vfs-editor-wrap[data-v-162fe7ff]{flex:auto;min-width:0;min-height:0;position:relative;overflow:hidden}.vfs-editor-line-mirror[data-v-162fe7ff]{visibility:hidden;pointer-events:none;box-sizing:content-box;white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;margin:0;padding:0;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,Liberation Mono,Courier New,monospace;font-size:12px;line-height:1.72;position:absolute;top:0;left:0;overflow:visible}.vfs-editor-line-mirror__line[data-v-162fe7ff]{width:100%;min-width:0;display:block}.vfs-editor[data-v-162fe7ff]{z-index:1;box-sizing:border-box;resize:none;white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;border-radius:0;outline:none;flex:auto;width:100%;height:100%;min-height:0;max-height:100%;padding:8px 10px;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,Liberation Mono,Courier New,monospace;font-size:12px;line-height:1.72;position:relative;overflow:auto;box-shadow:none!important;background:0 0!important;border:0!important}.vfs-editor-preview-pane[data-v-162fe7ff]{flex:auto;min-width:0;min-height:0;overflow:auto}.vfs-slide-content[data-v-0649f89e]{gap:16px;display:grid}.vfs-slide-empty[data-v-0649f89e]{opacity:.75;margin:0}.vfs-tab-shell[data-v-7b1edd28]{flex-direction:column;flex:auto;min-width:0;min-height:0;display:flex}.vfs-tabs[data-v-7b1edd28]{background:#00000024;border:1px solid #ffffff1f;border-radius:12px;flex-wrap:wrap;flex:none;align-items:center;gap:8px;padding:6px;display:flex}.vfs-tabs__primary[data-v-7b1edd28]{flex-wrap:wrap;flex:auto;gap:6px;min-width:0;display:flex}.vfs-tabs__trailing[data-v-7b1edd28]{flex:0 auto;align-items:center;gap:6px;min-width:0;max-width:100%;margin-left:auto;display:inline-flex}@media (width<=1023px){.vfs-tabs[data-v-7b1edd28]{flex-direction:column;align-items:stretch}.vfs-tabs__primary[data-v-7b1edd28]{width:100%;overflow-x:visible}.vfs-tabs__trailing[data-v-7b1edd28]{flex-wrap:wrap;justify-content:flex-start;width:100%;max-width:none;margin-left:0}}.vfs-tabs__trailing[data-v-7b1edd28]:empty{display:none}.vfs-tab-content[data-v-7b1edd28]{flex-direction:column;flex:auto;min-width:0;min-height:0;display:flex}.vfs-tab[data-v-7b1edd28]{writing-mode:horizontal-tb;white-space:nowrap;opacity:.9;background:0 0;border:1px solid #0000;border-radius:999px;flex:none;justify-content:center;align-items:center;transition:background .12s,border-color .12s,opacity .12s;display:inline-flex}.vfs-tab[data-v-7b1edd28]:hover{opacity:1;background:#ffffff0f;border-color:#ffffff1f}.vfs-tab.active[data-v-7b1edd28]{opacity:1;background:#ffffff1f;border-color:#ffffff38;font-weight:700;box-shadow:0 6px 16px #0000002e}.vfs-worktree-screen[data-v-a1232042]{flex-direction:column;flex:auto;min-width:0;min-height:0;display:flex}.vfs-worktree-text[data-v-a1232042]{white-space:pre-wrap;overflow-wrap:anywhere;opacity:.92;background:#00000024;border:1px solid #ffffff1f;border-radius:12px;flex:auto;min-width:0;min-height:0;margin:0;padding:10px 12px;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,Liberation Mono,Courier New,monospace;font-size:12px;line-height:1.35;overflow:auto}.vfs-main-layout[data-v-124536bd]{flex-direction:column;flex:auto;min-height:0;display:flex;position:relative}.vfs-list-only-layout[data-v-124536bd]{flex-direction:column;flex:auto;width:100%;min-height:0;display:flex}.vfs-preview-stack[data-v-124536bd]{flex-direction:column;flex:auto;min-height:0;display:flex}.vfs-preview-body[data-v-124536bd]{flex-direction:column;flex:auto;gap:8px;min-height:0;display:flex}.vfs-preview-body--fullscreen[data-v-124536bd]{box-sizing:border-box;background:var(--SmartThemeBlurTintColor,#141414eb);min-height:100dvh}.vfs-preview-top-bar[data-v-124536bd]{flex-wrap:wrap;flex:none;align-items:center;gap:8px;display:flex;position:relative}.vfs-tabs-editor-snapshot-tools[data-v-124536bd]{flex:none;align-items:center;gap:6px;display:inline-flex}.vfs-tabs-snapshot-listbox[data-v-124536bd]{flex:none;width:11rem;min-width:11rem;max-width:11rem}.vfs-tabs-snapshot-rollback-button[data-v-124536bd]{flex-shrink:0;justify-content:center;align-items:center;min-width:2.1rem;min-height:30px;padding:4px 8px;font-size:.8rem;display:inline-flex}.vfs-preview-top-bar__left[data-v-124536bd]{flex:none;align-items:center;gap:8px;display:flex}.vfs-preview-top-bar__title[data-v-124536bd]{flex:auto;min-width:0}.vfs-preview-chrome-actions[data-v-124536bd]{flex-wrap:wrap;align-items:center;gap:8px;min-width:0;margin-left:auto;display:inline-flex}.vfs-preview-chrome-button[data-v-124536bd]{justify-content:center;align-items:center;min-width:2.25rem;min-height:2.25rem;padding:6px 10px;display:inline-flex}.vfs-preview-file-title[data-v-124536bd]{text-overflow:ellipsis;white-space:nowrap;pointer-events:none;opacity:.92;margin:0;font-size:1.08rem;font-weight:700;line-height:1.2;overflow:hidden}.vfs-preview-body[data-v-124536bd]>:not(.vfs-preview-top-bar){flex:auto;min-width:0;min-height:0}.vfs-preview-content-frame[data-v-124536bd]{background:#00000024;border:1px solid #ffffff29;border-radius:12px;flex-direction:column;flex:auto;min-width:0;min-height:0;padding:10px 12px;display:flex;position:relative}.vfs-preview-content-frame--meta-anchored[data-v-124536bd]{padding-bottom:52px}.vfs-editor-stage[data-v-124536bd]{flex-direction:column;flex:auto;min-width:0;min-height:0;display:flex}.vfs-preview-back-button[data-v-124536bd]{justify-content:center;align-items:center;min-width:2.25rem;min-height:2.25rem;padding:6px 10px;display:inline-flex}.vfs-preview-meta[data-v-124536bd]{opacity:.72;text-align:right;flex-wrap:wrap;justify-content:flex-end;align-items:center;gap:6px 10px;max-width:100%;font-size:12px;line-height:1.3;display:flex}.vfs-preview-meta--anchored[data-v-124536bd]{position:absolute;bottom:8px;right:12px}.vfs-preview-meta--flow[data-v-124536bd]{margin-top:8px;margin-left:auto}[data-layout=mobile] .vfs-preview-top-bar[data-v-124536bd]{flex-flow:wrap;align-items:center;min-width:0}[data-layout=mobile] .vfs-preview-top-bar__left[data-v-124536bd]{flex:none;order:-1}[data-layout=mobile] .vfs-preview-chrome-actions[data-v-124536bd]{box-sizing:border-box;flex-wrap:nowrap;flex:1 1 0;order:-1;justify-content:flex-end;min-width:0;margin-left:0}[data-layout=mobile] .vfs-preview-top-bar__title[data-v-124536bd]{text-align:center;flex:0 0 100%;order:0;width:100%;min-width:0;max-width:100%}[data-layout=mobile] .vfs-preview-file-title[data-v-124536bd]{text-align:center}@media (width<=1023px){.vfs-tabs-editor-snapshot-tools[data-v-124536bd],.vfs-tabs-snapshot-listbox[data-v-124536bd]{flex:auto;width:100%;min-width:0;max-width:100%}}.vfs-settings-root[data-v-9d99f3f1],.inline-drawer[data-v-9d99f3f1],.inline-drawer-content[data-v-9d99f3f1]{width:100%}.vfs-title-row[data-v-9d99f3f1]{align-items:center;gap:10px;display:flex}.vfs-panel[data-v-9d99f3f1]{padding:10px}.vfs-json-repair[data-v-9d99f3f1]{margin-top:10px}.vfs-hint[data-v-9d99f3f1]{opacity:.8;margin:4px 0 0 24px;font-size:.85em}.vfs-field[data-v-9d99f3f1]{flex-direction:column;gap:6px;margin-top:12px;display:flex}.vfs-field-label[data-v-9d99f3f1]{opacity:.9;font-size:.95em}.vfs-number-input[data-v-9d99f3f1]{max-width:120px}.vfs-actions[data-v-9d99f3f1]{flex-wrap:wrap;gap:8px;margin-top:10px;display:flex}.vfs-actions .menu_button[data-v-9d99f3f1]{writing-mode:horizontal-tb;white-space:nowrap}#st-vfs-popup.st-vfs-popup{z-index:10000;height:70vh;max-height:85vh;color:var(--SmartThemeBodyColor,#ffffffeb);background:var(--SmartThemeBlurTintColor,#141414eb);border:1px solid #ffffff1f;border-radius:12px;flex-direction:column;padding:0;display:flex;position:fixed;overflow:hidden;box-shadow:0 12px 40px #0000008c;pointer-events:auto!important}#st-vfs-popup.st-vfs-popup::backdrop{pointer-events:none;background:#0000008c}#st-vfs-popup #st-vfs-popup-app{flex-direction:column;flex:auto;min-height:0;padding:12px;display:flex;pointer-events:auto!important}#st-vfs-popup #st-vfs-popup-app>*{flex:auto;min-height:0}#st-vfs-popup #st-vfs-action-menu-teleport{z-index:80;position:absolute;inset:0;pointer-events:none!important}#st-vfs-popup #st-vfs-action-menu-teleport>*,#st-vfs-popup.st-vfs-popup *{pointer-events:auto!important}#st-vfs-popup .st-vfs-popup__header{justify-content:space-between;align-items:center;gap:10px;padding:10px 12px 0;display:flex}#st-vfs-popup .st-vfs-popup__header-actions{align-items:center;gap:8px;display:inline-flex}#st-vfs-popup .st-vfs-popup__title{opacity:.95;text-overflow:ellipsis;white-space:nowrap;font-weight:700;overflow:hidden}#st-vfs-popup .st-vfs-popup__close{min-width:36px;height:36px;box-shadow:none;color:inherit;background:0 0;border:0;padding:0;font-size:28px;font-weight:500;line-height:36px}#st-vfs-popup .st-vfs-popup__close:hover{opacity:.85;background:0 0;border:0}#st-vfs-popup button,#st-vfs-popup .menu_button,#st-vfs-popup summary{writing-mode:horizontal-tb;white-space:nowrap}#st-vfs-popup button.vfs-fm-item{white-space:normal}#st-vfs-popup .vfs-action-menu__toggle{cursor:pointer;-webkit-user-select:none;user-select:none;background:#0003;border:1px solid #ffffff1f;border-radius:8px;align-items:center;gap:8px;padding:6px 10px;display:inline-flex}#st-vfs-popup summary.vfs-action-menu__toggle::-webkit-details-marker{display:none}#st-vfs-popup .vfs-action-menu__list button[role=menuitem]{text-align:left;width:100%;color:var(--SmartThemeBodyColor,#ffffffeb);border-radius:8px;justify-content:flex-start;padding:6px 10px}#st-vfs-popup .vfs-action-menu__list button[role=menuitem].menu_button{min-width:100%}#st-vfs-popup .vfs-create-modal__overlay{z-index:30;background:#00000073;justify-content:center;align-items:center;display:flex;position:absolute;inset:0}#st-vfs-popup .vfs-create-modal__card{background:var(--SmartThemeBlurTintColor,#141414f0);border:1px solid #ffffff29;border-radius:10px;width:min(420px,100% - 24px);padding:14px;box-shadow:0 10px 30px #00000073}#st-vfs-popup .vfs-create-modal__title{margin:0 0 10px}#st-vfs-popup .vfs-create-modal__field{gap:6px;display:grid}#st-vfs-popup .vfs-create-modal__actions{justify-content:flex-end;gap:8px;margin-top:12px;display:flex}@media (width<=1023px){#st-vfs-popup.st-vfs-popup{border-radius:8px;height:92vh;max-height:96vh}#st-vfs-popup #st-vfs-popup-app{padding:8px}#st-vfs-popup .st-vfs-popup__header{padding:8px 10px 0}#st-vfs-popup .st-vfs-popup__close{min-width:32px;height:32px;font-size:24px;line-height:32px}}.extraMesButtons #st-vfs-entry-button.st-vfs-entry{justify-content:center;align-items:flex-start;min-width:22px;height:28px;min-height:28px;padding:2px 0 0;font-size:14px;line-height:1;display:inline-flex}#st-vfs-settings-root .checkbox_label{color:var(--SmartThemeBodyColor,#ffffffeb);align-items:center;gap:8px;display:inline-flex}#st-vfs-settings-root .checkbox_label input[type=checkbox]{width:16px;height:16px;accent-color:var(--SmartThemeQuoteColor,#7aa2ff);flex:none}#st-vfs-settings-root .vfs-number-input{box-sizing:border-box;color:var(--SmartThemeBodyColor,#ffffffeb);background:#0003;border:1px solid #ffffff1f;border-radius:8px;padding:6px 10px}#st-vfs-settings-root .vfs-number-input:focus-visible{outline-offset:1px;outline:2px solid #7aa2ff73}#st-vfs-settings-root .menu_button{color:var(--SmartThemeBodyColor,#ffffffeb);background:#0003;border:1px solid #ffffff1f;border-radius:8px;padding:6px 10px}#st-vfs-settings-root .menu_button:hover{background:#ffffff0f;border-color:#ffffff29}
 /*$vite$:1*/`)),document.head.appendChild(e)}}catch(e){console.error(`vite-plugin-css-injected-by-js`,e)}})();var e = globalThis.process || (globalThis.process = { env: {} });
 //#region node_modules/@vue/shared/dist/shared.esm-bundler.js
 /* @__NO_SIDE_EFFECTS__ */
@@ -4180,6 +4180,7 @@ var _l = {
 	logMaxBytes: 1024 * 1024,
 	virtualToolCallEnabled: !0,
 	virtualToolJsonRepairEnabled: !0,
+	virtualToolResultFullArgsEnabled: !1,
 	extensionTemplateVfsSnapshot: null,
 	workTreeTemplate: null
 };
@@ -4198,6 +4199,7 @@ function vl(e) {
 		logMaxBytes: r,
 		virtualToolCallEnabled: typeof t.virtualToolCallEnabled == "boolean" ? t.virtualToolCallEnabled : _l.virtualToolCallEnabled,
 		virtualToolJsonRepairEnabled: typeof t.virtualToolJsonRepairEnabled == "boolean" ? t.virtualToolJsonRepairEnabled : _l.virtualToolJsonRepairEnabled,
+		virtualToolResultFullArgsEnabled: typeof t.virtualToolResultFullArgsEnabled == "boolean" ? t.virtualToolResultFullArgsEnabled : _l.virtualToolResultFullArgsEnabled,
 		extensionTemplateVfsSnapshot: i,
 		workTreeTemplate: a
 	};
@@ -4209,6 +4211,7 @@ function yl(e) {
 		logMaxBytes: Number.isFinite(e.logMaxBytes) && e.logMaxBytes > 0 ? Math.floor(e.logMaxBytes) : _l.logMaxBytes,
 		virtualToolCallEnabled: !!e.virtualToolCallEnabled,
 		virtualToolJsonRepairEnabled: !!e.virtualToolJsonRepairEnabled,
+		virtualToolResultFullArgsEnabled: !!e.virtualToolResultFullArgsEnabled,
 		extensionTemplateVfsSnapshot: e.extensionTemplateVfsSnapshot ? Qc(e.extensionTemplateVfsSnapshot) : null,
 		workTreeTemplate: e.workTreeTemplate ? gl(e.workTreeTemplate) : null
 	};
@@ -10984,81 +10987,92 @@ function Ev() {
 }
 //#endregion
 //#region src/App.vue?vue&type=script&setup=true&lang.ts
-var Dv = { class: "vfs-settings-root" }, Ov = { class: "inline-drawer" }, kv = { class: "inline-drawer-content" }, Av = { class: "vfs-panel" }, jv = { class: "checkbox_label" }, Mv = { class: "checkbox_label vfs-json-repair" }, Nv = { class: "vfs-field" }, Pv = /* @__PURE__ */ Zd(/* @__PURE__ */ Zr({
+var Dv = { class: "vfs-settings-root" }, Ov = { class: "inline-drawer" }, kv = { class: "inline-drawer-content" }, Av = { class: "vfs-panel" }, jv = { class: "checkbox_label" }, Mv = { class: "checkbox_label vfs-json-repair" }, Nv = { class: "checkbox_label vfs-json-repair" }, Pv = { class: "vfs-field" }, Fv = /* @__PURE__ */ Zd(/* @__PURE__ */ Zr({
 	__name: "App",
 	setup(e) {
-		let t = /* @__PURE__ */ U(!0), n = /* @__PURE__ */ U(!0), r = /* @__PURE__ */ U(10), i = null, a = xd(jc(Vc())), o = Ev();
+		let t = /* @__PURE__ */ U(!0), n = /* @__PURE__ */ U(!0), r = /* @__PURE__ */ U(!1), i = /* @__PURE__ */ U(10), a = null, o = xd(jc(Vc())), s = Ev();
 		pi(() => {
-			yd(), a.start(), t.value = Z.getState().extension.enabled, n.value = Z.getState().extension.virtualToolJsonRepairEnabled, r.value = Z.getState().extension.snapshotMaxCount, i = Z.subscribe((e) => {
-				t.value = e.extension.enabled, n.value = e.extension.virtualToolJsonRepairEnabled, r.value = e.extension.snapshotMaxCount;
+			yd(), o.start(), t.value = Z.getState().extension.enabled, n.value = Z.getState().extension.virtualToolJsonRepairEnabled, r.value = Z.getState().extension.virtualToolResultFullArgsEnabled, i.value = Z.getState().extension.snapshotMaxCount, a = Z.subscribe((e) => {
+				t.value = e.extension.enabled, n.value = e.extension.virtualToolJsonRepairEnabled, r.value = e.extension.virtualToolResultFullArgsEnabled, i.value = e.extension.snapshotMaxCount;
 			});
 		}), _i(() => {
-			a.stop(), i?.(), i = null;
+			o.stop(), a?.(), a = null;
 		});
-		let s = () => {
+		let c = () => {
 			Z.setExtensionEnabled(t.value);
-		}, c = () => {
+		}, l = () => {
 			Z.updateExtension((e) => ({
 				...e,
 				virtualToolJsonRepairEnabled: n.value
 			}));
-		}, l = () => {
-			let e = Number(r.value);
+		}, u = () => {
+			Z.updateExtension((e) => ({
+				...e,
+				virtualToolResultFullArgsEnabled: r.value
+			}));
+		}, d = () => {
+			let e = Number(i.value);
 			if (!Number.isFinite(e)) return;
 			let t = Math.min(500, Math.max(1, Math.floor(e)));
-			r.value = t, Z.updateExtension((e) => ({
+			i.value = t, Z.updateExtension((e) => ({
 				...e,
 				snapshotMaxCount: t
 			}));
-		}, u = () => {
-			o.open({
+		}, f = () => {
+			s.open({
 				scope: "template",
 				title: "模板管理"
 			});
 		};
-		return (e, i) => (G(), K("div", Dv, [q("div", Ov, [i[7] ||= q("div", { class: "inline-drawer-toggle inline-drawer-header" }, [q("div", { class: "vfs-title-row" }, [q("b", null, "虚拟文件系统配置")]), q("div", { class: "inline-drawer-icon fa-solid fa-circle-chevron-down down" })], -1), q("div", kv, [q("div", Av, [
+		return (e, a) => (G(), K("div", Dv, [q("div", Ov, [a[10] ||= q("div", { class: "inline-drawer-toggle inline-drawer-header" }, [q("div", { class: "vfs-title-row" }, [q("b", null, "虚拟文件系统配置")]), q("div", { class: "inline-drawer-icon fa-solid fa-circle-chevron-down down" })], -1), q("div", kv, [q("div", Av, [
 			q("label", jv, [wr(q("input", {
-				"onUpdate:modelValue": i[0] ||= (e) => t.value = e,
-				type: "checkbox",
-				onChange: s
-			}, null, 544), [[mc, t.value]]), i[3] ||= q("span", null, "启用虚拟文件系统", -1)]),
-			q("label", Mv, [wr(q("input", {
-				"onUpdate:modelValue": i[1] ||= (e) => n.value = e,
+				"onUpdate:modelValue": a[0] ||= (e) => t.value = e,
 				type: "checkbox",
 				onChange: c
-			}, null, 544), [[mc, n.value]]), i[4] ||= q("span", null, "启用工具调用 JSON 自动修复（仅消息标签通道）", -1)]),
-			i[6] ||= q("p", { class: "vfs-hint" }, "采用保守策略；低把握场景不执行", -1),
-			q("label", Nv, [i[5] ||= q("span", { class: "vfs-field-label" }, "检查点保留条数（FIFO，1–500）", -1), wr(q("input", {
-				"onUpdate:modelValue": i[2] ||= (e) => r.value = e,
+			}, null, 544), [[mc, t.value]]), a[4] ||= q("span", null, "启用虚拟文件系统", -1)]),
+			q("label", Mv, [wr(q("input", {
+				"onUpdate:modelValue": a[1] ||= (e) => n.value = e,
+				type: "checkbox",
+				onChange: l
+			}, null, 544), [[mc, n.value]]), a[5] ||= q("span", null, "启用工具调用 JSON 自动修复（仅消息标签通道）", -1)]),
+			a[8] ||= q("p", { class: "vfs-hint" }, "采用保守策略；低把握场景不执行", -1),
+			q("label", Nv, [wr(q("input", {
+				"onUpdate:modelValue": a[2] ||= (e) => r.value = e,
+				type: "checkbox",
+				onChange: u
+			}, null, 544), [[mc, r.value]]), a[6] ||= q("span", null, "成功时在消息结果中展示完整工具入参（仅消息标签通道）", -1)]),
+			a[9] ||= q("p", { class: "vfs-hint" }, "默认关闭；开启后 <virtual-tool-result> 的 calls 含完整 args，可能增大消息体积", -1),
+			q("label", Pv, [a[7] ||= q("span", { class: "vfs-field-label" }, "检查点保留条数（FIFO，1–500）", -1), wr(q("input", {
+				"onUpdate:modelValue": a[3] ||= (e) => i.value = e,
 				class: "vfs-number-input",
 				type: "number",
 				min: "1",
 				max: "500",
-				onChange: l
+				onChange: d
 			}, null, 544), [[
 				pc,
-				r.value,
+				i.value,
 				void 0,
 				{ number: !0 }
 			]])]),
 			q("div", { class: "vfs-actions" }, [q("button", {
 				type: "button",
 				class: "menu_button",
-				onClick: u
+				onClick: f
 			}, "模板管理")])
 		])])])]));
 	}
-}), [["__scopeId", "data-v-c3405d1a"]]);
+}), [["__scopeId", "data-v-9d99f3f1"]]);
 //#endregion
 //#region src/app/services/virtual-tools/tools.ts
-function Fv(e) {
+function Iv(e) {
 	if (typeof e != "string" || e.trim().length === 0) throw Error("path must be a non-empty string");
 	return e;
 }
-function Iv(e, t) {
+function Lv(e, t) {
 	return typeof e == "number" && Number.isFinite(e) ? Math.floor(e) : t;
 }
-function Lv(e, t) {
+function Rv(e, t) {
 	return e.length <= t ? {
 		text: e,
 		truncated: !1
@@ -11067,13 +11081,13 @@ function Lv(e, t) {
 		truncated: !0
 	};
 }
-function Rv(e) {
+function zv(e) {
 	return e.split("\n");
 }
-var zv = {
+var Bv = {
 	name: "read",
 	execute(e, t) {
-		let n = 2e4, r = Fv(e.path), i = Math.max(1, Iv(e.startLine, 1)), a = Math.max(i, Iv(e.endLine, i + 499)), o = Math.max(1, Iv(e.maxLines, 500)), s = Math.max(1, Iv(e.maxChars, n)), c = Math.min(500, o), l = Math.min(n, s), u = Rv(t.vfs.readFile(r)), d = Math.min(u.length, Math.min(a, i + c - 1)), f = Lv(u.slice(i - 1, d).join("\n"), l), p = d < Math.min(u.length, a);
+		let n = 2e4, r = Iv(e.path), i = Math.max(1, Lv(e.startLine, 1)), a = Math.max(i, Lv(e.endLine, i + 499)), o = Math.max(1, Lv(e.maxLines, 500)), s = Math.max(1, Lv(e.maxChars, n)), c = Math.min(500, o), l = Math.min(n, s), u = zv(t.vfs.readFile(r)), d = Math.min(u.length, Math.min(a, i + c - 1)), f = Rv(u.slice(i - 1, d).join("\n"), l), p = d < Math.min(u.length, a);
 		return {
 			tool: "read",
 			ok: !0,
@@ -11091,10 +11105,10 @@ var zv = {
 			}
 		};
 	}
-}, Bv = {
+}, Vv = {
 	name: "write",
 	execute(e, t) {
-		let n = Fv(e.path), r = typeof e.content == "string" ? e.content : "";
+		let n = Iv(e.path), r = typeof e.content == "string" ? e.content : "";
 		return t.vfs.writeFile(n, r, {
 			createParents: !0,
 			updatedBy: "assistant"
@@ -11104,20 +11118,20 @@ var zv = {
 			summary: `Wrote ${n}`
 		};
 	}
-}, Vv = {
+}, Hv = {
 	name: "delete",
 	execute(e, t) {
-		let n = Fv(e.path), r = e.recursive === !0;
+		let n = Iv(e.path), r = e.recursive === !0;
 		return t.vfs.delete(n, { recursive: r }), {
 			tool: "delete",
 			ok: !0,
 			summary: `Deleted ${n}`
 		};
 	}
-}, Hv = {
+}, Uv = {
 	name: "append",
 	execute(e, t) {
-		let n = Fv(e.path), r = typeof e.content == "string" ? e.content : "", i = t.vfs.exists(n) ? t.vfs.readFile(n) : "";
+		let n = Iv(e.path), r = typeof e.content == "string" ? e.content : "", i = t.vfs.exists(n) ? t.vfs.readFile(n) : "";
 		return t.vfs.writeFile(n, `${i}${r}`, {
 			createParents: !0,
 			updatedBy: "assistant"
@@ -11128,7 +11142,7 @@ var zv = {
 		};
 	}
 };
-function Uv(e, t) {
+function Wv(e, t) {
 	if (t.length === 0) throw Error("oldContent must be a non-empty string");
 	let n = 0, r = 0;
 	for (; r <= e.length;) {
@@ -11138,13 +11152,13 @@ function Uv(e, t) {
 	}
 	return n;
 }
-var Wv = {
+var Gv = {
 	name: "replace",
 	execute(e, t) {
-		let n = Fv(e.path);
+		let n = Iv(e.path);
 		if (typeof e.oldContent != "string" || e.oldContent.length === 0) throw Error("oldContent must be a non-empty string");
 		if (typeof e.newContent != "string") throw Error("newContent is required");
-		let r = e.oldContent, i = e.newContent, a = e.replaceAll === !0, o = t.vfs.readFile(n), s = Uv(o, r);
+		let r = e.oldContent, i = e.newContent, a = e.replaceAll === !0, o = t.vfs.readFile(n), s = Wv(o, r);
 		if (s === 0) throw Error("oldContent not found");
 		if (!a && s > 1) throw Error("oldContent is not unique; set replaceAll=true to replace every occurrence");
 		let c = a ? o.split(r).join(i) : o.replace(r, i);
@@ -11162,10 +11176,10 @@ var Wv = {
 			}
 		};
 	}
-}, Gv = {
+}, Kv = {
 	name: "list",
 	execute(e, t) {
-		let n = Fv(e.path), r = t.vfs.list(n);
+		let n = Iv(e.path), r = t.vfs.list(n);
 		return {
 			tool: "list",
 			ok: !0,
@@ -11173,7 +11187,7 @@ var Wv = {
 			data: r
 		};
 	}
-}, Kv = {
+}, qv = {
 	name: "search",
 	execute(e, t) {
 		let n = typeof e.query == "string" ? e.query : "", r = e.regex === !0, i = typeof e.path == "string" ? e.path : "/", a = t.vfs.walk(i).filter((e) => e.type === "file"), o = r ? new RegExp(n, "i") : null, s = a.map((e) => {
@@ -11188,32 +11202,32 @@ var Wv = {
 		};
 	}
 };
-function qv() {
+function Jv() {
 	return [
-		zv,
 		Bv,
 		Vv,
-		Wv,
 		Hv,
 		Gv,
-		Kv
+		Uv,
+		Kv,
+		qv
 	];
 }
 //#endregion
 //#region src/app/services/virtual-tools/tool-dispatcher.ts
-var Jv = {
+var Yv = {
 	maxCalls: 10,
 	timeoutMs: 5e3
 };
-function Yv(e) {
+function Xv(e) {
 	return typeof e == "object" && !!e && !Array.isArray(e);
 }
-var Xv = class {
+var Zv = class {
 	tools;
 	options;
-	constructor(e = qv(), t = {}) {
+	constructor(e = Jv(), t = {}) {
 		this.tools = new Map(e.map((e) => [e.name, e])), this.options = {
-			...Jv,
+			...Yv,
 			...t
 		};
 	}
@@ -11232,7 +11246,7 @@ var Xv = class {
 		};
 		let n = Date.now(), r = [];
 		for (let i of e.calls) {
-			if (!i || typeof i.tool != "string" || i.tool.trim() === "" || !Yv(i.args)) return {
+			if (!i || typeof i.tool != "string" || i.tool.trim() === "" || !Xv(i.args)) return {
 				ok: !1,
 				results: r,
 				errorCode: "INVALID_CALL_ARGS",
@@ -11276,10 +11290,10 @@ var Xv = class {
 };
 //#endregion
 //#region src/app/services/vfs-runtime/chat-vfs-runtime.ts
-function Zv(e) {
+function Qv(e) {
 	return Object.keys(e).slice(0, 4).join(",");
 }
-function Qv(e, t, n, r) {
+function $v(e, t, n, r) {
 	let i = [];
 	return e.calls.forEach((e, a) => {
 		let o = t.results[a];
@@ -11293,7 +11307,7 @@ function Qv(e, t, n, r) {
 			toolName: o.tool,
 			status: "success",
 			durationMs: 0,
-			argsSummary: Zv(e.args ?? {})
+			argsSummary: Qv(e.args ?? {})
 		});
 		let s = o.tool === "read" && o.data && typeof o.data == "object" ? o.data : null;
 		s && "truncated" in s && s.truncated === !0 && i.push({
@@ -11311,7 +11325,7 @@ function Qv(e, t, n, r) {
 		});
 	}), i;
 }
-var $v = class {
+var ey = class {
 	store;
 	dispatcher;
 	checkpointService;
@@ -11342,7 +11356,7 @@ var $v = class {
 					durationMs: c - t.startedAt,
 					argsSummary: `calls=${e.calls.length}`,
 					checkpointId: s
-				}, a = Qv(e, i, t, c);
+				}, a = $v(e, i, t, c);
 				l = id([
 					...n.chatVfsLogs,
 					r,
@@ -11371,7 +11385,7 @@ var $v = class {
 		let e = this.store.getState().extension;
 		return e.enabled && e.virtualToolCallEnabled;
 	}
-}, ey = class {
+}, ty = class {
 	store;
 	constructor(e) {
 		this.store = e;
@@ -11413,115 +11427,115 @@ var $v = class {
 	cloneSnapshot(e) {
 		return JSON.parse(JSON.stringify(e));
 	}
-}, ty = /<virtual-tool-call>([\s\S]*?)<\/virtual-tool-call>/g, ny = /<virtual-tool-result>([\s\S]*?)<\/virtual-tool-result>/g;
-function ry(e) {
+}, ny = /<virtual-tool-call>([\s\S]*?)<\/virtual-tool-call>/g, ry = /<virtual-tool-result>([\s\S]*?)<\/virtual-tool-result>/g;
+function iy(e) {
 	let t = null, n = null;
-	for (; (t = ty.exec(e)) !== null;) n = t;
+	for (; (t = ny.exec(e)) !== null;) n = t;
 	return n ? {
 		content: n[1].trim(),
 		start: n.index,
 		end: n.index + n[0].length
 	} : null;
 }
-function iy(e) {
-	let t = [...e.matchAll(ny)].length;
+function ay(e) {
+	let t = [...e.matchAll(ry)].length;
 	return {
 		ok: t <= 1,
 		count: t
 	};
 }
-function ay(e, t, n) {
+function oy(e, t, n) {
 	let r = JSON.stringify(n);
 	return `${e.slice(0, t.start)}<virtual-tool-result>${r}</virtual-tool-result>${e.slice(t.end)}`;
 }
 //#endregion
 //#region node_modules/jsonrepair/lib/esm/utils/JSONRepairError.js
-var oy = class extends Error {
+var sy = class extends Error {
 	constructor(e, t) {
 		super(`${e} at position ${t}`), this.position = t;
 	}
-}, sy = 32, cy = 10, ly = 9, uy = 13, dy = 160, fy = 6158, py = 8192, my = 8203, hy = 8239, gy = 8287, _y = 12288, vy = 65279;
-function yy(e) {
+}, cy = 32, ly = 10, uy = 9, dy = 13, fy = 160, py = 6158, my = 8192, hy = 8203, gy = 8239, _y = 8287, vy = 12288, yy = 65279;
+function by(e) {
 	return /^[0-9A-Fa-f]$/.test(e);
 }
-function by(e) {
+function xy(e) {
 	return e >= "0" && e <= "9";
 }
-function xy(e) {
+function Sy(e) {
 	return e >= " ";
 }
-function Sy(e) {
+function Cy(e) {
 	return ",:[]/{}()\n+".includes(e);
 }
-function Cy(e) {
+function wy(e) {
 	return e >= "a" && e <= "z" || e >= "A" && e <= "Z" || e === "_" || e === "$";
 }
-function wy(e) {
+function Ty(e) {
 	return e >= "a" && e <= "z" || e >= "A" && e <= "Z" || e === "_" || e === "$" || e >= "0" && e <= "9";
 }
-var Ty = /^(http|https|ftp|mailto|file|data|irc):\/\/$/, Ey = /^[A-Za-z0-9-._~:/?#@!$&'()*+;=]$/;
-function Dy(e) {
+var Ey = /^(http|https|ftp|mailto|file|data|irc):\/\/$/, Dy = /^[A-Za-z0-9-._~:/?#@!$&'()*+;=]$/;
+function Oy(e) {
 	return ",[]/{}\n+".includes(e);
 }
-function Oy(e) {
-	return Py(e) || ky.test(e);
+function ky(e) {
+	return Fy(e) || Ay.test(e);
 }
-var ky = /^[[{\w-]$/;
-function Ay(e) {
+var Ay = /^[[{\w-]$/;
+function jy(e) {
 	return e === "\n" || e === "\r" || e === "	" || e === "\b" || e === "\f";
-}
-function jy(e, t) {
-	let n = e.charCodeAt(t);
-	return n === sy || n === cy || n === ly || n === uy;
 }
 function My(e, t) {
 	let n = e.charCodeAt(t);
-	return n === sy || n === ly || n === uy;
+	return n === cy || n === ly || n === uy || n === dy;
 }
 function Ny(e, t) {
 	let n = e.charCodeAt(t);
-	return n === dy || n === fy || n >= py && n <= my || n === hy || n === gy || n === _y || n === vy;
+	return n === cy || n === uy || n === dy;
 }
-function Py(e) {
-	return Fy(e) || Ly(e);
+function Py(e, t) {
+	let n = e.charCodeAt(t);
+	return n === fy || n === py || n >= my && n <= hy || n === gy || n === _y || n === vy || n === yy;
 }
 function Fy(e) {
-	return e === "\"" || e === "“" || e === "”";
+	return Iy(e) || Ry(e);
 }
 function Iy(e) {
-	return e === "\"";
+	return e === "\"" || e === "“" || e === "”";
 }
 function Ly(e) {
-	return e === "'" || e === "‘" || e === "’" || e === "`" || e === "´";
+	return e === "\"";
 }
 function Ry(e) {
+	return e === "'" || e === "‘" || e === "’" || e === "`" || e === "´";
+}
+function zy(e) {
 	return e === "'";
 }
-function zy(e, t) {
+function By(e, t) {
 	let n = arguments.length > 2 && arguments[2] !== void 0 ? arguments[2] : !1, r = e.lastIndexOf(t);
 	return r === -1 ? e : e.substring(0, r) + (n ? "" : e.substring(r + 1));
 }
-function By(e, t) {
+function Vy(e, t) {
 	let n = e.length;
-	if (!jy(e, n - 1)) return e + t;
-	for (; jy(e, n - 1);) n--;
+	if (!My(e, n - 1)) return e + t;
+	for (; My(e, n - 1);) n--;
 	return e.substring(0, n) + t + e.substring(n);
 }
-function Vy(e, t, n) {
+function Hy(e, t, n) {
 	return e.substring(0, t) + e.substring(t + n);
 }
-function Hy(e) {
+function Uy(e) {
 	return /[,\n][ \t\r]*$/.test(e);
 }
 //#endregion
 //#region node_modules/jsonrepair/lib/esm/regular/jsonrepair.js
-var Uy = {
+var Wy = {
 	"\b": "\\b",
 	"\f": "\\f",
 	"\n": "\\n",
 	"\r": "\\r",
 	"	": "\\t"
-}, Wy = {
+}, Gy = {
 	"\"": "\"",
 	"\\": "\\",
 	"/": "/",
@@ -11531,7 +11545,7 @@ var Uy = {
 	r: "\r",
 	t: "	"
 };
-function Gy(e) {
+function Ky(e) {
 	let t = 0, n = "";
 	c([
 		"```",
@@ -11543,7 +11557,7 @@ function Gy(e) {
 		"```}"
 	]);
 	let r = u(",");
-	for (r && a(), Oy(e[t]) && Hy(n) ? (r || (n = By(n, ",")), g()) : r && (n = zy(n, ",")); e[t] === "}" || e[t] === "]";) t++, a();
+	for (r && a(), ky(e[t]) && Uy(n) ? (r || (n = Vy(n, ",")), g()) : r && (n = By(n, ",")); e[t] === "}" || e[t] === "]";) t++, a();
 	if (t >= e.length) return n;
 	D();
 	function i() {
@@ -11559,15 +11573,15 @@ function Gy(e) {
 		return t > n;
 	}
 	function o(r) {
-		let i = r ? jy : My, a = "";
+		let i = r ? My : Ny, a = "";
 		for (;;) if (i(e, t)) a += e[t], t++;
-		else if (Ny(e, t)) a += " ", t++;
+		else if (Py(e, t)) a += " ", t++;
 		else break;
 		return a.length > 0 ? (n += a, !0) : !1;
 	}
 	function s() {
 		if (e[t] === "/" && e[t + 1] === "*") {
-			for (; t < e.length && !Ky(e, t);) t++;
+			for (; t < e.length && !qy(e, t);) t++;
 			return t += 2, !0;
 		}
 		if (e[t] === "/" && e[t + 1] === "/") {
@@ -11578,7 +11592,7 @@ function Gy(e) {
 	}
 	function c(n) {
 		if (l(n)) {
-			if (Cy(e[t])) for (; t < e.length && wy(e[t]);) t++;
+			if (wy(e[t])) for (; t < e.length && Ty(e[t]);) t++;
 			return a(), !0;
 		}
 		return !1;
@@ -11609,15 +11623,15 @@ function Gy(e) {
 			let r = !0;
 			for (; t < e.length && e[t] !== "}";) {
 				let o;
-				if (r ? (o = !0, r = !1) : (o = u(","), o || (n = By(n, ",")), a()), p(), !(_() || S(!0))) {
-					e[t] === "}" || e[t] === "{" || e[t] === "]" || e[t] === "[" || e[t] === void 0 ? n = zy(n, ",") : O();
+				if (r ? (o = !0, r = !1) : (o = u(","), o || (n = Vy(n, ",")), a()), p(), !(_() || S(!0))) {
+					e[t] === "}" || e[t] === "{" || e[t] === "]" || e[t] === "[" || e[t] === void 0 ? n = By(n, ",") : O();
 					break;
 				}
 				a();
 				let s = u(":"), c = t >= e.length;
-				s || (Oy(e[t]) || c ? n = By(n, ":") : k()), i() || (s || c ? n += "null" : k());
+				s || (ky(e[t]) || c ? n = Vy(n, ":") : k()), i() || (s || c ? n += "null" : k());
 			}
-			return e[t] === "}" ? (n += "}", t++) : n = By(n, "}"), !0;
+			return e[t] === "}" ? (n += "}", t++) : n = Vy(n, "}"), !0;
 		}
 		return !1;
 	}
@@ -11625,50 +11639,50 @@ function Gy(e) {
 		if (e[t] === "[") {
 			n += "[", t++, a(), d(",") && a();
 			let r = !0;
-			for (; t < e.length && e[t] !== "]";) if (r ? r = !1 : u(",") || (n = By(n, ",")), p(), !i()) {
-				n = zy(n, ",");
+			for (; t < e.length && e[t] !== "]";) if (r ? r = !1 : u(",") || (n = Vy(n, ",")), p(), !i()) {
+				n = By(n, ",");
 				break;
 			}
-			return e[t] === "]" ? (n += "]", t++) : n = By(n, "]"), !0;
+			return e[t] === "]" ? (n += "]", t++) : n = Vy(n, "]"), !0;
 		}
 		return !1;
 	}
 	function g() {
 		let e = !0, t = !0;
-		for (; t;) e ? e = !1 : u(",") || (n = By(n, ",")), t = i();
-		t || (n = zy(n, ",")), n = `[\n${n}\n]`;
+		for (; t;) e ? e = !1 : u(",") || (n = Vy(n, ",")), t = i();
+		t || (n = By(n, ",")), n = `[\n${n}\n]`;
 	}
 	function _() {
 		let r = arguments.length > 0 && arguments[0] !== void 0 ? arguments[0] : !1, i = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : -1, o = e[t] === "\\";
-		if (o &&= (t++, !0), Py(e[t])) {
-			let s = Iy(e[t]) ? Iy : Ry(e[t]) ? Ry : Ly(e[t]) ? Ly : Fy, c = t, l = n.length, u = "\"";
+		if (o &&= (t++, !0), Fy(e[t])) {
+			let s = Ly(e[t]) ? Ly : zy(e[t]) ? zy : Ry(e[t]) ? Ry : Iy, c = t, l = n.length, u = "\"";
 			for (t++;;) {
 				if (t >= e.length) {
 					let i = w(t - 1);
-					return !r && Sy(e.charAt(i)) ? (t = c, n = n.substring(0, l), _(!0)) : (u = By(u, "\""), n += u, !0);
+					return !r && Cy(e.charAt(i)) ? (t = c, n = n.substring(0, l), _(!0)) : (u = Vy(u, "\""), n += u, !0);
 				}
-				if (t === i) return u = By(u, "\""), n += u, !0;
+				if (t === i) return u = Vy(u, "\""), n += u, !0;
 				if (s(e[t])) {
 					let i = t, o = u.length;
-					if (u += "\"", t++, n += u, a(!1), r || t >= e.length || Sy(e[t]) || Py(e[t]) || by(e[t])) return v(), !0;
+					if (u += "\"", t++, n += u, a(!1), r || t >= e.length || Cy(e[t]) || Fy(e[t]) || xy(e[t])) return v(), !0;
 					let s = w(i - 1), d = e.charAt(s);
 					if (d === ",") return t = c, n = n.substring(0, l), _(!1, s);
-					if (Sy(d)) return t = c, n = n.substring(0, l), _(!0);
+					if (Cy(d)) return t = c, n = n.substring(0, l), _(!0);
 					n = n.substring(0, l), t = i + 1, u = `${u.substring(0, o)}\\${u.substring(o)}`;
-				} else if (r && Dy(e[t])) {
-					if (e[t - 1] === ":" && Ty.test(e.substring(c + 1, t + 2))) for (; t < e.length && Ey.test(e[t]);) u += e[t], t++;
-					return u = By(u, "\""), n += u, v(), !0;
+				} else if (r && Oy(e[t])) {
+					if (e[t - 1] === ":" && Ey.test(e.substring(c + 1, t + 2))) for (; t < e.length && Dy.test(e[t]);) u += e[t], t++;
+					return u = Vy(u, "\""), n += u, v(), !0;
 				} else if (e[t] === "\\") {
 					let n = e.charAt(t + 1);
-					if (Wy[n] !== void 0) u += e.slice(t, t + 2), t += 2;
+					if (Gy[n] !== void 0) u += e.slice(t, t + 2), t += 2;
 					else if (n === "u") {
 						let n = 2;
-						for (; n < 6 && yy(e[t + n]);) n++;
+						for (; n < 6 && by(e[t + n]);) n++;
 						n === 6 ? (u += e.slice(t, t + 6), t += 6) : t + n >= e.length ? t = e.length : A();
 					} else n === "\n" ? (u += "\\n", t += 2) : (u += n, t += 2);
 				} else {
 					let n = e.charAt(t);
-					n === "\"" && e[t - 1] !== "\\" ? (u += `\\${n}`, t++) : Ay(n) ? (u += Uy[n], t++) : (xy(n) || ee(n), u += n, t++);
+					n === "\"" && e[t - 1] !== "\\" ? (u += `\\${n}`, t++) : jy(n) ? (u += Wy[n], t++) : (Sy(n) || ee(n), u += n, t++);
 				}
 				o && f();
 			}
@@ -11678,9 +11692,9 @@ function Gy(e) {
 	function v() {
 		let r = !1;
 		for (a(); e[t] === "+";) {
-			r = !0, t++, a(), n = zy(n, "\"", !0);
+			r = !0, t++, a(), n = By(n, "\"", !0);
 			let e = n.length;
-			n = _() ? Vy(n, e, 1) : By(n, "\"");
+			n = _() ? Hy(n, e, 1) : Vy(n, "\"");
 		}
 		return r;
 	}
@@ -11688,18 +11702,18 @@ function Gy(e) {
 		let r = t;
 		if (e[t] === "-") {
 			if (t++, T()) return E(r), !0;
-			if (!by(e[t])) return t = r, !1;
+			if (!xy(e[t])) return t = r, !1;
 		}
-		for (; by(e[t]);) t++;
+		for (; xy(e[t]);) t++;
 		if (e[t] === ".") {
 			if (t++, T()) return E(r), !0;
-			if (!by(e[t])) return t = r, !1;
-			for (; by(e[t]);) t++;
+			if (!xy(e[t])) return t = r, !1;
+			for (; xy(e[t]);) t++;
 		}
 		if (e[t] === "e" || e[t] === "E") {
 			if (t++, (e[t] === "-" || e[t] === "+") && t++, T()) return E(r), !0;
-			if (!by(e[t])) return t = r, !1;
-			for (; by(e[t]);) t++;
+			if (!xy(e[t])) return t = r, !1;
+			for (; xy(e[t]);) t++;
 		}
 		if (!T()) return t = r, !1;
 		if (t > r) {
@@ -11716,16 +11730,16 @@ function Gy(e) {
 	}
 	function S(r) {
 		let a = t;
-		if (Cy(e[t])) {
-			for (; t < e.length && wy(e[t]);) t++;
+		if (wy(e[t])) {
+			for (; t < e.length && Ty(e[t]);) t++;
 			let n = t;
-			for (; jy(e, n);) n++;
+			for (; My(e, n);) n++;
 			if (e[n] === "(") return t = n + 1, i(), e[t] === ")" && (t++, e[t] === ";" && t++), !0;
 		}
-		for (; t < e.length && !Dy(e[t]) && !Py(e[t]) && (!r || e[t] !== ":");) t++;
-		if (e[t - 1] === ":" && Ty.test(e.substring(a, t + 2))) for (; t < e.length && Ey.test(e[t]);) t++;
+		for (; t < e.length && !Oy(e[t]) && !Fy(e[t]) && (!r || e[t] !== ":");) t++;
+		if (e[t - 1] === ":" && Ey.test(e.substring(a, t + 2))) for (; t < e.length && Dy.test(e[t]);) t++;
 		if (t > a) {
-			for (; jy(e, t - 1) && t > 0;) t--;
+			for (; My(e, t - 1) && t > 0;) t--;
 			let r = e.slice(a, t);
 			return n += r === "undefined" ? "null" : JSON.stringify(r), e[t] === "\"" && t++, !0;
 		}
@@ -11739,47 +11753,47 @@ function Gy(e) {
 	}
 	function w(t) {
 		let n = t;
-		for (; n > 0 && jy(e, n);) n--;
+		for (; n > 0 && My(e, n);) n--;
 		return n;
 	}
 	function T() {
-		return t >= e.length || Sy(e[t]) || jy(e, t);
+		return t >= e.length || Cy(e[t]) || My(e, t);
 	}
 	function E(r) {
 		n += `${e.slice(r, t)}0`;
 	}
 	function ee(e) {
-		throw new oy(`Invalid character ${JSON.stringify(e)}`, t);
+		throw new sy(`Invalid character ${JSON.stringify(e)}`, t);
 	}
 	function D() {
-		throw new oy(`Unexpected character ${JSON.stringify(e[t])}`, t);
+		throw new sy(`Unexpected character ${JSON.stringify(e[t])}`, t);
 	}
 	function te() {
-		throw new oy("Unexpected end of json string", e.length);
+		throw new sy("Unexpected end of json string", e.length);
 	}
 	function O() {
-		throw new oy("Object key expected", t);
+		throw new sy("Object key expected", t);
 	}
 	function k() {
-		throw new oy("Colon expected", t);
+		throw new sy("Colon expected", t);
 	}
 	function A() {
-		throw new oy(`Invalid unicode character "${e.slice(t, t + 6)}"`, t);
+		throw new sy(`Invalid unicode character "${e.slice(t, t + 6)}"`, t);
 	}
 }
-function Ky(e, t) {
+function qy(e, t) {
 	return e[t] === "*" && e[t + 1] === "/";
 }
 //#endregion
 //#region src/app/services/message/json-repair-policy.ts
-var qy = new Set([
+var Jy = new Set([
 	"content",
 	"oldContent",
 	"newContent"
 ]);
-function Jy(e) {
-	let t = Yy(e);
-	if (t.inString) return t.valueKey && qy.has(t.valueKey) ? {
+function Yy(e) {
+	let t = Xy(e);
+	if (t.inString) return t.valueKey && Jy.has(t.valueKey) ? {
 		allowed: !1,
 		reasonCode: "LIKELY_TRUNCATED_PAYLOAD"
 	} : {
@@ -11797,7 +11811,7 @@ function Jy(e) {
 		reasonCode: "LIKELY_TRUNCATED_PAYLOAD"
 	} : { allowed: !0 };
 }
-function Yy(e) {
+function Xy(e) {
 	let t = [], n = !1, r = !1, i = null, a = 0;
 	for (; a < e.length;) {
 		let o = e[a];
@@ -11818,18 +11832,18 @@ function Yy(e) {
 			continue;
 		}
 		if (o === "\"") {
-			let n = Xy(e, a);
+			let n = Zy(e, a);
 			if (n.closed) {
-				Zy(e, n.endIndex) ? i = null : Qy(e, a) && (i = $y(e, a)), a = n.endIndex;
+				Qy(e, n.endIndex) ? i = null : $y(e, a) && (i = eb(e, a)), a = n.endIndex;
 				continue;
 			}
-			return Qy(e, a) && (i = $y(e, a)), {
+			return $y(e, a) && (i = eb(e, a)), {
 				inString: !0,
 				valueKey: i,
 				bracketStack: t
 			};
 		}
-		o === "{" ? (t.push("{"), i = null) : o === "[" ? t.push("[") : o === "}" ? eb(t, "{") : o === "]" ? eb(t, "[") : o === "," && (i = null), a++;
+		o === "{" ? (t.push("{"), i = null) : o === "[" ? t.push("[") : o === "}" ? tb(t, "{") : o === "]" ? tb(t, "[") : o === "," && (i = null), a++;
 	}
 	return {
 		inString: !1,
@@ -11837,7 +11851,7 @@ function Yy(e) {
 		bracketStack: t
 	};
 }
-function Xy(e, t) {
+function Zy(e, t) {
 	let n = !1;
 	for (let r = t + 1; r < e.length; r++) {
 		let t = e[r];
@@ -11859,21 +11873,21 @@ function Xy(e, t) {
 		endIndex: e.length
 	};
 }
-function Zy(e, t) {
+function Qy(e, t) {
 	for (let n = t; n < e.length; n++) {
 		let t = e[n];
 		if (!(t === " " || t === "	" || t === "\n" || t === "\r")) return t === ":";
 	}
 	return !1;
 }
-function Qy(e, t) {
+function $y(e, t) {
 	for (let n = t - 1; n >= 0; n--) {
 		let t = e[n];
 		if (!(t === " " || t === "	" || t === "\n" || t === "\r")) return t === ":";
 	}
 	return !1;
 }
-function $y(e, t) {
+function eb(e, t) {
 	let n = 0;
 	for (let r = t - 1; r >= 0; r--) {
 		let i = e[r];
@@ -11889,18 +11903,18 @@ function $y(e, t) {
 			break;
 		}
 		if (n === 0 && i === "\"") {
-			let n = Xy(e, r);
-			if (n.closed && n.endIndex <= t && Zy(e, n.endIndex)) return e.slice(r + 1, n.endIndex - 1);
+			let n = Zy(e, r);
+			if (n.closed && n.endIndex <= t && Qy(e, n.endIndex)) return e.slice(r + 1, n.endIndex - 1);
 		}
 	}
 	return null;
 }
-function eb(e, t) {
+function tb(e, t) {
 	e[e.length - 1] === t && e.pop();
 }
 //#endregion
 //#region src/app/services/message/virtual-tool-call-parser.ts
-function tb(e, t) {
+function nb(e, t) {
 	try {
 		return {
 			kind: "parsed",
@@ -11912,14 +11926,14 @@ function tb(e, t) {
 			kind: "strict-failed",
 			errorMessage: r
 		};
-		let i = Jy(e);
+		let i = Yy(e);
 		if (!i.allowed) return {
 			kind: "non-repairable",
 			reasonCode: i.reasonCode ?? "INDETERMINATE_STRUCTURE",
 			errorMessage: r
 		};
 		try {
-			let t = Gy(e), n = JSON.parse(t), r = ["jsonrepair applied after conservative policy gate"];
+			let t = Ky(e), n = JSON.parse(t), r = ["jsonrepair applied after conservative policy gate"];
 			return t !== e && r.push("structural normalization"), {
 				kind: "repaired",
 				envelope: n,
@@ -11936,10 +11950,10 @@ function tb(e, t) {
 }
 //#endregion
 //#region src/app/services/virtual-tools/tool-result-payload.ts
-function nb(e) {
+function rb(e) {
 	return Object.keys(e).slice(0, 4).join(",");
 }
-function rb(e, t) {
+function ib(e, t) {
 	return e.map((e) => {
 		let n = e.args ?? {};
 		return t ? {
@@ -11947,33 +11961,34 @@ function rb(e, t) {
 			args: n
 		} : {
 			tool: e.tool,
-			argsSummary: nb(n)
+			argsSummary: rb(n)
 		};
 	});
 }
 //#endregion
 //#region src/app/services/message/virtual-tool-message-handler.ts
-var ib = /* @__PURE__ */ new Set(), ab = class {
+var ab = /* @__PURE__ */ new Set(), ob = class {
 	runtime;
 	logs;
 	getJsonRepairEnabled;
-	constructor(e, t, n = () => !0) {
-		this.runtime = e, this.logs = t, this.getJsonRepairEnabled = n;
+	getResultFullArgsEnabled;
+	constructor(e, t, n = () => !0, r = () => !1) {
+		this.runtime = e, this.logs = t, this.getJsonRepairEnabled = n, this.getResultFullArgsEnabled = r;
 	}
 	process(e) {
 		let t = `${e.chatId}:${e.messageId}`;
-		if (ib.has(t)) return {
+		if (ab.has(t)) return {
 			handled: !1,
 			messageText: e.messageText
 		};
-		ib.add(t);
-		let n = Date.now(), r = ry(e.messageText);
+		ab.add(t);
+		let n = Date.now(), r = iy(e.messageText);
 		try {
 			if (!this.runtime.isVirtualToolCallEnabled()) return {
 				handled: !1,
 				messageText: e.messageText
 			};
-			let t = iy(e.messageText);
+			let t = ay(e.messageText);
 			if (!t.ok) return this.logs.append({
 				id: `log-${Date.now()}`,
 				timestamp: Date.now(),
@@ -11994,7 +12009,7 @@ var ib = /* @__PURE__ */ new Set(), ab = class {
 				handled: !1,
 				messageText: e.messageText
 			};
-			let i = tb(r.content, { repairEnabled: this.getJsonRepairEnabled() });
+			let i = nb(r.content, { repairEnabled: this.getJsonRepairEnabled() });
 			if (i.kind === "strict-failed" || i.kind === "non-repairable" || i.kind === "repair-failed") {
 				let t = i.kind === "strict-failed" ? "JSON_PARSE_SKIPPED" : i.kind === "non-repairable" ? i.reasonCode : "JSON_REPAIR_FAILED";
 				return this.logs.append({
@@ -12019,14 +12034,14 @@ var ib = /* @__PURE__ */ new Set(), ab = class {
 				messageId: e.messageId,
 				startedAt: n,
 				batchId: c
-			}), u = {
+			}), u = !l.ok || this.getResultFullArgsEnabled(), d = {
 				ok: l.ok,
-				calls: rb(a.calls, !l.ok),
+				calls: ib(a.calls, u),
 				results: l.results,
 				errorCode: l.errorCode,
 				errorMessage: l.errorMessage
 			};
-			return o && (u.repairApplied = !0, u.repairNotes = s), o && l.ok && this.logs.append({
+			return o && (d.repairApplied = !0, d.repairNotes = s), o && l.ok && this.logs.append({
 				id: `log-${Date.now()}-repaired`,
 				timestamp: Date.now(),
 				chatId: e.chatId,
@@ -12052,11 +12067,11 @@ var ib = /* @__PURE__ */ new Set(), ab = class {
 				errorMessage: l.errorMessage
 			}), this.logPerToolExecution(e, a, l, c)), {
 				handled: !0,
-				messageText: ay(e.messageText, r, u)
+				messageText: oy(e.messageText, r, d)
 			};
 		} catch (t) {
 			let i = t instanceof Error ? t.message : String(t), a = "UNHANDLED_PROCESSING_ERROR";
-			return r ||= ry(e.messageText), this.logs.append({
+			return r ||= iy(e.messageText), this.logs.append({
 				id: `log-${Date.now()}`,
 				timestamp: Date.now(),
 				chatId: e.chatId,
@@ -12070,7 +12085,7 @@ var ib = /* @__PURE__ */ new Set(), ab = class {
 				errorMessage: i
 			}), r ? {
 				handled: !0,
-				messageText: ay(e.messageText, r, {
+				messageText: oy(e.messageText, r, {
 					ok: !1,
 					calls: [],
 					results: [],
@@ -12082,7 +12097,7 @@ var ib = /* @__PURE__ */ new Set(), ab = class {
 				messageText: e.messageText
 			};
 		} finally {
-			ib.delete(t);
+			ab.delete(t);
 		}
 	}
 	logPerToolExecution(e, t, n, r) {
@@ -12099,7 +12114,7 @@ var ib = /* @__PURE__ */ new Set(), ab = class {
 					toolName: o.tool,
 					status: "success",
 					durationMs: 0,
-					argsSummary: nb(t.args ?? {})
+					argsSummary: rb(t.args ?? {})
 				});
 				let n = o.tool === "read" && o.data && typeof o.data == "object" ? o.data : null;
 				n && "truncated" in n && n.truncated === !0 && this.logs.append({
@@ -12126,42 +12141,42 @@ var ib = /* @__PURE__ */ new Set(), ab = class {
 				toolName: t.tool,
 				status: n.errorCode === "BATCH_TIMEOUT" ? "timeout" : "failed",
 				durationMs: 0,
-				argsSummary: nb(t.args ?? {}),
+				argsSummary: rb(t.args ?? {}),
 				errorCode: n.errorCode,
 				errorMessage: n.errorMessage
 			});
 		});
 	}
-}, ob = "├── ", sb = "└── ", cb = "│   ", lb = "    ";
-function ub(e, t) {
+}, sb = "├── ", cb = "└── ", lb = "│   ", ub = "    ";
+function db(e, t) {
 	return t.children.map((t) => e.nodes[t]).filter(Boolean).sort((e, t) => e.name.localeCompare(t.name));
 }
-function db(e) {
+function fb(e) {
 	return e.type === "directory" ? e.path === "/" ? "/" : `${e.name}/` : e.name;
 }
-function fb(e) {
+function pb(e) {
 	let t = e.nodes[e.rootId];
 	if (!t || t.type !== "directory") return "/";
 	let n = [];
-	n.push(db(t));
+	n.push(fb(t));
 	let r = (t, i) => {
-		let a = ub(e, t);
+		let a = db(e, t);
 		a.forEach((e, t) => {
-			let o = t === a.length - 1, s = o ? sb : ob;
-			n.push(`${i}${s}${db(e)}`), e.type === "directory" && r(e, `${i}${o ? lb : cb}`);
+			let o = t === a.length - 1, s = o ? cb : sb;
+			n.push(`${i}${s}${fb(e)}`), e.type === "directory" && r(e, `${i}${o ? ub : lb}`);
 		});
 	};
 	return r(t, ""), n.join("\n");
 }
 //#endregion
 //#region src/infra/sillytarvern/macros/register-vfs-macros.ts
-function pb(e, t) {
+function mb(e, t) {
 	if (typeof SillyTavern > "u") return;
 	let { registerMacro: n } = SillyTavern.getContext();
 	n("VIRTUAL_FILE_TREE", () => {
 		t?.();
 		let n = e.getState().chat.chatVfsSnapshot;
-		return fb(n);
+		return pb(n);
 	}), n("VIRTUAL_WORK_TREE", () => {
 		t?.();
 		let { chatVfsSnapshot: n, workTree: r } = e.getState().chat;
@@ -12170,7 +12185,7 @@ function pb(e, t) {
 }
 //#endregion
 //#region src/infra/sillytarvern/function-tools/format-function-tool-result.ts
-function mb(e) {
+function hb(e) {
 	let t = {
 		tool: e.tool,
 		ok: e.ok,
@@ -12178,43 +12193,43 @@ function mb(e) {
 	};
 	return e.data !== void 0 && (t.data = e.data), e.errorCode && (t.errorCode = e.errorCode), t;
 }
-function hb(e, t) {
+function gb(e, t) {
 	let n = {
 		ok: e.ok,
-		results: e.results.map(mb)
+		results: e.results.map(hb)
 	};
-	return t?.calls && (n.calls = rb(t.calls, !e.ok)), e.ok || (e.errorCode && (n.errorCode = e.errorCode), e.errorMessage && (n.errorMessage = e.errorMessage)), JSON.stringify(n);
+	return t?.calls && (n.calls = ib(t.calls, !e.ok)), e.ok || (e.errorCode && (n.errorCode = e.errorCode), e.errorMessage && (n.errorMessage = e.errorMessage)), JSON.stringify(n);
 }
 //#endregion
 //#region src/infra/sillytarvern/function-tools/vfs-function-tool-schemas.ts
-var gb = "http://json-schema.org/draft-04/schema#";
-function _b(e) {
+var _b = "http://json-schema.org/draft-04/schema#";
+function vb(e) {
 	return {
 		type: "string",
 		description: e
 	};
 }
-function vb(e) {
+function yb(e) {
 	return {
 		type: "number",
 		description: e
 	};
 }
-var yb = [
+var bb = [
 	{
 		name: "vfs_read",
 		displayName: "VFS Read",
 		shortTool: "read",
 		description: "Read a file from the current chat virtual file system. Paths must start with `/`. Optional line/char limits tighten output.",
 		parameters: {
-			$schema: gb,
+			$schema: _b,
 			type: "object",
 			properties: {
-				path: _b("Virtual file path (required, e.g. `/notes/a.txt`)"),
-				startLine: vb("1-based start line (default 1)"),
-				endLine: vb("1-based end line (inclusive)"),
-				maxLines: vb("Max lines to return (cannot exceed built-in cap)"),
-				maxChars: vb("Max characters to return (cannot exceed built-in cap)")
+				path: vb("Virtual file path (required, e.g. `/notes/a.txt`)"),
+				startLine: yb("1-based start line (default 1)"),
+				endLine: yb("1-based end line (inclusive)"),
+				maxLines: yb("Max lines to return (cannot exceed built-in cap)"),
+				maxChars: yb("Max characters to return (cannot exceed built-in cap)")
 			},
 			required: ["path"]
 		},
@@ -12226,10 +12241,10 @@ var yb = [
 		shortTool: "write",
 		description: "Create or overwrite a file in the current chat virtual file system. Paths must start with `/`. Parent directories are created automatically.",
 		parameters: {
-			$schema: gb,
+			$schema: _b,
 			type: "object",
 			properties: {
-				path: _b("Virtual file path (required)"),
+				path: vb("Virtual file path (required)"),
 				content: {
 					type: "string",
 					description: "Full file content to write (defaults to empty string)"
@@ -12245,10 +12260,10 @@ var yb = [
 		shortTool: "append",
 		description: "Append text to a file in the current chat virtual file system. Paths must start with `/`. Creates the file if missing.",
 		parameters: {
-			$schema: gb,
+			$schema: _b,
 			type: "object",
 			properties: {
-				path: _b("Virtual file path (required)"),
+				path: vb("Virtual file path (required)"),
 				content: {
 					type: "string",
 					description: "Text to append (defaults to empty string)"
@@ -12264,10 +12279,10 @@ var yb = [
 		shortTool: "delete",
 		description: "Delete a file or directory in the current chat virtual file system. Set `recursive` to true only when intentionally removing a non-empty directory tree.",
 		parameters: {
-			$schema: gb,
+			$schema: _b,
 			type: "object",
 			properties: {
-				path: _b("Virtual file or directory path (required)"),
+				path: vb("Virtual file or directory path (required)"),
 				recursive: {
 					type: "boolean",
 					description: "Must be true to recursively delete a non-empty directory"
@@ -12283,10 +12298,10 @@ var yb = [
 		shortTool: "replace",
 		description: "Replace an exact substring in a file (like search-and-replace). Paths must start with `/`. `oldContent` must appear in the file; when it appears more than once, set `replaceAll` to true or use a longer unique `oldContent`.",
 		parameters: {
-			$schema: gb,
+			$schema: _b,
 			type: "object",
 			properties: {
-				path: _b("Virtual file path (required)"),
+				path: vb("Virtual file path (required)"),
 				oldContent: {
 					type: "string",
 					description: "Exact text to find in the file (required, non-empty)"
@@ -12314,9 +12329,9 @@ var yb = [
 		shortTool: "list",
 		description: "List entries under a directory in the current chat virtual file system. Paths must start with `/`.",
 		parameters: {
-			$schema: gb,
+			$schema: _b,
 			type: "object",
-			properties: { path: _b("Virtual directory path (required)") },
+			properties: { path: vb("Virtual directory path (required)") },
 			required: ["path"]
 		},
 		formatMessage: (e) => `正在列出 ${String(e.path ?? "")}…`
@@ -12327,7 +12342,7 @@ var yb = [
 		shortTool: "search",
 		description: "Search file contents under a directory in the current chat virtual file system. Use `regex: true` for case-insensitive regex; otherwise substring match.",
 		parameters: {
-			$schema: gb,
+			$schema: _b,
 			type: "object",
 			properties: {
 				query: {
@@ -12349,18 +12364,18 @@ var yb = [
 			return t ? `正在搜索「${t}」…` : "正在搜索虚拟文件…";
 		}
 	}
-], bb = yb.map((e) => e.name), xb = Object.fromEntries(yb.map((e) => [e.name, e.shortTool]));
-function Sb(e) {
+], xb = bb.map((e) => e.name), Sb = Object.fromEntries(bb.map((e) => [e.name, e.shortTool]));
+function Cb(e) {
 	if (typeof SillyTavern > "u") return !1;
 	let t = SillyTavern.getContext();
 	if (!t.registerFunctionTool || !t.isToolCallingSupported?.()) return !1;
 	let n = e.getState().extension;
 	return !(!n.enabled || !n.virtualToolCallEnabled || t.canPerformToolCalls && !t.canPerformToolCalls("normal"));
 }
-function Cb(e, t, n) {
-	let r = xb[n];
+function wb(e, t, n) {
+	let r = Sb[n];
 	return async (n) => {
-		if (!Sb(t)) return hb({
+		if (!Cb(t)) return gb({
 			ok: !1,
 			results: [],
 			errorCode: "VFS_TOOLS_DISABLED",
@@ -12374,9 +12389,9 @@ function Cb(e, t, n) {
 			args: n ?? {}
 		};
 		try {
-			return hb(e.executeSingleTool(r, i.args), { calls: [i] });
+			return gb(e.executeSingleTool(r, i.args), { calls: [i] });
 		} catch (e) {
-			return hb({
+			return gb({
 				ok: !1,
 				results: [],
 				errorCode: "TOOL_EXECUTION_FAILED",
@@ -12385,73 +12400,73 @@ function Cb(e, t, n) {
 		}
 	};
 }
-function wb(e, t) {
+function Tb(e, t) {
 	if (typeof SillyTavern > "u") return;
 	let n = SillyTavern.getContext();
-	if (n.registerFunctionTool) for (let r of yb) n.unregisterFunctionTool?.(r.name), n.registerFunctionTool({
+	if (n.registerFunctionTool) for (let r of bb) n.unregisterFunctionTool?.(r.name), n.registerFunctionTool({
 		name: r.name,
 		displayName: r.displayName,
 		description: r.description,
 		parameters: r.parameters,
 		formatMessage: r.formatMessage,
 		stealth: !1,
-		shouldRegister: () => Sb(t),
-		action: Cb(e, t, r.name)
+		shouldRegister: () => Cb(t),
+		action: wb(e, t, r.name)
 	});
 }
-function Tb() {
+function Eb() {
 	if (typeof SillyTavern > "u") return;
 	let e = SillyTavern.getContext();
-	if (e.unregisterFunctionTool) for (let t of bb) e.unregisterFunctionTool(t);
+	if (e.unregisterFunctionTool) for (let t of xb) e.unregisterFunctionTool(t);
 }
-var Eb = null;
-function Db(e, t) {
-	return Eb = Sb(t), Eb ? wb(e, t) : Tb(), t.subscribe(() => {
-		let n = Sb(t);
-		n !== Eb && (Eb = n, n ? wb(e, t) : Tb());
+var Db = null;
+function Ob(e, t) {
+	return Db = Cb(t), Db ? Tb(e, t) : Eb(), t.subscribe(() => {
+		let n = Cb(t);
+		n !== Db && (Db = n, n ? Tb(e, t) : Eb());
 	});
 }
 //#endregion
 //#region src/app/composables/screens-composables/useVfsEntryMount.ts
-var Ob = "st-vfs-entry-button", kb = ".vfsEntry", Ab = null;
-function jb(e) {
+var kb = "st-vfs-entry-button", Ab = ".vfsEntry", jb = null;
+function Mb(e) {
 	if (typeof document > "u") return null;
 	let t = document.querySelector(".extraMesButtons");
 	if (!t) return null;
-	let n = t.querySelector(`#${Ob}`) ?? (() => {
+	let n = t.querySelector(`#${kb}`) ?? (() => {
 		let e = document.createElement("div");
-		return e.id = Ob, e.className = "mes_button st-vfs-entry fa-solid fa-box-archive", e.title = "虚拟文件系统", e.setAttribute("aria-label", "虚拟文件系统"), e.tabIndex = 0, t.appendChild(e), e;
+		return e.id = kb, e.className = "mes_button st-vfs-entry fa-solid fa-box-archive", e.title = "虚拟文件系统", e.setAttribute("aria-label", "虚拟文件系统"), e.tabIndex = 0, t.appendChild(e), e;
 	})();
 	n.className = "mes_button st-vfs-entry fa-solid fa-box-archive", n.title = "虚拟文件系统", n.setAttribute("aria-label", "虚拟文件系统"), n.tabIndex = 0;
-	let r = window.jQuery, i = `#${Ob}`, a = `click${kb}`, o = (t) => {
+	let r = window.jQuery, i = `#${kb}`, a = `click${Ab}`, o = (t) => {
 		t.target?.closest(i) && (t.preventDefault(), e());
 	};
 	return r ? (r(document).off(a, i), r(document).on(a, i, (t) => {
 		t?.preventDefault?.(), e();
-	})) : (Ab && document.removeEventListener("click", Ab), Ab = o, document.addEventListener("click", o)), () => {
-		r ? r(document).off(a, i) : (document.removeEventListener("click", o), Ab === o && (Ab = null)), n.remove();
+	})) : (jb && document.removeEventListener("click", jb), jb = o, document.addEventListener("click", o)), () => {
+		r ? r(document).off(a, i) : (document.removeEventListener("click", o), jb === o && (jb = null)), n.remove();
 	};
 }
 //#endregion
 //#region src/app/bootstrap/mountVfsEntry.ts
-var Mb = null, Nb = Ev(), Pb = null, Fb = null, Ib = 0, Lb = 40, Rb = ".extraMesButtons #st-vfs-entry-button";
-function zb() {
+var Nb = null, Pb = Ev(), Fb = null, Ib = null, Lb = 0, Rb = 40, zb = ".extraMesButtons #st-vfs-entry-button";
+function Bb() {
 	let e = () => {
-		Nb.open(), Dd(wd);
+		Pb.open(), Dd(wd);
 	}, t = () => {
-		Fb &&= (window.clearInterval(Fb), null);
-	}, n = () => typeof document < "u" && !!document.querySelector(Rb), r = () => {
-		if (n()) return Ib = 0, t(), !0;
-		let r = jb(e);
-		return r ? (Mb = r, Ib = 0, t(), !0) : !1;
+		Ib &&= (window.clearInterval(Ib), null);
+	}, n = () => typeof document < "u" && !!document.querySelector(zb), r = () => {
+		if (n()) return Lb = 0, t(), !0;
+		let r = Mb(e);
+		return r ? (Nb = r, Lb = 0, t(), !0) : !1;
 	}, i = () => {
-		Fb ||= window.setInterval(() => {
-			Ib += 1, !r() && Ib >= Lb && t();
+		Ib ||= window.setInterval(() => {
+			Lb += 1, !r() && Lb >= Rb && t();
 		}, 250);
 	}, a = () => {
-		Pb || typeof MutationObserver > "u" || (Pb = new MutationObserver(() => {
+		Fb || typeof MutationObserver > "u" || (Fb = new MutationObserver(() => {
 			n() || r() || i();
-		}), Pb.observe(document.body, {
+		}), Fb.observe(document.body, {
 			childList: !0,
 			subtree: !0
 		}));
@@ -12462,25 +12477,25 @@ function zb() {
 	}
 	typeof document > "u" || (a(), i());
 }
-function Bb() {
-	Pb?.disconnect(), Pb = null, Fb &&= (window.clearInterval(Fb), null), Ib = 0, Mb?.(), Mb = null, Nb.close();
+function Vb() {
+	Fb?.disconnect(), Fb = null, Ib &&= (window.clearInterval(Ib), null), Lb = 0, Nb?.(), Nb = null, Pb.close();
 }
 //#endregion
 //#region src/app/bootstrap/unmountVfsEntry.ts
-function Vb() {
-	Bb();
+function Hb() {
+	Vb();
 }
 //#endregion
 //#region src/main.ts
-var Hb = document.createElement("div");
-Hb.id = "st-vfs-settings-root";
-var Ub = document.querySelector("#extensions_settings");
-Ub && (Ub.appendChild(Hb), wc(Pv).mount(Hb)), yd();
-var Wb = new ey(Z);
-Wb.initializeChatFromTemplateIfNeeded(), vd(Wb.initializeChatFromTemplateIfNeeded.bind(Wb)), pb(Z, Wb.initializeChatFromTemplateIfNeeded.bind(Wb));
-var Gb = new $v(Z, new Xv(), hd, Wb), Kb = Db(Gb, Z);
-xd(jc(Vc(new ab(Gb, new rd(Z), () => Z.getState().extension.virtualToolJsonRepairEnabled)))).start(), zb(), typeof window < "u" && window.addEventListener("beforeunload", () => {
-	Kb(), Tb(), Vb();
+var Ub = document.createElement("div");
+Ub.id = "st-vfs-settings-root";
+var Wb = document.querySelector("#extensions_settings");
+Wb && (Wb.appendChild(Ub), wc(Fv).mount(Ub)), yd();
+var Gb = new ty(Z);
+Gb.initializeChatFromTemplateIfNeeded(), vd(Gb.initializeChatFromTemplateIfNeeded.bind(Gb)), mb(Z, Gb.initializeChatFromTemplateIfNeeded.bind(Gb));
+var Kb = new ey(Z, new Zv(), hd, Gb), qb = Ob(Kb, Z);
+xd(jc(Vc(new ob(Kb, new rd(Z), () => Z.getState().extension.virtualToolJsonRepairEnabled, () => Z.getState().extension.virtualToolResultFullArgsEnabled)))).start(), Bb(), typeof window < "u" && window.addEventListener("beforeunload", () => {
+	qb(), Eb(), Hb();
 });
 //#endregion
 
